@@ -92,3 +92,15 @@ Build checks:
 ./gradlew uikit-kmp:assembleRelease                          # Android
 ./gradlew uikit-kmp:assembleOSTUIKitReleaseXCFramework       # iOS (macOS only)
 ```
+
+## iOS test app
+
+`iosTestApp/` hosts **OSTUIKitTestApp**, a small SwiftUI harness that consumes the local
+`uikit-kmp/OSTUIKitKMP` package (XcodeGen project — the xcodeproj is generated, not committed):
+
+```bash
+./iosTestApp/rebuild.sh   # builds the debug XCFramework, refreshes compose resources,
+                          # regenerates the Xcode project and opens it
+```
+
+Then select an iOS 16+ simulator and run.
