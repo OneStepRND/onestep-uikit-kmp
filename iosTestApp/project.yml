@@ -1,0 +1,63 @@
+name: OSTUIKitTestApp
+options:
+  bundleIdPrefix: co.onestep.kmp
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "15.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+
+targets:
+  OSTUIKitTestApp:
+    type: application
+    platform: iOS
+    sources:
+      - OSTUIKitTestApp
+    settings:
+      base:
+        INFOPLIST_FILE: OSTUIKitTestApp/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: co.onestep.kmp.uikit.testapp
+        DEVELOPMENT_TEAM: 55WPGZLRF5
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_BITCODE: "NO"
+        STRIP_BITCODE_FROM_COPIED_FILES: "NO"
+    dependencies:
+      - package: OSTUIKitKMP
+        product: OSTUIKitKMP
+      # NOTE: The OneStep iOS SDK (OneStepSDK) must be added here.
+      # Update the URL below to match your organization's SPM distribution:
+      - package: onestep-sdk-ios
+        product: OneStepSDK
+    postBuildScripts:
+      - script: |
+          # Copy Compose Multiplatform resources to app bundle root
+          # Kotlin expects them at $APP/compose-resources/ but SPM puts them
+          # inside the OSTUIKitKMP_OSTUIKitKMP.bundle
+          BUNDLE_RESOURCES="$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/OSTUIKitKMP_OSTUIKitKMP.bundle/compose-resources"
+          APP_RESOURCES="$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/compose-resources"
+          if [ -d "$BUNDLE_RESOURCES" ]; then
+            rm -rf "$APP_RESOURCES"
+            cp -R "$BUNDLE_RESOURCES" "$APP_RESOURCES"
+          fi
+        name: "Copy Compose Resources to App Root"
+
+packages:
+  OSTUIKitKMP:
+    path: ../uikit-kmp/OSTUIKitKMP
+  # TODO: Update this URL to the actual OneStep iOS SDK SPM repository.
+  # The SDK may be distributed via:
+  #   - Private SPM: https://github.com/OneStepRND/onestep-sdk-ios
+  #   - CocoaPods (would require Podfile instead)
+  #   - Local path (if SDK xcframework is available locally)
+  # Uncomment and adjust one of the following:
+  onestep-sdk-ios:
+    url: https://github.com/OneStepRND/onestep-sdk-ios
+    # Must match the exact version pinned by onestep-uikit-ios-spm (local dev harness).
+    exactVersion: 2.0.8-rc1
+  # Local alternative:
+  # onestep-sdk-ios:
+  #   path: /path/to/onestep-sdk-ios

@@ -1,0 +1,106 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1783105009475,
+  "projectRoot": "/Users/zivkesten/Android/onestep-uikit-kmp",
+  "techStack": {
+    "languages": [
+      {
+        "name": "Kotlin",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "build.gradle.kts"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "gradle",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "scripts"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "build": {
+      "path": "build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1783105009460,
+      "keyFiles": []
+    },
+    "gradle": {
+      "path": "gradle",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1783105009462,
+      "keyFiles": [
+        "libs.versions.toml"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 2,
+      "lastAccessed": 1783105009463,
+      "keyFiles": [
+        "publish-xcframework.sh",
+        "publish.sh"
+      ]
+    },
+    "uikit-kmp": {
+      "path": "uikit-kmp",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1783105009464,
+      "keyFiles": [
+        "KMP_MIGRATION_PLAN.md",
+        "build.gradle.kts",
+        "consumer-rules.pro"
+      ]
+    },
+    "uikit-kmp/build": {
+      "path": "uikit-kmp/build",
+      "purpose": "Build output",
+      "fileCount": 1,
+      "lastAccessed": 1783105009465,
+      "keyFiles": [
+        "konan.txt"
+      ]
+    },
+    "uikit-kmp/src": {
+      "path": "uikit-kmp/src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1783105009465,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "README.md",
+      "accessCount": 2,
+      "lastAccessed": 1783105435699,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

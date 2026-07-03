@@ -14,3 +14,9 @@ nohup.out
 # Local Claude Code state
 /.claude/*
 !/.claude/CLAUDE.md
+
+# iOS test app — generated/user-specific
+iosTestApp/OSTUIKitTestApp.xcodeproj/
+iosTestApp/build/
+iosTestApp/.omc/
+iosTestApp/.claude/
