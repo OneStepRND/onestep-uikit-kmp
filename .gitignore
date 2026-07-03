@@ -20,3 +20,6 @@ iosTestApp/OSTUIKitTestApp.xcodeproj/
 iosTestApp/build/
 iosTestApp/.omc/
 iosTestApp/.claude/
+
+# OMC local state
+.omc/
