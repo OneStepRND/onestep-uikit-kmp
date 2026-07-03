@@ -1,0 +1,10 @@
+<!-- Placeholder for the "orthotics" footwear option, pending final design asset. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <path
+        android:pathData="M18,5C13,5 11,9 11,15C11,19 12,22 12,27C12,31.4 14.6,35 19,35C23.4,35 26,31.4 26,26V13C26,8 23,5 18,5ZM18,8C21.3,8 23,10 23,13V26C23,29.7 21.5,32 19,32C16.5,32 15,29.4 15,27C15,22.5 14,19.2 14,15C14,10.5 15,8 18,8Z"
+        android:fillColor="#0F3157" />
+</vector>

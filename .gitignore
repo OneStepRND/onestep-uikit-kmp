@@ -1,0 +1,16 @@
+*.iml
+.gradle
+local.properties
+.idea/
+.DS_Store
+.kotlin/
+**/build/
+/captures
+.externalNativeBuild
+.cxx
+.swiftpm/
+nohup.out
+
+# Local Claude Code state
+/.claude/*
+!/.claude/CLAUDE.md

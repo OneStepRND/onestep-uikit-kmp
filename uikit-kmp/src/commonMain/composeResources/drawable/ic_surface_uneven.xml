@@ -1,0 +1,13 @@
+<!-- Placeholder for the "uneven" surface option, pending final design asset. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <path
+        android:pathData="M5,24L12,15L18,21L26,11L35,22L32.7,23.9L26,15.6L18.2,25.3L12.3,19.4L6.5,26.8Z"
+        android:fillColor="#0F3157" />
+    <path
+        android:pathData="M5,29H35V32H5Z"
+        android:fillColor="#0F3157" />
+</vector>

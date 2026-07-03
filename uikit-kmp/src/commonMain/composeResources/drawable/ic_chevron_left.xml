@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+
+    <!--
+      A left-pointing chevron (back), drawn as a single stroked path.
+      Horizontal mirror of ic_chevron so it matches the app's chevron style.
+      The toolbar RTL-mirrors the start icon, so this points right in RTL.
+    -->
+    <path
+        android:pathData="M660,00 L260,480 L660,990"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="50"
+        android:strokeLineCap="square"
+        android:strokeLineJoin="miter"/>
+</vector>

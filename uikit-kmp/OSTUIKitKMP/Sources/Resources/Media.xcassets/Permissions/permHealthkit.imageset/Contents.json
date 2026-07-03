@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "permHealthkit.pdf",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

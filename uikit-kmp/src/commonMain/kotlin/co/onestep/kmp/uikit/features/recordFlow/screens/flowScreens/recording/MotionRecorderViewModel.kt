@@ -1,0 +1,1087 @@
+package co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording
+
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import co.onestep.kmp.uikit.bridge.PreferencesBridge
+import co.onestep.kmp.uikit.bridge.RecorderBridge
+import co.onestep.kmp.uikit.data.PocketLocation
+import co.onestep.kmp.uikit.data.WalkDuration
+import co.onestep.kmp.uikit.features.audio.AudioPlayer
+import co.onestep.kmp.uikit.features.audio.TTSPlayer
+import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTBalance
+import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTBalanceCondition
+import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTPrepareData
+import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTPrepareDuration
+import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
+import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsTracker
+import co.onestep.kmp.uikit.features.recordFlow.configurations.randomUUID
+import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingInstruction
+import co.onestep.kmp.uikit.features.recordFlow.screensData.HallwayDistanceScreenState
+import co.onestep.kmp.uikit.features.recordFlow.screensData.IconData
+import co.onestep.kmp.uikit.features.recordFlow.screensData.SecondaryButtonData
+import co.onestep.kmp.uikit.features.recordFlow.screensData.RecordingScreenData
+import co.onestep.kmp.uikit.features.recordFlow.screensData.SlideToStopButtonData
+import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
+import co.onestep.kmp.uikit.features.recordFlow.screensData.TimerData
+import co.onestep.kmp.uikit.features.recordFlow.screensData.ToolBarData
+import co.onestep.kmp.uikit.features.recordFlow.screensData.filterHallwayDigits
+import co.onestep.kmp.uikit.features.recordFlow.screensData.hallwayRange
+import co.onestep.kmp.uikit.features.recordFlow.screensData.hallwayRecommended
+import co.onestep.kmp.uikit.models.OSTActivityType
+import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
+import co.onestep.kmp.uikit.models.OSTAnalyserError
+import co.onestep.kmp.uikit.models.OSTAnalyserState
+import co.onestep.kmp.uikit.models.OSTMotionMeasurement
+import co.onestep.kmp.uikit.models.OSTRecorderState
+import co.onestep.kmp.uikit.models.OSTAssistiveDevice
+import co.onestep.kmp.uikit.models.OSTUserInputMetaData
+import co.onestep.kmp.uikit.models.OSTWalkCourseLength.Companion.getWalkCourseLength
+import co.onestep.kmp.uikit.models.currentTimeMillis
+import co.onestep.kmp.uikit.utils.Languages
+import co.onestep.kmp.uikit.utils.METERS_TO_FEET_RATIO
+import co.onestep.kmp.uikit.utils.ResourceProvider
+import co.onestep.kmp.uikit.utils.toDisplayTime
+import co.onestep.kmp.uikit.utils.useImperialSystem
+import co.onestep.kmp.uikit_kmp.generated.resources.Res
+import co.onestep.kmp.uikit_kmp.generated.resources.measurement_stopped
+import co.onestep.kmp.uikit_kmp.generated.resources.unit_feet
+import co.onestep.kmp.uikit_kmp.generated.resources.unit_meters
+import co.onestep.kmp.uikit_kmp.generated.resources.analyzing
+import co.onestep.kmp.uikit_kmp.generated.resources.analyzing_in_progress
+import co.onestep.kmp.uikit_kmp.generated.resources.change_if_your_testing_area_is_different
+import co.onestep.kmp.uikit_kmp.generated.resources.dual_task_prepare_instructions
+import co.onestep.kmp.uikit_kmp.generated.resources.enter_hallway_length
+import co.onestep.kmp.uikit_kmp.generated.resources.generating_report
+import co.onestep.kmp.uikit_kmp.generated.resources.get_ready
+import co.onestep.kmp.uikit_kmp.generated.resources.go
+import co.onestep.kmp.uikit_kmp.generated.resources.hallway_length_error_range
+import co.onestep.kmp.uikit_kmp.generated.resources.hallway_length_hint
+import co.onestep.kmp.uikit_kmp.generated.resources.ic_play_button
+import co.onestep.kmp.uikit_kmp.generated.resources.last_saved_hallway_length
+import co.onestep.kmp.uikit_kmp.generated.resources.place_the_phone_against_the_thigh
+import co.onestep.kmp.uikit_kmp.generated.resources.place_the_phone_in_position
+import co.onestep.kmp.uikit_kmp.generated.resources.place_the_phone_in_the_pocket
+import co.onestep.kmp.uikit_kmp.generated.resources.preparing_results
+import co.onestep.kmp.uikit_kmp.generated.resources.recording_in_progress
+import co.onestep.kmp.uikit_kmp.generated.resources.slide_to_stop
+import co.onestep.kmp.uikit_kmp.generated.resources.start_now
+import co.onestep.kmp.uikit_kmp.generated.resources.static_balance_hold_chest
+import co.onestep.kmp.uikit_kmp.generated.resources.static_balance_place_pocket_strap
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.roundToInt
+import org.jetbrains.compose.resources.StringResource
+
+private const val DEFAULT_DISPLAY_START_TIME = "00:00"
+
+internal class MotionRecorderViewModel(
+    private val resourceProvider: ResourceProvider,
+    private val audioPlayer: AudioPlayer,
+    private val ttsPlayer: TTSPlayer,
+    private val preferenceManager: PreferencesBridge,
+    private val recorderBridge: RecorderBridge,
+) : ViewModel() {
+    var configuration =
+        mutableStateOf(OSTRecordingConfiguration.defaultWalk())
+
+    private val _onInitializationError = Channel<Unit>(Channel.CONFLATED)
+    val onInitializationError = _onInitializationError.receiveAsFlow()
+
+    private val _onUiTimeoutExit = Channel<Unit>(Channel.CONFLATED)
+    val onUiTimeoutExit = _onUiTimeoutExit.receiveAsFlow()
+
+    private var suppressShortHallwayWarning: Boolean
+        get() = if (configuration.value.activityType == OSTActivityType.SIX_MINUTE_WALK) {
+            preferenceManager.suppressShortHallwayWarning6Min
+        } else {
+            preferenceManager.suppressShortHallwayWarning2Min
+        }
+        set(value) {
+            if (configuration.value.activityType == OSTActivityType.SIX_MINUTE_WALK) {
+                preferenceManager.suppressShortHallwayWarning6Min = value
+            } else {
+                preferenceManager.suppressShortHallwayWarning2Min = value
+            }
+        }
+
+    val recordingLimit: String =
+        (recorderBridge.currentRecordingLimit() / 1000 / 60).toInt().toString()
+
+    val stepCount: StateFlow<Int> =
+        recorderBridge.stepsCount
+            .filter { configuration.value.readyForAnalysisUiAssist && configuration.value.activityType == OSTActivityType.WALK }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Eagerly,
+                initialValue = recorderBridge.stepsCount.value,
+            )
+
+    var timerValue = mutableStateOf("")
+        private set
+
+    var subtitle = mutableStateOf<String?>(null)
+        private set
+
+    var recodingScreenState: MutableState<RecordingScreenData> = mutableStateOf(getReadyState())
+        private set
+
+    var onMeasurementResult: (OSTMotionMeasurement?) -> Unit = {}
+
+    var onError: (OSTAnalyserError, OSTActivityType?) -> Unit = { _, _ -> }
+
+    /**
+     * Analytics tracker, injected by the NavGraph. Null when the host provided no analytics
+     * handler, so all tracking is a no-op. Analytics is strictly side-effect-only and never
+     * changes flow behavior. Mirrors uikit, which fires the recording-phase measurement
+     * events (countdown / analyzing / stop / still-analyzing / start-now) from its VM.
+     */
+    var analyticsTracker: RecordFlowAnalyticsTracker? = null
+
+    /** Wall-clock ms when the current recording started, for `elapsed_seconds` on stop. */
+    private var recordingStartedAtMs: Long? = null
+
+    var motionMeasurement = mutableStateOf<OSTMotionMeasurement?>(null)
+
+    val language: String = resourceProvider.getLocaleLanguageTag().substringBefore("-")
+
+    private var timeout = 60
+
+    private var note: String? = null
+
+    private var tags: MutableList<String> = mutableListOf()
+
+    private var assistiveDevice: OSTAssistiveDevice? = null
+
+    private val customMetadata: MutableMap<String, Any> = mutableMapOf()
+
+    private var pocketLocation: PocketLocation? = null
+
+    // --- Static Balance session state (OS-15960) ---------------------------------
+    // One session per flow launch: the ViewModel is scoped to the recording flow, so a
+    // fresh launch gets a fresh session UUID. Every condition recorded in this launch
+    // (including via "Record another test") shares it; it is the Engine's grouping key
+    // for the session's perceptions.
+
+    /** Groups all Static Balance conditions recorded in this flow launch. */
+    val sessionUuid: String = randomUUID()
+
+    /** Measurement ids of the session's completed conditions, in recording order. */
+    private val sessionMeasurementIds = mutableListOf<String>()
+
+    /**
+     * The most recently completed condition's measurement. Used to resume to the web
+     * summary when a later condition fails (e.g. "recording too short" → Finish) — the
+     * host opens its web summary, which shows all of the day's conditions.
+     */
+    var lastSavedBalanceMeasurement: OSTMotionMeasurement? = null
+        private set
+
+    /** The condition configured for the upcoming/current recording, if any. */
+    var currentBalanceCondition: OSTBalanceCondition? = null
+        private set
+
+    private var isRecording = false
+
+    private var readyTimeJob: Job? = null
+
+    private var recordingJob: Job? = null
+
+    private var recordingStateJob: Job? = null
+
+    private var analysingJob: Job? = null
+
+    private var analyseStateJob: Job? = null
+
+    private var uiTimeoutJob: Job? = null
+
+    private var ttsInstructionsJob: Job? = null
+
+    private var stepMonitorJob: Job? = null
+
+    private var appInForeground = MutableStateFlow(true)
+
+    private var hasPlayedReadyForAnalysisAudio = false
+
+    private var hallwayLengthForCurrentTest: Int? = null
+
+    private var savedHallwayLength: Int? = null
+
+    var hallwayDistanceState =
+        mutableStateOf(
+            HallwayDistanceScreenState(
+                title = resourceProvider.getString(Res.string.enter_hallway_length),
+                subtitle = resourceProvider.getString(Res.string.hallway_length_hint),
+                unitText = resourceProvider.getString(if (isImperialSystem()) Res.string.unit_feet else Res.string.unit_meters),
+                inputValue = "",
+                errorText = null,
+                canContinue = false,
+                showShortHallwayDialog = false,
+                recommendedValue = hallwayRecommended(isImperialSystem()),
+                suppressShortHallwayWarning = suppressShortHallwayWarning,
+            ),
+        )
+        private set
+
+    var showToolbar = mutableStateOf(true)
+    var toolbarData = mutableStateOf(ToolBarData())
+    private var startIcon = mutableStateOf<IconData?>(null)
+
+    fun setForegroundState(isForeground: Boolean) {
+        appInForeground.value = isForeground
+    }
+
+    fun setToolBarData(data: ToolBarData) {
+        toolbarData.value = data
+        startIcon.value = data.startIcon
+    }
+
+    fun showToolbar(show: Boolean) {
+        showToolbar.value = show
+    }
+
+    fun showBackButton(show: Boolean) {
+        toolbarData.value =
+            toolbarData.value.copy(
+                startIcon = if (show) startIcon.value else null,
+            )
+    }
+
+    fun setToolBarTitle(title: StringResource?) {
+        toolbarData.value =
+            toolbarData.value.copy(
+                title =
+                    title?.let {
+                        TextData(
+                            text = resourceProvider.getString(title),
+                            textSize = 18.sp,
+                            fontWeight = FontWeight.Normal,
+                        )
+                    },
+            )
+    }
+
+    private fun collectRecordingState() {
+        recordingStateJob =
+            viewModelScope.launch {
+                recorderBridge.recorderState.collect {
+                    when (it) {
+                        OSTRecorderState.INITIALIZED -> Unit
+
+                        OSTRecorderState.RECORDING -> Unit
+
+                        OSTRecorderState.FINALIZING -> {
+                            // This event could be skipped if the RecorderState.DONE is dispatched very quickly
+                            if (!recodingScreenState.value.recordScreenStage.isAnalyzing()) {
+                                updateState(RecordingScreenData.RecordScreenStage.ANALYZING)
+                                startUiTimeout()  // Start timeout when user first sees analyzing UI
+                            }
+                        }
+
+                        OSTRecorderState.DONE -> {
+                            // In case the FINALIZING event is skipped
+                            if (!recodingScreenState.value.recordScreenStage.isAnalyzing()) {
+                                updateState(RecordingScreenData.RecordScreenStage.ANALYZING)
+                                startUiTimeout()  // Also cover case where FINALIZING is skipped
+                            }
+                            analyse()
+                        }
+                    }
+                }
+            }
+    }
+
+    private fun collectAnalyseState() {
+        analyseStateJob =
+            viewModelScope.launch {
+                recorderBridge.analyserState.collect {
+                    when (it) {
+                        OSTAnalyserState.Idle -> Unit
+
+                        OSTAnalyserState.Uploading -> {
+                            subtitle.value =
+                                resourceProvider.getString(Res.string.analyzing_in_progress)
+                        }
+
+                        OSTAnalyserState.Analyzing -> {
+                            subtitle.value = resourceProvider.getString(Res.string.generating_report)
+                        }
+
+                        OSTAnalyserState.Analyzed -> {
+                            uiTimeoutJob?.cancel()
+                            subtitle.value = resourceProvider.getString(Res.string.preparing_results)
+                            delay(2000)
+                            onMeasurementResult(motionMeasurement.value)
+                        }
+
+                        is OSTAnalyserState.Failed -> {
+                            uiTimeoutJob?.cancel()
+                            clearJobs()
+                            onError(it.error, configuration.value.activityType)
+                        }
+                    }
+                }
+            }
+    }
+
+    fun setConfiguration(configuration: OSTRecordingConfiguration) {
+        this.configuration.value = configuration
+        audioPlayer.enable(configuration.playVoiceOver)
+        ttsPlayer.enable(configuration.prepareScreenData is OSTPrepareData.Tts)
+        val savedMeters = if (configuration.activityType == OSTActivityType.SIX_MINUTE_WALK) {
+            preferenceManager.sixMinHallwayLengthM
+        } else {
+            preferenceManager.twoMinHallwayLengthM
+        }
+        savedHallwayLength = savedMeters?.let {
+            if (isImperialSystem()) (it * METERS_TO_FEET_RATIO).roundToInt() else it.roundToInt()
+        }
+        rebuildHallwayState(inputValue = savedHallwayLength?.toString() ?: "")
+    }
+
+    fun initState() {
+        subtitle.value = null
+        hasPlayedReadyForAnalysisAudio = false
+
+        // Safety net: ensure recorder is in clean state before starting new flow
+        val currentState = recorderBridge.recorderState.value
+        if (currentState != OSTRecorderState.INITIALIZED) {
+            println("MotionRecorderViewModel: initState called with recorder in $currentState state, resetting")
+            recorderBridge.reset()
+        }
+
+        configuration.value.duration?.let { changeDuration(it) }
+        val noPrepareData = configuration.value.prepareScreenData == null
+        val durationPrepareData = configuration.value.prepareScreenData as? OSTPrepareData.Duration
+        if (noPrepareData || durationPrepareData?.prepareDuration == OSTPrepareDuration.NONE) {
+            updateState(RecordingScreenData.RecordScreenStage.RECORDING)
+        } else {
+            updateState(RecordingScreenData.RecordScreenStage.GET_READY)
+        }
+        collectRecordingState()
+    }
+
+    private fun updateState(stage: RecordingScreenData.RecordScreenStage) {
+        when (stage) {
+            RecordingScreenData.RecordScreenStage.GET_READY -> {
+                // Prepare foreground service early to avoid crashes when recording starts from background
+                viewModelScope.launch {
+                    recorderBridge.prepareForRecording(configuration.value.activityType)
+                }
+
+                configuration.value.prepareScreenData?.let { prepareScreenData ->
+                    val config = configuration.value
+                    var instructions =
+                        resourceProvider.getString(Res.string.dual_task_prepare_instructions)
+                    when (prepareScreenData) {
+                        is OSTPrepareData.Tts -> {
+                            audioPlayer.stopCurrentAudio()
+
+                            val tts = prepareScreenData.ttsSpeechText.ifEmpty { null }
+
+                            if (prepareScreenData.showInstructions && prepareScreenData.ttsSpeechText.isNotEmpty()) {
+                                instructions = prepareScreenData.ttsSpeechText
+                            }
+                            ttsPlayer.speak(tts ?: instructions)
+                            ttsPlayer.setOnDoneListener {
+                                updateState(RecordingScreenData.RecordScreenStage.RECORDING)
+                                ttsPlayer.setOnDoneListener(null)
+                            }
+                        }
+
+                        is OSTPrepareData.Duration -> {
+                            if (config.playVoiceOver) {
+                                audioPlayer.stopCurrentAudio()
+                                when (prepareScreenData.prepareDuration) {
+                                    OSTPrepareDuration.FIVE_SECONDS -> audioPlayer.playAudio(
+                                        when (language) {
+                                            Languages.HEBREW, Languages.HEBREW_LEGACY -> "countdown_from_5_iw"
+                                            else -> "countdown_from_5"
+                                        },
+                                    )
+
+                                    OSTPrepareDuration.TEN_SECONDS -> audioPlayer.playAudio(
+                                        when (language) {
+                                            Languages.RUSSIAN, Languages.ROMANIAN, Languages.UKRAINIAN -> "countdown_from_10_ru"
+                                            Languages.HEBREW, Languages.HEBREW_LEGACY -> "countdown_from_10_iw"
+                                            else -> "countdown_from_10"
+                                        },
+                                    )
+
+                                    OSTPrepareDuration.NONE -> Unit
+                                }
+                            }
+                            // screen: measurement_countdown — the Get Ready countdown screen
+                            // is shown (Duration prepare with a non-zero countdown), matching
+                            // uikit's countdown screen-view.
+                            if (prepareScreenData.prepareDuration != OSTPrepareDuration.NONE) {
+                                analyticsTracker?.trackMeasurementCountdownScreen(configuration.value.activityType)
+                            }
+                            startTimerJob(prepareScreenData)
+                        }
+                    }
+                    recodingScreenState.value =
+                        if (config.activityType == OSTActivityType.DUAL_TASK_WALK_SUBTRACT) {
+                            getReadyDualTaskState(instructions)
+                        } else {
+                            getReadyState()
+                        }
+                } ?: run {
+                    updateState(RecordingScreenData.RecordScreenStage.RECORDING)
+                }
+            }
+
+            RecordingScreenData.RecordScreenStage.RECORDING -> {
+                readyTimeJob?.cancel()
+                audioPlayer.stopCurrentAudio()
+                recodingScreenState.value = recordingState()
+                startRecording()
+            }
+
+            RecordingScreenData.RecordScreenStage.ANALYZING -> {
+                // screen: measurement_analyzing — the analyzing UI is first shown.
+                // measurement_seconds is the recorded length in whole seconds (wall-clock
+                // since recording start, matching uikit's recorded-length semantics).
+                val measurementSeconds =
+                    recordingStartedAtMs?.let { ((currentTimeMillis() - it) / 1000L).toInt() } ?: 0
+                analyticsTracker?.trackAnalyzingScreen(configuration.value.activityType, measurementSeconds)
+                isRecording = false
+                recordingJob?.cancel()
+                if (configuration.value.playVoiceOver) {
+                    if (!audioPlayer.isPlaying()) {
+                        audioPlayer.playAudio(
+                            when (language) {
+                                Languages.RUSSIAN, Languages.UKRAINIAN, Languages.ROMANIAN -> "recording_stopped_ru"
+                                Languages.HEBREW, Languages.HEBREW_LEGACY -> "recording_stopped_iw"
+                                else -> "recording_stopped"
+                            },
+                        )
+                    }
+                }
+                recodingScreenState.value = analysingState()
+            }
+        }
+    }
+
+    private fun getReadyDualTaskState(instructions: String) = RecordingScreenData(
+        recordScreenStage = RecordingScreenData.RecordScreenStage.GET_READY,
+        title = TextData(resourceProvider.getString(Res.string.get_ready), 60.sp, FontWeight.W600),
+        instructions = TextData(instructions, 28.sp, FontWeight.W600),
+    )
+
+    private fun getReadyState() = RecordingScreenData(
+        recordScreenStage = RecordingScreenData.RecordScreenStage.GET_READY,
+        title = TextData(resourceProvider.getString(Res.string.get_ready), 60.sp, FontWeight.W600),
+        instructions = TextData(
+            pocketLocation?.getReadyTitleKey?.let { key ->
+                when (key) {
+                    "place_the_phone_in_the_pocket" -> resourceProvider.getString(Res.string.place_the_phone_in_the_pocket)
+                    "place_the_phone_against_the_thigh" -> resourceProvider.getString(Res.string.place_the_phone_against_the_thigh)
+                    else -> null
+                }
+            }
+                ?: when (configuration.value.activityType) {
+                    OSTActivityType.ROM_KNEE_EXT -> resourceProvider.getString(Res.string.place_the_phone_against_the_thigh)
+
+                    // Static Balance: seated condition holds the phone at the chest; all
+                    // other stances use pocket/strap placement.
+                    OSTActivityType.STATIC_BALANCE ->
+                        if (currentBalanceCondition?.codeFor("stance") == "seated") {
+                            resourceProvider.getString(Res.string.static_balance_hold_chest)
+                        } else {
+                            resourceProvider.getString(Res.string.static_balance_place_pocket_strap)
+                        }
+
+                    else -> resourceProvider.getString(Res.string.place_the_phone_in_position)
+                },
+            28.sp, FontWeight.W600
+        ),
+        timerValue = TimerData(TextData(timerValue.value, 115.sp, FontWeight.W600), countdown = true),
+        bottomButton = SecondaryButtonData(
+            text = TextData(resourceProvider.getString(Res.string.start_now), 24.sp, FontWeight.W600),
+            iconData = IconData(icon = Res.drawable.ic_play_button, tintColor = Color.White),
+            action = {
+                // Clicked: start_measurement_now — user skipped the remaining countdown.
+                // time_remaining is the seconds still shown on the countdown at tap time.
+                analyticsTracker?.trackStartMeasurementNowClicked(
+                    activity = configuration.value.activityType,
+                    timeRemaining = timerValue.value.toDoubleOrNull() ?: 0.0,
+                )
+                timerValue.value = "0"; updateState(RecordingScreenData.RecordScreenStage.RECORDING)
+            },
+        ),
+    )
+
+    private fun recordingState() = RecordingScreenData(
+        recordScreenStage = RecordingScreenData.RecordScreenStage.RECORDING,
+        title = TextData(resourceProvider.getString(Res.string.go), 60.sp, FontWeight.W600),
+        instructions = TextData(resourceProvider.getString(Res.string.recording_in_progress), 28.sp, FontWeight.W600),
+        timerValue = TimerData(TextData(timerValue.value, 115.sp, FontWeight.W600), countdown = false),
+        slideToStopButton = SlideToStopButtonData(
+            textData = TextData(resourceProvider.getString(Res.string.slide_to_stop), 20.sp, FontWeight.Bold),
+            action = ::stopRecording,
+        ),
+    )
+
+    private fun analysingState() = RecordingScreenData(
+        recordScreenStage = RecordingScreenData.RecordScreenStage.ANALYZING,
+        title = TextData(resourceProvider.getString(Res.string.analyzing), 60.sp, FontWeight.W600),
+        instructions = TextData(resourceProvider.getString(Res.string.analyzing_in_progress), 28.sp, FontWeight.W600),
+    )
+
+    private fun startUiTimeout() {
+        if (uiTimeoutJob != null) return  // Already running
+        uiTimeoutJob = viewModelScope.launch {
+            delay(60_000L)
+            println("MotionRecorderViewModel: UI timeout reached after 60 seconds")
+            // Cancel all in-flight work (upload continues via NonCancellable in analyze())
+            analyseStateJob?.cancel()
+            analyseStateJob = null
+            analysingJob?.cancel()
+            analysingJob = null
+            // Reset recorder AND analyser to clean state for re-entry
+            recorderBridge.reset()
+            when (configuration.value.showSummaryScreen) {
+                OSTSummaryOptions.Full,
+                OSTSummaryOptions.WEB -> {
+                    onError(
+                        OSTAnalyserError.Timeout(null, "UI timeout"),
+                        configuration.value.activityType
+                    )
+                }
+
+                OSTSummaryOptions.None -> {
+                    viewModelScope.launch {
+                        _onUiTimeoutExit.send(Unit)
+                    }
+                }
+
+                OSTSummaryOptions.MINIMAL -> {
+                    onError(
+                        OSTAnalyserError.Timeout(null, "UI timeout"),
+                        configuration.value.activityType
+                    )
+                }
+            }
+        }
+    }
+
+    private fun startRecording() {
+        customMetadata["\$ost_uikit_version"] = ""
+
+        // Static Balance: attach the session grouping key and the per-condition selections
+        // (nested under `onestep_balance_conditions`) at recorder start. The recorded
+        // duration is the measurement's own `metadata.seconds` (early stop → shorter
+        // recording); it is not duplicated into the conditions object. The clinician note is
+        // added afterwards on the "Recording saved" screen via [updateBalanceConditionNote].
+        if (configuration.value.activityType == OSTActivityType.STATIC_BALANCE) {
+            customMetadata[OSTBalanceCondition.KEY_SESSION_UUID] = sessionUuid
+            currentBalanceCondition?.let {
+                customMetadata[OSTBalanceCondition.KEY_BALANCE_CONDITIONS] =
+                    it.toConditionsMetadata(
+                        notesKey = configuration.value.balance?.notesKey
+                            ?: OSTBalance.DEFAULT_NOTES_KEY,
+                    )
+            }
+        }
+
+        val duration =
+            when (timeout) {
+                -1 -> null // Unrestricted walk
+                0 -> 60 * 1000L // Default to 60 seconds
+                else -> timeout * 1000L // Or set the duration
+            }
+
+        // save it to preferences
+        saveHallwayDistanceToPreferences()
+
+        recordingJob =
+            viewModelScope.launch {
+                recorderBridge.start(
+                    activityType = configuration.value.activityType,
+                    duration = duration,
+                    sensorEnhancedMode = configuration.value.sensorEnhancedMode,
+                    userInputMetadata =
+                        OSTUserInputMetaData(
+                            note = note,
+                            tags = tags,
+                            assistiveDevice = assistiveDevice,
+                            walkCourseLength =
+                                hallwayLengthForCurrentTest?.let {
+                                    getWalkCourseLength(it, isImperialSystem())
+                                },
+                        ),
+                    customMetadata =
+                        customMetadata.apply {
+                            put(RecorderBridge.READY_FOR_ANALYSIS_KEY, configuration.value.readyForAnalysisUiAssist)
+                        },
+                )
+                isRecording = true
+                recordingStartedAtMs = currentTimeMillis()
+                configuration.value.instructions?.recordingInstructions?.let {
+                    // start TTS instructions sequence
+                    startRecordingInstructionsJob(it)
+                }
+                startStepMonitoring()
+                updateTimeTicker()
+            }
+    }
+
+    private suspend fun updateTimeTicker() {
+        val isUnrestricted = timeout < 0
+        val countdown = configuration.value.isCountingDown && !isUnrestricted
+        timerValue.value =
+            if (countdown) timeout.toDisplayTime() else DEFAULT_DISPLAY_START_TIME
+        while (isRecording) {
+            delay(1000L)
+            timerValue.value = timerValue.value.toDisplayTime(countdown)
+        }
+    }
+
+    fun setDevicePosition(position: Int) {
+        pocketLocation = PocketLocation.pocketLocationByIndex(position)
+    }
+
+    fun setWalkDuration(index: Int) {
+        changeDuration(WalkDuration.durationByIndex(index).duration)
+    }
+
+    /**
+     * Stores the pre-recording assistive-device selection so it is attached to the resulting
+     * measurement's [OSTUserInputMetaData] at recorder start. Mirrors the Android uikit
+     * `setAssistiveDevice`.
+     */
+    fun setAssistiveDevice(device: OSTAssistiveDevice) {
+        this.assistiveDevice = device
+    }
+
+    // Utility functions for future pre record tagging feature
+    fun setNote(note: String) {
+        this.note = note
+    }
+
+    fun addTags(tagsToAdd: List<String>) {
+        this.tags.addAll(tagsToAdd)
+    }
+
+    fun removeTags(tagsToRemove: List<String>) {
+        tags.removeAll(tagsToRemove)
+    }
+
+    fun clearTags() {
+        tags.clear()
+    }
+
+    fun setCustomMetadata(customMetadata: Map<String, Any>) {
+        this.customMetadata.putAll(customMetadata)
+    }
+
+    // --- Static Balance session (OS-15960) ---------------------------------------
+
+    /**
+     * Sets the Static Balance condition for the upcoming recording. The condition's
+     * per-category selections are attached to the perception as the nested
+     * `onestep_balance_conditions` custom metadata at recorder start (see [startRecording]).
+     * No note is collected before recording; the single per-condition note is entered
+     * afterwards on the "Recording saved" screen and merged into the same nested object via
+     * [updateBalanceConditionNote].
+     */
+    fun setBalanceCondition(condition: OSTBalanceCondition) {
+        currentBalanceCondition = condition
+    }
+
+    /** Records a completed condition's measurement in the session. */
+    fun onBalanceConditionSaved(measurement: OSTMotionMeasurement) {
+        sessionMeasurementIds.add(measurement.id)
+        lastSavedBalanceMeasurement = measurement
+    }
+
+    /** Number of conditions completed in this session so far. */
+    fun balanceConditionCount(): Int = sessionMeasurementIds.size
+
+    /**
+     * Attaches the single per-condition note — entered post-recording on the "Recording
+     * saved" screen — to the just-analyzed measurement under the nested
+     * `onestep_balance_conditions` object, the same channel the per-condition selections
+     * travel in (under the server-driven `"note"` tag, [OSTBalance.notesKey]).
+     *
+     * The note is added after the recording uploaded, so this re-sends the FULL nested
+     * object (selections + note) via the update PATCH rather than only the note, so the
+     * object stays complete regardless of the server's per-key merge behavior. The
+     * measurement's own top-level `note` field is intentionally not used for Static Balance.
+     */
+    fun updateBalanceConditionNote(newNote: String?) {
+        if (newNote.isNullOrBlank()) return
+        val measurementId = motionMeasurement.value?.id ?: return
+        val condition = currentBalanceCondition ?: return
+        val notesKey = configuration.value.balance?.notesKey ?: OSTBalance.DEFAULT_NOTES_KEY
+        val conditionsMetadata = condition.copy(notes = newNote)
+            .toConditionsMetadata(notesKey = notesKey)
+        viewModelScope.launch {
+            try {
+                recorderBridge.updateBalanceConditionMetadata(
+                    uuid = measurementId,
+                    conditions = conditionsMetadata,
+                )
+            } catch (e: Exception) {
+                println("MotionRecorderViewModel: Failed to update static balance note for $measurementId: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Resets per-condition state ("Record another test") while keeping the session alive:
+     * same [sessionUuid], accumulated measurement ids untouched.
+     */
+    fun prepareForNextBalanceCondition() {
+        currentBalanceCondition = null
+        note = null
+        tags.clear()
+        // Drop the per-condition object but keep session_uuid so the next condition stays
+        // in the same session.
+        customMetadata.remove(OSTBalanceCondition.KEY_BALANCE_CONDITIONS)
+        recorderBridge.reset()
+        timerValue.value = ""
+        recodingScreenState.value = getReadyState()
+    }
+
+    fun stopRecording() {
+        if (!isRecording) return
+        // Clicked: measurement_stop — user slid to stop. elapsed_seconds is the wall-clock
+        // recording duration with ms precision, matching uikit.
+        recordingStartedAtMs?.let { startedAt ->
+            analyticsTracker?.trackMeasurementStopClicked(
+                activity = configuration.value.activityType,
+                elapsedSeconds = (currentTimeMillis() - startedAt) / 1000.0,
+            )
+        }
+        viewModelScope.launch {
+            stopRecordingAndWaitForDone()
+        }
+    }
+
+    private suspend fun stopRecordingAndWaitForDone(reset: Boolean = false) {
+        if (!isRecording) return
+
+        isRecording = false
+
+        // Stop the recording coroutine (time ticker, step monitoring, etc)
+        recordingJob?.cancelAndJoin()
+        recordingJob = null
+
+        // Stop any TTS instructions tied to the recording
+        stopRecordingInstructionsJob()
+
+        // Tell the recorder to stop
+        recorderBridge.stop()
+
+        // Wait until the recorder reports DONE
+        recorderBridge.recorderState
+            .first { state ->
+                state == OSTRecorderState.DONE
+            }
+
+        if (reset) {
+            recorderBridge.reset()
+        }
+    }
+
+    fun analyse() {
+        recorderBridge.reset()
+        recordingJob?.cancel()
+        recordingStateJob?.cancel()
+        collectAnalyseState()
+
+        // Ensure timeout is running (covers case where analyse() is called directly)
+        startUiTimeout()
+
+        analysingJob =
+            viewModelScope.launch {
+                appInForeground
+                    .filter { it } // only pass when in foreground
+                    .filter { recorderBridge.analyserState.value == OSTAnalyserState.Idle } // only pass when idle
+                    .first() // suspend until the first `true` is emitted
+                // Then do the analysis exactly once
+                motionMeasurement.value = recorderBridge.analyze()
+            }
+    }
+
+    private fun changeDuration(newTimeout: Int) {
+        timeout = newTimeout
+    }
+
+    private fun startStepMonitoring() {
+        stepMonitorJob =
+            viewModelScope.launch {
+                stepCount.collect { count ->
+                    if (count >= 20 && !hasPlayedReadyForAnalysisAudio && configuration.value.playVoiceOver) {
+                        hasPlayedReadyForAnalysisAudio = true
+                        playReadyForAnalysisAudio()
+                    }
+                }
+            }
+    }
+
+    private fun startTimerJob(prepareData: OSTPrepareData.Duration) {
+        readyTimeJob?.cancel()
+        val initialValue =
+            prepareData.prepareDuration.seconds.toLong()
+        timerValue.value = (initialValue.plus(1)).toString()
+        readyTimeJob =
+            viewModelScope.launch {
+                for (time in initialValue downTo -1) {
+                    if (time == -1L) {
+                        updateState(RecordingScreenData.RecordScreenStage.RECORDING)
+                    } else {
+                        val nextValue = timerValue.value.toIntOrNull()?.minus(1)
+                        var display = nextValue.toString()
+                        // Wait for one second
+                        var delay = 1000L
+                        if ((nextValue ?: 0) < 1) {
+                            delay = 1500L
+                            display = resourceProvider.getString(Res.string.go)
+                        }
+                        timerValue.value = display
+                        delay(delay)
+                    }
+                }
+            }
+    }
+
+    fun clearJobs() {
+        // Cancel state collectors FIRST (before stop flow) to prevent
+        // the DONE state from triggering analyse() during cancellation
+        recordingStateJob?.cancel()
+        recordingStateJob = null
+        analysingJob?.cancel()
+        analysingJob = null
+        analyseStateJob?.cancel()
+        analyseStateJob = null
+        uiTimeoutJob?.cancel()
+        uiTimeoutJob = null
+
+        viewModelScope.launch {
+            // Gracefully stop recording and wait for DONE, if we are recording
+            stopRecordingAndWaitForDone(reset = true)
+
+            // Cancel remaining jobs
+            readyTimeJob?.cancel()
+            recordingJob?.cancel()
+            audioPlayer.stopCurrentAudio()
+            ttsInstructionsJob?.cancel()
+            stepMonitorJob?.cancel()
+            ttsPlayer.stopCurrentSpeech()
+        }
+
+        // Ensure reset happens even if viewModelScope is cancelled.
+        // stopRecordingAndWaitForDone returns early when !isRecording (analysis phase),
+        // so reset() never gets called. Do it directly here.
+        if (!isRecording) {
+            recorderBridge.reset()
+        }
+    }
+
+    fun playAudio(sound: String) {
+        audioPlayer.playAudio(sound)
+    }
+
+    private fun startRecordingInstructionsJob(instructionsQueue: List<OSTRecordingInstruction>) {
+        ttsInstructionsJob =
+            viewModelScope.launch {
+                try {
+                    val startTime = currentTimeMillis()
+
+                    for (instruction in instructionsQueue) {
+                        val delayTime =
+                            instruction.startTimeMillis - (currentTimeMillis() - startTime)
+                        if (delayTime > 0) delay(delayTime) // Wait until the correct timestamp
+                        ttsPlayer.speak(instruction.text)
+                        instruction.marker?.let {
+                            recorderBridge.addMarker(it)
+                        }
+                    }
+                } catch (e: CancellationException) {
+                    e.printStackTrace()
+                    ttsPlayer.speak(resourceProvider.getString(Res.string.measurement_stopped))
+                }
+            }
+    }
+
+    fun stopRecordingInstructionsJob() {
+        ttsInstructionsJob?.cancel()
+        ttsPlayer.stopCurrentSpeech()
+    }
+
+    fun stopAudio() {
+        audioPlayer.stopCurrentAudio()
+    }
+
+    fun playReadyForAnalysisAudio() {
+        audioPlayer.playAudio(
+            when (language) {
+                Languages.RUSSIAN, Languages.UKRAINIAN, Languages.ROMANIAN -> "data_is_read_for_analysis_ru"
+                Languages.HEBREW, Languages.HEBREW_LEGACY -> "data_is_ready_for_analysis_heb"
+                else -> "data_is_ready_for_analysis"
+            },
+        )
+    }
+
+    fun saveHallwayDistanceToPreferences() {
+        val displayValue = hallwayLengthForCurrentTest ?: return
+        val valueInMeters: Float = if (isImperialSystem()) {
+            displayValue / METERS_TO_FEET_RATIO
+        } else {
+            displayValue.toFloat()
+        }
+        if (configuration.value.activityType == OSTActivityType.SIX_MINUTE_WALK) {
+            preferenceManager.sixMinHallwayLengthM = valueInMeters
+        } else {
+            preferenceManager.twoMinHallwayLengthM = valueInMeters
+        }
+    }
+
+    fun onHallwayInputChanged(rawValue: String) {
+        val digits = filterHallwayDigits(rawValue)
+        rebuildHallwayState(
+            inputValue = digits,
+            errorText = hallwayErrorFor(digits),
+            showShortHallwayDialog = false,
+        )
+    }
+
+    fun onHallwayContinue(): Boolean {
+        val inputValue = hallwayDistanceState.value.inputValue
+        val value = inputValue.toIntOrNull()
+        val error = hallwayErrorFor(inputValue, emptyIsError = true)
+
+        if (value == null || error != null) {
+            rebuildHallwayState(errorText = error, showShortHallwayDialog = false)
+            return false
+        }
+
+        val recommended = hallwayRecommended(isImperialSystem(), configuration.value.activityType)
+        if (!suppressShortHallwayWarning && value < recommended) {
+            rebuildHallwayState(
+                errorText = null,
+                showShortHallwayDialog = true,
+            )
+            return false
+        }
+
+        commitHallwayLength(value)
+        return true
+    }
+
+    fun onShortHallwayStartTest(): Boolean {
+        val inputValue = hallwayDistanceState.value.inputValue
+        val value = inputValue.toIntOrNull() ?: return false
+        val error = hallwayErrorFor(inputValue)
+
+        if (error != null) {
+            dismissShortHallwayDialog()
+            rebuildHallwayState(errorText = error, showShortHallwayDialog = false)
+            return false
+        }
+
+        commitHallwayLength(value)
+        dismissShortHallwayDialog()
+        return true
+    }
+
+    fun onHallwaySkip() {
+        hallwayLengthForCurrentTest = null
+
+        rebuildHallwayState(
+            errorText = hallwayErrorFor(hallwayDistanceState.value.inputValue),
+            showShortHallwayDialog = false,
+        )
+    }
+
+    fun dismissShortHallwayDialog() {
+        rebuildHallwayState(showShortHallwayDialog = false)
+    }
+
+    fun onSuppressShortHallwayWarningChanged(suppress: Boolean) {
+        suppressShortHallwayWarning = suppress
+        rebuildHallwayState() // refresh the state so the checkbox reflects immediately
+    }
+
+    fun isImperialSystem(): Boolean = useImperialSystem(preferenceManager)
+
+    private fun rebuildHallwayState(
+        inputValue: String = hallwayDistanceState.value.inputValue,
+        errorText: String? = hallwayDistanceState.value.errorText,
+        showShortHallwayDialog: Boolean = hallwayDistanceState.value.showShortHallwayDialog,
+    ) {
+        val isImperial = isImperialSystem()
+        val titleRes: StringResource =
+            if (savedHallwayLength != null) {
+                Res.string.last_saved_hallway_length
+            } else {
+                Res.string.enter_hallway_length
+            }
+
+        val subtitleRes: StringResource =
+            if (savedHallwayLength != null) {
+                Res.string.change_if_your_testing_area_is_different
+            } else {
+                Res.string.hallway_length_hint
+            }
+
+        hallwayDistanceState.value =
+            HallwayDistanceScreenState(
+                title = resourceProvider.getString(titleRes),
+                subtitle = resourceProvider.getString(subtitleRes),
+                unitText = resourceProvider.getString(if (isImperial) Res.string.unit_feet else Res.string.unit_meters),
+                inputValue = inputValue,
+                errorText = errorText,
+                canContinue =
+                    inputValue.toIntOrNull()?.let {
+                        val (rangeMin, rangeMax) = hallwayRange(isImperial)
+                        it in rangeMin..rangeMax
+                    } ?: false,
+                showShortHallwayDialog = showShortHallwayDialog,
+                recommendedValue = hallwayRecommended(isImperial, configuration.value.activityType),
+                suppressShortHallwayWarning = suppressShortHallwayWarning,
+            )
+    }
+
+    private fun hallwayErrorFor(inputValue: String, emptyIsError: Boolean = false): String? {
+        val (min, max) = hallwayRange(isImperialSystem())
+        val value = inputValue.toIntOrNull()
+        return when {
+            value != null && value in min..max -> null
+            inputValue.isEmpty() && !emptyIsError -> null
+            else -> resourceProvider.getString(
+                Res.string.hallway_length_error_range,
+                min, max,
+                resourceProvider.getString(if (isImperialSystem()) Res.string.unit_feet else Res.string.unit_meters),
+            )
+        }
+    }
+
+    private fun commitHallwayLength(displayValue: Int) {
+        hallwayLengthForCurrentTest = displayValue
+
+        rebuildHallwayState(
+            inputValue = displayValue.toString(),
+            errorText = null,
+            showShortHallwayDialog = false,
+        )
+    }
+}

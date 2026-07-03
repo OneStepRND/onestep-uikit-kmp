@@ -1,0 +1,10 @@
+<!-- Placeholder for the "socks" footwear option, pending final design asset. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <path
+        android:pathData="M16,5C14.9,5 14,5.9 14,7V18.5C14,19.8 13.4,21 12.4,21.8L8.6,24.8C7.3,25.8 6.8,27.5 7.4,29C8.1,30.9 10.3,31.8 12.1,30.9L20.6,26.7C22.6,25.7 24,23.6 24,21.3V7C24,5.9 23.1,5 22,5H16ZM17,8H21V18H17V8Z"
+        android:fillColor="#0F3157" />
+</vector>

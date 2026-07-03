@@ -1,0 +1,13 @@
+<!-- Placeholder for the "dome" surface option, pending final design asset. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <path
+        android:pathData="M20,9C13.37,9 8,14.37 8,21V24H32V21C32,14.37 26.63,9 20,9ZM20,12C24.97,12 29,16.03 29,21H11C11,16.03 15.03,12 20,12Z"
+        android:fillColor="#0F3157" />
+    <path
+        android:pathData="M6,27H34V30H6Z"
+        android:fillColor="#0F3157" />
+</vector>

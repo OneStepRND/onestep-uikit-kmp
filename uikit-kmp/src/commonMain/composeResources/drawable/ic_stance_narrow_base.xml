@@ -1,0 +1,16 @@
+<!-- Placeholder for the "narrow_base" stance option, pending final design asset. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <path
+        android:pathData="M16,6C14.9,6 14,6.9 14,8V28C14,29.1 14.9,30 16,30C17.1,30 18,29.1 18,28V8C18,6.9 17.1,6 16,6Z"
+        android:fillColor="#0F3157" />
+    <path
+        android:pathData="M24,6C22.9,6 22,6.9 22,8V28C22,29.1 22.9,30 24,30C25.1,30 26,29.1 26,28V8C26,6.9 25.1,6 24,6Z"
+        android:fillColor="#0F3157" />
+    <path
+        android:pathData="M13,32H27V35H13Z"
+        android:fillColor="#0F3157" />
+</vector>

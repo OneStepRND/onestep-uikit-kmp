@@ -1,0 +1,84 @@
+name: Publish Android (Maven Snapshot)
+
+permissions:
+  contents: read
+  packages: write  # publish to this repo's GitHub Packages maven repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to publish from'
+        required: true
+        type: string
+        default: 'main'
+      core_version:
+        description: 'Override co.onestep.android:core version (empty = <catalog>-SNAPSHOT). Must exist on GitHub Packages or Maven Central.'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  publish-snapshot:
+    # macOS runner: publishAllPublications includes the iOS klib publications,
+    # which can only be compiled on a macOS host.
+    runs-on: macos-latest
+    env:
+      GITHUB_ACTOR: ${{ github.actor }}
+      # GH_PACKAGES_TOKEN (PAT with read:packages on OneStepRND) is needed to
+      # resolve co.onestep.android:core and co.onestep:design-system from other
+      # repos' packages. Falls back to github.token, which can only read/write
+      # THIS repo's packages.
+      GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN != '' && secrets.GH_PACKAGES_TOKEN || github.token }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set Gradle properties
+        id: props
+        run: |
+          PROPS="-PgithubSnapshot=true"
+          if [ -n "${{ github.event.inputs.core_version }}" ]; then
+            PROPS="$PROPS -PcoreVersion=${{ github.event.inputs.core_version }}"
+          fi
+          echo "gradle_props=$PROPS" >> "$GITHUB_OUTPUT"
+
+      - name: Assemble release
+        run: ./gradlew uikit-kmp:assembleRelease ${{ steps.props.outputs.gradle_props }}
+
+      - name: Resolve version
+        id: gav
+        run: |
+          set -euo pipefail
+          VERSION=$(./gradlew -q uikit-kmp:properties ${{ steps.props.outputs.gradle_props }} | awk '/^version:/{print $2}')
+          echo "Resolved version: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publish snapshot to GitHub Packages
+        timeout-minutes: 40
+        run: |
+          ./gradlew uikit-kmp:publishAllPublicationsToGitHubPackagesRepository \
+            ${{ steps.props.outputs.gradle_props }} --no-parallel --max-workers=2
+
+      - name: Publication summary
+        run: |
+          echo "🎉 Published co.onestep.kmp:uikit-kmp:${{ steps.gav.outputs.version }}"
+          echo "Repository: https://maven.pkg.github.com/OneStepRND/onestep-uikit-kmp"
+          echo ""
+          echo "Consumers add to their repositories block:"
+          echo "  maven { url = uri(\"https://maven.pkg.github.com/OneStepRND/onestep-uikit-kmp\") }"
+          echo "and depend on:"
+          echo "  implementation(\"co.onestep.kmp:uikit-kmp:${{ steps.gav.outputs.version }}\")"

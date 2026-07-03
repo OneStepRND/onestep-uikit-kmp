@@ -1,0 +1,1143 @@
+package co.onestep.kmp.uikit.features.recordFlow.screens
+
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.LifecycleStartEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import co.onestep.kmp.uikit.bridge.Permission
+import co.onestep.kmp.uikit.bridge.PermissionStatus
+import co.onestep.kmp.uikit.di.UIKitServiceLocator
+import co.onestep.kmp.uikit.features.audio.PlatformAudioPlayerAdapter
+import co.onestep.kmp.uikit.features.audio.PlatformTTSPlayerAdapter
+import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
+import co.onestep.kmp.uikit.features.recordFlow.RecordFlowError
+import co.onestep.kmp.uikit.features.recordFlow.RecordFlowOutcome
+import co.onestep.kmp.uikit.features.recordFlow.ResultHandler
+import co.onestep.kmp.uikit.features.recordFlow.components.Toolbar
+import co.onestep.kmp.uikit.features.recordFlow.components.ToolBarColors
+import co.onestep.kmp.uikit.features.recordFlow.components.ToolBarHeight
+import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsEvents
+import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsTracker
+import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
+import co.onestep.kmp.uikit.features.recordFlow.configurations.defaultInstructions
+import co.onestep.kmp.uikit.features.recordFlow.destinations.ChoosePlacementDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.CustomTagsDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.HallwayDistanceDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.PreAssistiveDeviceDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.PreFootwearDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.SelectWalkDurationDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.SoundInstructionsDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.SoundPermissionDeniedAlwaysDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.SoundPermissionDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.StartRecordDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.choosePlacementScreen
+import co.onestep.kmp.uikit.features.recordFlow.destinations.customTagsScreen
+import co.onestep.kmp.uikit.features.recordFlow.destinations.hallwayDistanceScreen
+import co.onestep.kmp.uikit.features.recordFlow.destinations.preAssistiveDeviceScreen
+import co.onestep.kmp.uikit.features.recordFlow.destinations.preFootwearScreen
+import co.onestep.kmp.uikit.features.recordFlow.destinations.selectWalkDurationScreen
+import co.onestep.kmp.uikit.features.recordFlow.destinations.soundInstructionsScreen
+import co.onestep.kmp.uikit.features.recordFlow.destinations.soundPermissionScreen
+import co.onestep.kmp.uikit.features.recordFlow.destinations.startRecordScreen
+import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTBalance
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.errors.ErrorScreen
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.preRecord.ShortHallwayLengthDialog
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.ConditionSetupDestination
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.RecordingSavedDestination
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.conditionSetupScreen
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.recordingSavedScreen
+import co.onestep.kmp.uikit.features.recordFlow.screens.instructions.InstructionsContent
+import co.onestep.kmp.uikit.features.recordFlow.screensData.EmptyAnalysisScreenData
+import co.onestep.kmp.uikit.features.recordFlow.screensData.IconData
+import co.onestep.kmp.uikit.features.recordFlow.screensData.PrimaryButtonData
+import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
+import co.onestep.kmp.uikit.features.recordFlow.screensData.ToolBarData
+import co.onestep.kmp.uikit.ui.components.BottomSheet
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.MotionRecorderViewModel
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.RecordingScreenContent
+import co.onestep.kmp.uikit.features.recordFlow.screensData.isSixOrTwoMinWalk
+import co.onestep.kmp.uikit.features.tagging.models.Footwear
+import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
+import co.onestep.kmp.uikit.features.summary.screens.navigation.StsManualReportDestination
+import co.onestep.kmp.uikit.features.summary.screens.navigation.stsManualReportScreen
+import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
+import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOrigin
+import co.onestep.kmp.uikit.models.FeatureFlag
+import co.onestep.kmp.uikit.models.OSTActivityType
+import co.onestep.kmp.uikit.models.OSTEvent
+import co.onestep.kmp.uikit.models.OSTMotionMeasurement
+import co.onestep.kmp.uikit.models.currentTimeMillis
+import co.onestep.kmp.uikit.models.displayNameRes
+import co.onestep.kmp.uikit.utils.UIktDestination
+import co.onestep.kmp.uikit_kmp.generated.resources.Res
+import co.onestep.kmp.uikit_kmp.generated.resources.continue_camel_case
+import co.onestep.kmp.uikit_kmp.generated.resources.great_job_on_completing_a_walk
+import co.onestep.kmp.uikit_kmp.generated.resources.ic_chevron_left
+import co.onestep.kmp.uikit_kmp.generated.resources.ic_close
+import co.onestep.kmp.uikit_kmp.generated.resources.ic_warning
+import co.onestep.kmp.uikit_kmp.generated.resources.no
+import co.onestep.kmp.uikit_kmp.generated.resources.steps_measured
+import co.onestep.kmp.uikit_kmp.generated.resources.stop_recording_dialog_text
+import co.onestep.kmp.uikit_kmp.generated.resources.yes
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import co.onestep.designsystem.theme.LocalOSColors
+import org.jetbrains.compose.resources.stringResource
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+
+// Post-recording navigation destinations (remain local to NavGraph)
+@Serializable
+internal data object RecordingDestination : UIktDestination
+
+@Serializable
+internal data object SummaryResultDestination : UIktDestination
+
+@Serializable
+internal data object ErrorResultDestination : UIktDestination
+
+@Serializable
+internal data object EmptyAnalysisDestination : UIktDestination
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun RecordFlowNavGraph(
+    config: OSTRecordingConfiguration,
+    onResult: (OSTEvent) -> Unit,
+    onDismiss: () -> Unit,
+    shouldShowSoundInstructions: () -> Boolean = { false },
+    onAskMicrophonePermission: () -> Unit = {},
+    onGoToSettings: () -> Unit = {},
+) {
+    val navController = rememberNavController()
+    val resourceProvider = UIKitServiceLocator.resourceProvider
+    val featureFlags = UIKitServiceLocator.featureFlagsBridge
+    val permissionsManager = UIKitServiceLocator.permissionsManager
+    val scope = rememberCoroutineScope()
+
+    // Record-flow analytics tracker (null when the host provided no analytics handler → all
+    // tracking is a no-op). Analytics is side-effect-only and never changes flow behavior.
+    val recordFlowTracker = UIKitServiceLocator.recordFlowAnalyticsTracker
+    val activity = config.activityType
+
+    val viewModel = remember {
+        MotionRecorderViewModel(
+            recorderBridge = UIKitServiceLocator.recorderBridge,
+            audioPlayer = PlatformAudioPlayerAdapter(UIKitServiceLocator.audioPlayer),
+            ttsPlayer = PlatformTTSPlayerAdapter(UIKitServiceLocator.ttsPlayer),
+            preferenceManager = UIKitServiceLocator.preferencesBridge,
+            resourceProvider = resourceProvider,
+        ).apply {
+            setConfiguration(config)
+            // Inject the tracker so the VM can fire the recording-phase measurement events
+            // (countdown / analyzing / stop / start-now), matching uikit's VM-side tracking.
+            analyticsTracker = recordFlowTracker
+        }
+    }
+
+    var resultMeasurement by remember { mutableStateOf<OSTMotionMeasurement?>(null) }
+    var resultError by remember { mutableStateOf<RecordFlowError?>(null) }
+    // The on-screen error identity (canonical code + localized title) while an error screen is
+    // shown, so the toolbar exit_button can report error_code + error_title_string — mirroring
+    // uikit's LocalRecordErrorSink / viewModel.currentError. Set when navigating to
+    // [ErrorResultDestination]; cleared when the error screen leaves the composition.
+    var currentErrorCode by remember { mutableStateOf<String?>(null) }
+    var currentErrorTitle by remember { mutableStateOf<String?>(null) }
+    var showInstructionsSheet by remember { mutableStateOf(false) }
+    var showExitConfirmationDialog by remember { mutableStateOf(false) }
+    var showRecordingExitDialog by remember { mutableStateOf(false) }
+
+    // Toolbar state
+    val showToolbar = viewModel.showToolbar
+    val toolbarData = viewModel.toolbarData
+    val tagBackRequests = remember { MutableSharedFlow<Unit>() }
+    val currentScreenIndex = remember { mutableIntStateOf(0) }
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+
+    // Wire app foreground state to viewModel so analyse() can proceed
+    // Mirrors original Fragment onStart/onStop lifecycle wiring
+    LifecycleStartEffect(Unit) {
+        viewModel.setForegroundState(true)
+        onStopOrDispose {
+            viewModel.setForegroundState(false)
+        }
+    }
+
+    // Set up toolbar data (back + close icons)
+    LaunchedEffect(Unit) {
+        viewModel.setToolBarData(
+            ToolBarData(
+                startIcon =
+                    IconData(Res.drawable.ic_chevron_left) {
+                        val route = navController.currentBackStackEntry?.destination?.route
+                        // Clicked: back_button — toolbar back within the measurement flow.
+                        // screen_name is derived per-destination from the current route
+                        // (simple class name, lowercased), matching uikit MainFlowScreen.
+                        recordFlowTracker?.trackBackClicked(
+                            screenName = route
+                                ?.substringAfterLast('.')
+                                ?.lowercase()
+                                ?: "",
+                            activity = activity,
+                        )
+                        if (route == CustomTagsDestination::class.qualifiedName) {
+                            scope.launch { tagBackRequests.emit(Unit) }
+                        } else {
+                            viewModel.clearJobs()
+                            if (!navController.popBackStack()) {
+                                onDismiss()
+                            }
+                        }
+                    },
+                endIcons =
+                    listOf(
+                        IconData(Res.drawable.ic_close) {
+                            val route = navController.currentBackStackEntry?.destination?.route
+                            // Clicked: exit_button — toolbar close within the measurement flow.
+                            // screen_name is the destination's simple class name with the trailing
+                            // "Destination" stripped (e.g. "ErrorStsShort"), matching uikit.
+                            // error_code/error_title_string are populated only when exiting from an
+                            // error screen (currentErrorCode/Title are null otherwise).
+                            recordFlowTracker?.trackExitClicked(
+                                screenName = route
+                                    ?.substringAfterLast('.')
+                                    ?.removeSuffix("Destination")
+                                    ?: "",
+                                activity = activity,
+                                errorCode = currentErrorCode,
+                                errorTitle = currentErrorTitle,
+                            )
+                            viewModel.clearJobs()
+                            onDismiss()
+                        },
+                    ),
+            ),
+        )
+        viewModel.showToolbar(true)
+        viewModel.showBackButton(true)
+    }
+
+    // Adjust toolbar per destination
+    LaunchedEffect(currentBackStackEntry) {
+        adjustToolBar(currentBackStackEntry?.destination?.route, viewModel, config)
+    }
+
+    // Screen-view analytics: fire the per-destination `screen:` events as each pre-recording
+    // / start destination becomes current, mirroring uikit's per-screen LaunchedEffect
+    // screen-views. Static Balance's condition-setup screen-view is fired via that screen's
+    // own onScreenView callback below (it needs the 1-based condition number + session uuid).
+    LaunchedEffect(currentBackStackEntry) {
+        when (currentBackStackEntry?.destination?.route) {
+            SelectWalkDurationDestination::class.qualifiedName ->
+                recordFlowTracker?.trackWalkSelectDurationScreen(activity)
+            PreAssistiveDeviceDestination::class.qualifiedName ->
+                recordFlowTracker?.trackPreRecordingAssistiveDeviceScreen(activity)
+            PreFootwearDestination::class.qualifiedName ->
+                recordFlowTracker?.trackPreRecordingFootwearScreen(activity)
+            CustomTagsDestination::class.qualifiedName ->
+                recordFlowTracker?.trackPreTagScreen(activity, RecordFlowAnalyticsEvents.TagSource.PRE_TAG)
+            SoundInstructionsDestination::class.qualifiedName ->
+                recordFlowTracker?.trackIncreaseVolumeScreen(activity)
+            StartRecordDestination::class.qualifiedName ->
+                recordFlowTracker?.trackMeasurementStartScreen(activity)
+        }
+    }
+
+    // Build the ordered pre-recording destination sequence based on config
+    val preRecordDestinations = remember(config) {
+        buildList<UIktDestination> {
+            // Static Balance (OS-15960): each condition begins on the Condition Setup screen,
+            // then flows StartRecord -> Recording -> "Recording saved". "Record another test"
+            // loops back to the start of this sequence (Condition Setup).
+            if (config.activityType == OSTActivityType.STATIC_BALANCE) {
+                add(ConditionSetupDestination)
+            }
+
+            // a) Hallway distance for 6min/2min walks (behind feature flag)
+            if (isSixOrTwoMinWalk(config.activityType) &&
+                featureFlags.isEnabled(FeatureFlag.HALLWAY_DISTANCE)
+            ) {
+                add(HallwayDistanceDestination)
+            }
+
+            // b) Walk duration picker if duration isn't set
+            if (config.duration == null || config.duration == 0) {
+                add(SelectWalkDurationDestination)
+            }
+
+            // c) Phone placement selection
+            if (config.showPhonePositionScreen) {
+                add(ChoosePlacementDestination)
+            }
+
+            // c.1) Optional pre-recording assistive-device selection
+            if (config.showPreRecordingAssistiveDeviceSelection) {
+                add(PreAssistiveDeviceDestination)
+            }
+
+            // c.2) Optional pre-recording footwear selection
+            if (config.showPreRecordingFootwearSelection) {
+                add(PreFootwearDestination)
+            }
+
+            // d) Optional pre-recording questions (custom tags)
+            config.preRecordingQuestions?.let {
+                add(CustomTagsDestination)
+            }
+
+            // e) Microphone permission for dual-task
+            if (config.activityType == OSTActivityType.DUAL_TASK_WALK_SUBTRACT) {
+                val micStatus = permissionsManager.checkPermissionStatus(Permission.MICROPHONE)
+                when {
+                    micStatus == PermissionStatus.GRANTED -> Unit
+                    micStatus != PermissionStatus.DENIED -> add(SoundPermissionDestination)
+                    else -> add(SoundPermissionDeniedAlwaysDestination)
+                }
+            }
+
+            // f) Sound instructions if volume is low
+            if (config.playVoiceOver && shouldShowSoundInstructions()) {
+                add(SoundInstructionsDestination)
+            }
+
+            // g) Always end with Start Record
+            add(StartRecordDestination)
+        }
+    }
+
+    // Build navigation map: each destination -> its successor
+    val navigationMap = remember(preRecordDestinations) {
+        preRecordDestinations.zipWithNext().toMap()
+    }
+
+    // Helper to navigate to the next destination in the pre-recording sequence
+    fun navigateToNext(current: UIktDestination) {
+        val next = navigationMap[current] ?: return
+        navController.navigateToDestination(next)
+    }
+
+    val startDestination: Any = preRecordDestinations.firstOrNull() ?: StartRecordDestination
+
+    Box(Modifier.fillMaxSize().background(Color.White)) {
+        // The toolbar overlays a fixed top inset instead of sitting in a Column above the
+        // NavHost (mirrors the original uikit MainFlowScreen). The NavHost is always
+        // fillMaxSize() with a constant per-route top inset, so hiding the toolbar — e.g. on the
+        // Get Ready / recording screen — no longer collapses a Column slot and stretches the
+        // content; the toolbar just fades away over the reserved space. Because the NavHost is
+        // inset below the toolbar (not overlapping it) there is no iOS touch conflict.
+        //
+        // Screens that intentionally render with no top chrome (Recording saved, Summary)
+        // reclaim the inset so they keep their full-height layout.
+        val collapseToolbarGap = when (currentBackStackEntry?.destination?.route) {
+            RecordingSavedDestination::class.qualifiedName,
+            SummaryResultDestination::class.qualifiedName -> true
+            else -> false
+        }
+
+        NavHost(
+            modifier = Modifier
+                .fillMaxSize()
+                // Reserve the toolbar's full height (status bar + ToolBarHeight) so the
+                // overlaid toolbar never covers content and toggling it never resizes the
+                // screen. Collapsed routes render full-bleed (no top chrome).
+                .then(
+                    if (collapseToolbarGap) {
+                        Modifier
+                    } else {
+                        Modifier
+                            .windowInsetsPadding(WindowInsets.statusBars)
+                            .padding(top = ToolBarHeight.dp)
+                    },
+                ),
+            navController = navController,
+            startDestination = startDestination,
+            enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start) },
+            exitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start) },
+            popEnterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End) },
+            popExitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End) },
+        ) {
+        // --- Pre-recording screens ---
+
+        // Hallway distance (for 6min/2min walks)
+        hallwayDistanceScreen(
+            stateProvider = { viewModel.hallwayDistanceState.value },
+            onValueChange = { value ->
+                viewModel.onHallwayInputChanged(value)
+            },
+            onContinue = {
+                if (viewModel.onHallwayContinue()) {
+                    // hallway_length_submitted — a length was entered. value/unit come from the
+                    // committed hallway state; unit is the spec-canonical m/ft.
+                    recordFlowTracker?.trackHallwayLengthSubmitted(
+                        activity = activity,
+                        entered = true,
+                        value = viewModel.hallwayDistanceState.value.inputValue.toIntOrNull(),
+                        unit = hallwayUnit(viewModel.isImperialSystem()),
+                    )
+                    navigateToNext(HallwayDistanceDestination)
+                }
+            },
+            onContinueWithoutLength = {
+                // hallway_length_submitted — the clinician skipped entering a length.
+                recordFlowTracker?.trackHallwayLengthSubmitted(
+                    activity = activity,
+                    entered = false,
+                    value = null,
+                    unit = null,
+                )
+                viewModel.onHallwaySkip()
+                navigateToNext(HallwayDistanceDestination)
+            },
+        )
+
+        // Walk duration selection
+        selectWalkDurationScreen(
+            recordingLimit = viewModel.recordingLimit,
+            onPrimaryAction = { index ->
+                // Clicked: walk_duration_selected — the tapped option's index (0=1min …).
+                recordFlowTracker?.trackWalkDurationSelected(activity, index)
+                viewModel.setWalkDuration(index)
+                navigateToNext(SelectWalkDurationDestination)
+            },
+        )
+
+        // Phone placement selection
+        choosePlacementScreen(
+            onPrimaryAction = { index ->
+                viewModel.setDevicePosition(index)
+                navigateToNext(ChoosePlacementDestination)
+            },
+        )
+
+        // Pre-recording assistive-device selection (optional, gated by config)
+        preAssistiveDeviceScreen(
+            onDeviceSelected = { device ->
+                // Clicked: pre_recording_assistive_device_selected — the typed device
+                // selection (enum name), never PII.
+                recordFlowTracker?.trackPreRecordingAssistiveDeviceSelected(activity, device)
+                viewModel.setAssistiveDevice(device)
+                navigateToNext(PreAssistiveDeviceDestination)
+            },
+        )
+
+        // Pre-recording footwear selection (optional, gated by config). NONE adds no tag,
+        // matching uikit; other selections are attached as a tag by their display name.
+        preFootwearScreen(
+            onFootwearSelected = { footwear, displayName ->
+                // Clicked: pre_recording_footwear_selected — the typed footwear selection
+                // (enum name), never PII.
+                recordFlowTracker?.trackPreRecordingFootwearSelected(activity, footwear)
+                if (footwear != Footwear.NONE) {
+                    viewModel.addTags(listOf(displayName))
+                }
+                navigateToNext(PreFootwearDestination)
+            },
+        )
+
+        // Pre-recording questions (custom tags)
+        customTagsScreen(
+            preRecordingQuestions = config.preRecordingQuestions,
+            onAddTags = { viewModel.addTags(it) },
+            onRemoveTags = { viewModel.removeTags(it) },
+            onToolbarBackRequest = tagBackRequests,
+            currentIndex = currentScreenIndex,
+            onBack = { navController.popBackStack() },
+            onDone = {
+                navigateToNext(CustomTagsDestination)
+            },
+        )
+
+        // Sound permission (microphone) — either SoundPermission or SoundPermissionDeniedAlways
+        // is in the list, never both. Skip/Allow from either screen navigates to the same next.
+        val nextAfterSoundPermission = navigationMap[SoundPermissionDestination]
+            ?: navigationMap[SoundPermissionDeniedAlwaysDestination]
+
+        soundPermissionScreen(
+            resourceProvider = resourceProvider,
+            onAskMicrophonePermission = {
+                onAskMicrophonePermission()
+                nextAfterSoundPermission?.let { navController.navigateToDestination(it) }
+            },
+            onSkip = {
+                nextAfterSoundPermission?.let { navController.navigateToDestination(it) }
+            },
+            onGoToSettings = onGoToSettings,
+        )
+
+        // Sound instructions (volume low)
+        soundInstructionsScreen(
+            primaryAction = {
+                navigateToNext(SoundInstructionsDestination)
+            },
+        )
+
+        // Start record screen (big "Start" button + "View instructions")
+        startRecordScreen(
+            activityType = activity,
+            primaryAction = {
+                // Clicked: start_measurement — user tapped Start on the StartRecord screen.
+                recordFlowTracker?.trackStartMeasurementClicked(activity)
+                navController.navigate(RecordingDestination) {
+                    popUpTo(StartRecordDestination) { inclusive = true }
+                }
+            },
+            secondaryAction = {
+                // screen: measurement_instructions — opened from the StartRecord ("GO") screen.
+                recordFlowTracker?.trackMeasurementInstructionsScreen(
+                    activity,
+                    RecordFlowAnalyticsTracker.PRIOR_SCREEN_MEASUREMENT_START,
+                )
+                showInstructionsSheet = true
+            },
+            onBackPress = {
+                showExitConfirmationDialog = true
+            },
+        )
+
+        // --- Static Balance screens (OS-15960) ---
+
+        // Condition setup — start of each condition. On Continue, stores the condition and
+        // advances to the next pre-record destination (StartRecord).
+        conditionSetupScreen(
+            balance = config.balance ?: OSTBalance(),
+            onScreenView = {
+                // screen: static_balance_condition_setup — condition_number is 1-based within
+                // the session (completed count + 1); session_uuid groups the session.
+                recordFlowTracker?.trackStaticBalanceConditionSetupScreen(
+                    conditionNumber = viewModel.balanceConditionCount() + 1,
+                    sessionUuid = viewModel.sessionUuid,
+                )
+            },
+            onContinue = { condition ->
+                // static_balance_condition_confirmed — emits the full condition config
+                // (canonical category codes) + duration + condition_number + session_uuid.
+                // The optional free-text note is NOT sent here (HIPAA).
+                recordFlowTracker?.trackStaticBalanceConditionConfirmed(
+                    condition = condition,
+                    durationSeconds = config.duration ?: 0,
+                    conditionNumber = viewModel.balanceConditionCount() + 1,
+                    sessionUuid = viewModel.sessionUuid,
+                )
+                viewModel.setBalanceCondition(condition)
+                navigateToNext(ConditionSetupDestination)
+            },
+        )
+
+        // Recording saved — shown after a condition uploads. "Record another" loops back to
+        // Condition Setup (same session); "Go to summary" finishes with the web summary.
+        recordingSavedScreen(
+            conditionLine = { viewModel.currentBalanceCondition?.displayLine().orEmpty() },
+            durationSeconds = {
+                viewModel.motionMeasurement.value?.metadata?.seconds
+                    ?: viewModel.configuration.value.duration
+                    ?: 0
+            },
+            onRecordAnother = { note ->
+                // static_balance_note_added — only the session uuid is sent, NEVER the
+                // free-text note (HIPAA). static_balance_another_test carries condition_count.
+                if (!note.isNullOrBlank()) {
+                    recordFlowTracker?.trackStaticBalanceNoteAdded(viewModel.sessionUuid)
+                }
+                recordFlowTracker?.trackStaticBalanceConditionChoice(
+                    recordAnother = true,
+                    conditionCount = viewModel.balanceConditionCount(),
+                    sessionUuid = viewModel.sessionUuid,
+                )
+                viewModel.updateBalanceConditionNote(note)
+                viewModel.prepareForNextBalanceCondition()
+                navController.navigate(ConditionSetupDestination) {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+            onGoToSummary = { note ->
+                // static_balance_note_added — only the session uuid (never the note text).
+                // static_balance_go_to_summary carries condition_count.
+                if (!note.isNullOrBlank()) {
+                    recordFlowTracker?.trackStaticBalanceNoteAdded(viewModel.sessionUuid)
+                }
+                recordFlowTracker?.trackStaticBalanceConditionChoice(
+                    recordAnother = false,
+                    conditionCount = viewModel.balanceConditionCount(),
+                    sessionUuid = viewModel.sessionUuid,
+                )
+                viewModel.updateBalanceConditionNote(note)
+                finishStaticBalance(
+                    viewModel.motionMeasurement.value,
+                    viewModel.sessionUuid,
+                    onResult,
+                    onDismiss,
+                )
+            },
+        )
+
+        // --- Recording and post-recording screens ---
+
+        // Recording screen
+        composable<RecordingDestination> {
+            RecordingScreenContent(
+                modifier = Modifier.fillMaxSize(),
+                viewModel = viewModel,
+                onMeasurementResult = { measurement ->
+                    resultMeasurement = measurement
+                    // Route via ResultHandler exactly like the Android uikit flow:
+                    // FULL_ANALYSIS -> summary; EMPTY/PARTIAL -> the specific analysis-error
+                    // screen (or EmptyAnalysisWithSteps for walk/dual-task with steps);
+                    // null measurement -> general error.
+                    when (val outcome = ResultHandler.handleMeasurementResult(measurement)) {
+                        is RecordFlowOutcome.Summary -> {
+                            if (config.activityType == OSTActivityType.STATIC_BALANCE) {
+                                // Session loop: a successful condition lands on the "Recording
+                                // saved" screen instead of finishing the flow. Static Balance
+                                // uses a web-only summary, so no native summary screen is shown.
+                                viewModel.onBalanceConditionSaved(outcome.measurement)
+                                navController.navigate(RecordingSavedDestination) {
+                                    popUpTo(RecordingDestination) { inclusive = true }
+                                }
+                            } else {
+                                navController.navigate(SummaryResultDestination) {
+                                    popUpTo(RecordingDestination) { inclusive = true }
+                                }
+                            }
+                        }
+
+                        is RecordFlowOutcome.EmptyAnalysisWithSteps -> {
+                            navController.navigate(EmptyAnalysisDestination) {
+                                popUpTo(RecordingDestination) { inclusive = true }
+                            }
+                        }
+
+                        is RecordFlowOutcome.Error -> {
+                            resultError = outcome.error
+                            navController.navigate(ErrorResultDestination) {
+                                popUpTo(RecordingDestination) { inclusive = true }
+                            }
+                        }
+                    }
+                },
+                onBackPress = { showRecordingExitDialog = true },
+                onRecording = { viewModel.showToolbar(false) },
+                onError = { error, activityType ->
+                    // Technical analyser errors ("no result from the lab"). No live network
+                    // probe exists in KMP yet, so networkStatus is assumed true — the
+                    // connectivity screen still shows for OSTAnalyserError.NetworkError.
+                    resultError = ResultHandler.onAnalyseError(
+                        analyserError = error,
+                        activityType = activityType,
+                        networkStatus = true,
+                    )
+                    navController.navigate(ErrorResultDestination) {
+                        popUpTo(RecordingDestination) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        // Summary result
+        composable<SummaryResultDestination> {
+            val measurement = resultMeasurement
+            if (measurement != null) {
+                OSTMeasurementSummary(
+                    measurement = measurement,
+                    options = OSTSummaryOptions.Full,
+                    origin = OSTSummaryOrigin.Recording,
+                    configuration = config,
+                    onDismiss = {
+                        onResult(
+                            OSTEvent(
+                                name = "recording_completed",
+                                properties = mapOf("measurement_id" to measurement.id),
+                            )
+                        )
+                        onDismiss()
+                    },
+                )
+            }
+        }
+
+        // Empty analysis result — the "steps measured" no-score screen reached from the
+        // walk / dual-task empty-analysis path. Ports uikit's emptyAnalysisWithStepsScreen:
+        // Continue -> onDone; no retry (uikit's screen has none).
+        composable<EmptyAnalysisDestination> {
+            val steps = resultMeasurement?.metadata?.steps
+            LaunchedEffect(Unit) {
+                // This manual-entry screen is reached from the no-score / error path.
+                recordFlowTracker?.trackEnterResultsManuallyScreen(
+                    activity = activity,
+                    screenOrigin = RecordFlowAnalyticsTracker.SCREEN_ORIGIN_ERROR,
+                )
+            }
+            EmptyAnalysisScreen(
+                screenData = EmptyAnalysisScreenData(
+                    timeStampMillis = resultMeasurement?.timestamp ?: currentTimeMillis(),
+                    title = stringResource(
+                        Res.string.steps_measured,
+                        steps ?: stringResource(Res.string.no),
+                    ),
+                    steps = steps,
+                    icon = IconData(
+                        icon = Res.drawable.ic_warning,
+                        tintColor = LocalOSColors.current.error_p2,
+                    ),
+                    subtitle = stringResource(Res.string.great_job_on_completing_a_walk),
+                    brandButtonData = PrimaryButtonData(
+                        text = TextData(
+                            stringResource(Res.string.continue_camel_case),
+                            24.sp,
+                            FontWeight.W600,
+                        ),
+                        action = {
+                            recordFlowTracker?.trackEnterResultsManuallySaveClicked(
+                                activity = activity,
+                                value = steps?.toString() ?: "",
+                            )
+                            onDismiss()
+                        },
+                    ),
+                ),
+            )
+        }
+
+        // Error result — the specific screen is selected by [resultError] (set by ResultHandler).
+        composable<ErrorResultDestination> {
+            val error = resultError ?: RecordFlowError.General
+            val errorMeasurement = viewModel.motionMeasurement.value
+            // STS "Enter results manually" secondary action for the STS Short/Static/Position
+            // error screens. Non-null only when the init-time flag is on AND this is an STS
+            // error with a known measurement uuid. Fires Clicked: enter_results_manually
+            // (screen_origin = error) then navigates to the manual-report destination.
+            val onEnterStsResultsManually: (() -> Unit)? =
+                if (featureFlags.isEnabled(FeatureFlag.STS_MANUAL_REPORT) &&
+                    (error == RecordFlowError.StsShort ||
+                        error == RecordFlowError.StaticSts ||
+                        error == RecordFlowError.StsPosition) &&
+                    errorMeasurement?.id != null
+                ) {
+                    {
+                        recordFlowTracker?.trackEnterResultsManuallyClicked(
+                            activity = activity,
+                            screenOrigin = RecordFlowAnalyticsTracker.SCREEN_ORIGIN_ERROR,
+                        )
+                        navController.navigate(
+                            StsManualReportDestination(
+                                uuid = errorMeasurement.id,
+                                initialValue = null,
+                            ),
+                        )
+                    }
+                } else {
+                    null
+                }
+            // Build the screen data once so the analytics title/subtitle strings exactly match
+            // the localized strings shown on the error screen (uikit sends the same strings).
+            val errorScreenData = RecordFlowDataFactory.errorScreenData(
+                error = error,
+                resourceProvider = resourceProvider,
+                onRetry = {},
+                onSecondaryAction = {},
+            )
+
+            // Publish this error's identity (canonical code + localized title) so the toolbar
+            // exit_button can report error_code + error_title_string while the error screen is
+            // shown; clear it on leave. Mirrors uikit's LocalRecordErrorSink / currentError.
+            DisposableEffect(error, errorScreenData.title?.text) {
+                currentErrorCode = RecordFlowAnalyticsTracker.canonicalErrorCode(error.errorType)
+                currentErrorTitle = errorScreenData.title?.text
+                onDispose {
+                    currentErrorCode = null
+                    currentErrorTitle = null
+                }
+            }
+
+            // screen: measurement_error — emitted once when the error screen is shown. Sends
+            // the canonical error_code (derived from error.errorType), localized title/subtitle
+            // strings and the recorded measurement metadata (each omitted when null).
+            LaunchedEffect(error) {
+                recordFlowTracker?.trackErrorScreen(
+                    activity = activity,
+                    errorType = error.errorType,
+                    measurementSeconds = errorMeasurement?.metadata?.seconds,
+                    steps = errorMeasurement?.metadata?.steps,
+                    perceptionUuid = errorMeasurement?.id,
+                    titleString = errorScreenData.title?.text,
+                    subtitleString = errorScreenData.subtitle?.text,
+                    appSection = RecordFlowAnalyticsTracker.APP_SECTION_DEFAULT,
+                )
+            }
+            ErrorScreen(
+                onBackPress = {
+                    // uikit fires the same try_again / error_continue event on the error screen's
+                    // back-press as on its primary CTA (ErrorScreen.kt:78, ErrorTimeOut.kt:51).
+                    // Timeout uses error_continue; every other error uses try_again.
+                    when (error) {
+                        RecordFlowError.Timeout ->
+                            recordFlowTracker?.trackErrorContinueClicked(activity, error.errorType)
+
+                        else ->
+                            recordFlowTracker?.trackTryAgainClicked(
+                                activity = activity,
+                                errorType = error.errorType,
+                                appSection = RecordFlowAnalyticsTracker.APP_SECTION_DEFAULT,
+                                // uikit passes the per-error screen name (ERROR_TYPE), not a
+                                // constant — each error destination sets screenName = ERROR_TYPE
+                                // (e.g. "curvy"), which equals RecordFlowError.errorType here.
+                                screenName = error.errorType,
+                            )
+                    }
+                    onDismiss()
+                },
+                onSelection = {
+                    // The primary CTA differs per error, matching uikit's per-screen event:
+                    //  - Connectivity ("Reload")  -> Clicked: measurement_reload
+                    //  - Timeout ("Continue")      -> Clicked: measurement_error_continue
+                    //  - all other errors ("Try again") -> Clicked: measurement_try_again
+                    when (error) {
+                        RecordFlowError.Connectivity ->
+                            recordFlowTracker?.trackReloadClicked(activity)
+
+                        RecordFlowError.Timeout ->
+                            recordFlowTracker?.trackErrorContinueClicked(activity, error.errorType)
+
+                        else ->
+                            recordFlowTracker?.trackTryAgainClicked(
+                                activity = activity,
+                                errorType = error.errorType,
+                                appSection = RecordFlowAnalyticsTracker.APP_SECTION_DEFAULT,
+                                // uikit passes the per-error screen name (ERROR_TYPE), not a
+                                // constant — each error destination sets screenName = ERROR_TYPE
+                                // (e.g. "curvy"), which equals RecordFlowError.errorType here.
+                                screenName = error.errorType,
+                            )
+                    }
+                    viewModel.clearJobs()
+                    navController.navigate(StartRecordDestination) {
+                        popUpTo(ErrorResultDestination) { inclusive = true }
+                    }
+                },
+                // Secondary CTA: "View instructions" opens the instructions sheet on analysis
+                // errors; for the Static Balance short error it is "Finish" — resume to the
+                // web summary if a prior condition completed this session, else exit.
+                onSecondaryAction =
+                    if (error == RecordFlowError.StaticBalanceShort) {
+                        {
+                            finishStaticBalance(
+                                viewModel.lastSavedBalanceMeasurement,
+                                viewModel.sessionUuid,
+                                onResult,
+                                onDismiss,
+                            )
+                        }
+                    } else {
+                        {
+                            // screen: measurement_instructions — opened from an error screen.
+                            recordFlowTracker?.trackMeasurementInstructionsScreen(
+                                activity,
+                                RecordFlowAnalyticsTracker.PRIOR_SCREEN_MEASUREMENT_ERROR,
+                            )
+                            showInstructionsSheet = true
+                        }
+                    },
+                screenDataFactory = { retry, secondary ->
+                    RecordFlowDataFactory.errorScreenData(
+                        error = error,
+                        resourceProvider = resourceProvider,
+                        onRetry = retry,
+                        onSecondaryAction = secondary,
+                        onEnterResultsManually = onEnterStsResultsManually,
+                    )
+                },
+            )
+        }
+
+        // STS manual self-report (entry from the STS error screens). Registered unconditionally;
+        // it is only reachable when [onEnterStsResultsManually] navigated here (flag on).
+        stsManualReportScreen(
+            applyTopToolBarPadding = false,
+            onSubmitted = { uuid ->
+                // The user manually provided a value, so by definition there is a result. The
+                // server-side resultState may still be EMPTY/PARTIAL (self-report does not update
+                // it), which would route back to the same error screen — so bypass the state
+                // check and surface the refreshed measurement directly to the summary.
+                scope.launch {
+                    val refreshed = UIKitServiceLocator.recorderBridge.readSingleMotionMeasurement(uuid)
+                    if (refreshed != null) {
+                        resultMeasurement = refreshed
+                        navController.navigate(SummaryResultDestination) {
+                            popUpTo(ErrorResultDestination) { inclusive = true }
+                        }
+                    } else {
+                        // Override saved but local re-read failed — don't strand the user; exit
+                        // the flow (the saved value syncs on next fetch).
+                        onDismiss()
+                    }
+                }
+            },
+            onClose = { navController.popBackStack() },
+            // Failure on the connectivity-error screen exits the recording flow rather than
+            // dropping the user back on the STS error screen they came from.
+            onExitOnFailure = onDismiss,
+            // screen: measurement_enter_results_manually — entered from an STS error screen.
+            onScreenView = {
+                recordFlowTracker?.trackEnterResultsManuallyScreen(
+                    activity = activity,
+                    screenOrigin = RecordFlowAnalyticsTracker.SCREEN_ORIGIN_ERROR,
+                )
+            },
+            // Clicked: enter_results_manually_save — HIPAA: only the entered count value.
+            onSaveClicked = { value ->
+                recordFlowTracker?.trackEnterResultsManuallySaveClicked(
+                    activity = activity,
+                    value = value.toString(),
+                )
+            },
+        )
+        } // end NavHost
+
+        // Toolbar overlays the reserved top inset (see note above). Drawn on top of the
+        // NavHost's inset region — not overlapping the content — so toggling its visibility
+        // never resizes the screen.
+        AnimatedVisibility(
+            modifier = Modifier.align(Alignment.TopCenter),
+            visible = showToolbar.value,
+            enter = slideInVertically() + fadeIn(),
+            exit = slideOutVertically() + fadeOut(),
+        ) {
+            Toolbar(
+                toolbarData = toolbarData.value,
+                toolBarColor = ToolBarColors(
+                    containerColor = Color.Transparent,
+                    contentColor = LocalOSColors.current.neutral_p3,
+                ),
+            )
+        }
+
+        // Short hallway warning dialog (shown when user enters a value below recommended)
+        val hallwayState = viewModel.hallwayDistanceState.value
+        if (hallwayState.showShortHallwayDialog) {
+            // screen_short_hallway_popup — fired once when the warning dialog is shown.
+            LaunchedEffect(Unit) {
+                recordFlowTracker?.trackShortHallwayPopupShown(activity)
+            }
+            BasicAlertDialog(
+                onDismissRequest = viewModel::dismissShortHallwayDialog,
+                content = {
+                    ShortHallwayLengthDialog(
+                        recommendedValue = hallwayState.recommendedValue,
+                        unitText = hallwayState.unitText,
+                        dontShowAgainChecked = hallwayState.suppressShortHallwayWarning,
+                        onDontShowAgainChange = viewModel::onSuppressShortHallwayWarningChanged,
+                        onDismissClicked = viewModel::dismissShortHallwayDialog,
+                        onStartTestClicked = {
+                            // clicked_short_hallway_start_test — proceed with the short length.
+                            recordFlowTracker?.trackShortHallwayStartTestClicked(activity)
+                            if (viewModel.onShortHallwayStartTest()) {
+                                navigateToNext(HallwayDistanceDestination)
+                            }
+                        },
+                        onEditHallwayClicked = {
+                            // clicked_short_hallway_edit — dismiss to edit the length.
+                            recordFlowTracker?.trackShortHallwayEditClicked(activity)
+                            viewModel.dismissShortHallwayDialog()
+                        },
+                    )
+                },
+            )
+        }
+
+        // Exit confirmation dialog shown when user presses back on StartRecord screen
+        if (showExitConfirmationDialog) {
+            AlertDialog(
+                onDismissRequest = { showExitConfirmationDialog = false },
+                title = { Text(stringResource(Res.string.stop_recording_dialog_text)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showExitConfirmationDialog = false
+                        viewModel.clearJobs()
+                        onDismiss()
+                    }) {
+                        Text(stringResource(Res.string.yes))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showExitConfirmationDialog = false }) {
+                        Text(stringResource(Res.string.no))
+                    }
+                },
+            )
+        }
+
+        // Exit confirmation dialog shown when user presses back during active recording
+        if (showRecordingExitDialog) {
+            AlertDialog(
+                onDismissRequest = { showRecordingExitDialog = false },
+                title = { Text(stringResource(Res.string.stop_recording_dialog_text)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showRecordingExitDialog = false
+                        viewModel.clearJobs()
+                        navController.navigate(StartRecordDestination) {
+                            popUpTo(RecordingDestination) { inclusive = true }
+                        }
+                    }) {
+                        Text(stringResource(Res.string.yes))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRecordingExitDialog = false }) {
+                        Text(stringResource(Res.string.no))
+                    }
+                },
+            )
+        }
+    } // end Box
+
+    if (showInstructionsSheet) {
+        val instructions = config.instructions ?: config.defaultInstructions()
+        BottomSheet(
+            onDismissRequest = { showInstructionsSheet = false },
+        ) {
+            InstructionsContent(instructionsData = instructions)
+        }
+    }
+}
+
+/**
+ * Type-safe navigation helper that dispatches to the correct concrete destination type.
+ * Required because Navigation Compose uses serialization based on compile-time types.
+ */
+private fun NavController.navigateToDestination(destination: UIktDestination) {
+    when (destination) {
+        is ConditionSetupDestination -> navigate(ConditionSetupDestination)
+        is HallwayDistanceDestination -> navigate(HallwayDistanceDestination)
+        is SelectWalkDurationDestination -> navigate(SelectWalkDurationDestination)
+        is ChoosePlacementDestination -> navigate(ChoosePlacementDestination)
+        is PreAssistiveDeviceDestination -> navigate(PreAssistiveDeviceDestination)
+        is PreFootwearDestination -> navigate(PreFootwearDestination)
+        is CustomTagsDestination -> navigate(CustomTagsDestination)
+        is SoundPermissionDestination -> navigate(SoundPermissionDestination)
+        is SoundPermissionDeniedAlwaysDestination -> navigate(SoundPermissionDeniedAlwaysDestination)
+        is SoundInstructionsDestination -> navigate(SoundInstructionsDestination)
+        is StartRecordDestination -> navigate(StartRecordDestination)
+        is RecordingDestination -> navigate(RecordingDestination)
+    }
+}
+
+/** Spec-canonical hallway unit token for analytics: "ft" (imperial) or "m" (metric). */
+private fun hallwayUnit(isImperial: Boolean): String =
+    if (isImperial) RecordFlowAnalyticsEvents.Units.FEET else RecordFlowAnalyticsEvents.Units.METERS
+
+private fun adjustToolBar(
+    route: String?,
+    viewModel: MotionRecorderViewModel,
+    config: OSTRecordingConfiguration,
+) {
+    if (route == null) return
+    when {
+        // Get Ready (countdown) keeps a transparent toolbar (chevron + close) per design. The
+        // toolbar is hidden later, once recording actually starts, via
+        // RecordingScreenContent.onRecording -> showToolbar(false).
+        route == RecordingDestination::class.qualifiedName -> {
+            viewModel.showToolbar(true)
+            viewModel.setToolBarTitle(null)
+            viewModel.showBackButton(true)
+        }
+
+        route == StartRecordDestination::class.qualifiedName -> {
+            viewModel.showToolbar(true)
+            viewModel.setToolBarTitle(config.activityType.displayNameRes)
+            viewModel.showBackButton(true)
+        }
+
+        route == ConditionSetupDestination::class.qualifiedName -> {
+            viewModel.showToolbar(true)
+            viewModel.setToolBarTitle(config.activityType.displayNameRes)
+            viewModel.showBackButton(true)
+        }
+
+        // No toolbar on the "Recording saved" screen — its own "Go to summary" /
+        // "Record another test" buttons are the only actions.
+        route == RecordingSavedDestination::class.qualifiedName -> {
+            viewModel.showToolbar(false)
+        }
+
+        route == SummaryResultDestination::class.qualifiedName -> {
+            viewModel.showToolbar(false)
+        }
+
+        route == ErrorResultDestination::class.qualifiedName ||
+            route == EmptyAnalysisDestination::class.qualifiedName -> {
+            viewModel.showToolbar(true)
+            viewModel.setToolBarTitle(null)
+            viewModel.showBackButton(false)
+        }
+
+        else -> {
+            viewModel.showToolbar(true)
+            viewModel.setToolBarTitle(null)
+            viewModel.showBackButton(true)
+        }
+    }
+}
+
+/**
+ * Finishes the Static Balance flow with the web summary (OS-15960). The KMP flow has no
+ * native summary and no [OSTMotionMeasurement.summaryUrl]; instead it emits a
+ * `recording_completed` [OSTEvent] carrying the last completed condition's measurement id and
+ * the session grouping key, so the host app opens the web summary, then dismisses the flow.
+ *
+ * When no condition completed this session (no [measurement]), it just dismisses — matching
+ * uikit's fallback of exiting cleanly rather than looping on an error screen.
+ */
+private fun finishStaticBalance(
+    measurement: OSTMotionMeasurement?,
+    sessionUuid: String,
+    onResult: (OSTEvent) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    if (measurement != null) {
+        onResult(
+            OSTEvent(
+                name = "recording_completed",
+                properties = mapOf(
+                    "measurement_id" to measurement.id,
+                    "session_uuid" to sessionUuid,
+                ),
+            ),
+        )
+    }
+    onDismiss()
+}

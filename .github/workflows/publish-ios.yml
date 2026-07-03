@@ -1,0 +1,85 @@
+name: Publish iOS (XCFramework / SPM)
+
+permissions:
+  contents: write  # GitHub Releases + committing Package.swift
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to publish from'
+        required: true
+        type: string
+        default: 'main'
+      version:
+        description: 'Version to publish (e.g., 0.1.0). Empty = auto-detect from uikit-kmp/build.gradle.kts'
+        required: false
+        type: string
+        default: ''
+      snapshot:
+        description: 'Publish as snapshot (mutable prerelease tag; consumers track the main branch)'
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  publish-xcframework:
+    runs-on: macos-latest
+    env:
+      # Gradle: resolve co.onestep:design-system from other repos' packages.
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN != '' && secrets.GH_PACKAGES_TOKEN || github.token }}
+      # gh CLI: use the workflow token (GH_TOKEN wins over GITHUB_TOKEN for gh).
+      # Deliberately NOT the PAT so release/tag creation cannot re-trigger workflows.
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build and publish XCFramework
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            ARGS="--version ${{ github.event.inputs.version }}"
+          fi
+          if [ "${{ github.event.inputs.snapshot }}" = "true" ]; then
+            ARGS="$ARGS --snapshot"
+          fi
+          ./scripts/publish-xcframework.sh $ARGS
+
+      - name: Commit updated Package.swift and compose-resources
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Package.swift uikit-kmp/OSTUIKitKMP/Sources/Resources/compose-resources
+          if git diff --cached --quiet; then
+            echo "Nothing changed, skipping commit."
+          else
+            git commit -m "Chore: Update Package.swift + compose-resources for published XCFramework"
+            git push origin HEAD:${{ github.event.inputs.branch }}
+          fi
+
+      - name: Publication summary
+        if: success()
+        run: |
+          echo "XCFramework published!"
+          echo "Consumers add SPM dependency:"
+          echo "  URL: https://github.com/${{ github.repository }}"
+          if [ "${{ github.event.inputs.snapshot }}" = "true" ]; then
+            echo "  Track: branch \"${{ github.event.inputs.branch }}\""
+          else
+            echo "  Tag: see the release created by this run"
+          fi
