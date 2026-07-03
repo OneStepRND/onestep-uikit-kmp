@@ -1,0 +1,20 @@
+name: CI Canary (runner availability probe)
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Runner label to probe'
+        required: true
+        type: choice
+        options: [ ubuntu-latest, macos-latest ]
+        default: 'ubuntu-latest'
+
+jobs:
+  probe:
+    runs-on: ${{ github.event.inputs.runner }}
+    steps:
+      - name: Report
+        run: |
+          echo "Runner picked up the job."
+          uname -a
