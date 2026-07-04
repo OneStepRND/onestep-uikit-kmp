@@ -3,8 +3,8 @@ package co.onestep.kmp.uikit.features.recordFlow.destinations
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
 import co.onestep.kmp.uikit.features.recordFlow.components.ToolBarHeight
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
@@ -24,13 +24,13 @@ data object SoundPermissionDeniedAlwaysDestination : UIktDestination
  * Sound permission screen using UiKitScreen for KMP compatibility.
  * Converts PermissionScreenData to UiKitScreenData to reuse the common screen composable.
  */
-fun NavGraphBuilder.soundPermissionScreen(
+fun EntryProviderScope<NavKey>.soundPermissionScreen(
     resourceProvider: ResourceProvider,
     onAskMicrophonePermission: () -> Unit,
     onSkip: () -> Unit,
     onGoToSettings: () -> Unit,
 ) {
-    composable<SoundPermissionDestination> {
+    entry<SoundPermissionDestination> {
         val permData = RecordFlowDataFactory.soundPermissionData(
             resourceProvider = resourceProvider,
             onSelection = onAskMicrophonePermission,
@@ -42,7 +42,7 @@ fun NavGraphBuilder.soundPermissionScreen(
         )
     }
 
-    composable<SoundPermissionDeniedAlwaysDestination> {
+    entry<SoundPermissionDeniedAlwaysDestination> {
         val permData = RecordFlowDataFactory.soundPermissionDeniedAlwaysData(
             resourceProvider = resourceProvider,
             onGoToSettings = onGoToSettings,

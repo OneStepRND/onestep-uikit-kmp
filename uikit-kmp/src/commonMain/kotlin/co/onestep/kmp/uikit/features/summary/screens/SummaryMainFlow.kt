@@ -1,6 +1,5 @@
 package co.onestep.kmp.uikit.features.summary.screens
 
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.BasicAlertDialog
@@ -15,10 +14,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
 import co.onestep.kmp.uikit.di.UIKitServiceLocator
 import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsEvents
 import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsTracker
@@ -70,6 +68,9 @@ import co.onestep.kmp.uikit.models.OSTAssistiveDevice.Companion.toAssistiveDevic
 import co.onestep.kmp.uikit.models.OSTLevelOfAssistance
 import co.onestep.kmp.uikit.models.OSTLevelOfAssistance.Companion.toLevelOfAssistance
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData
+import co.onestep.kmp.uikit.navigation.UIktNavDisplay
+import co.onestep.kmp.uikit.navigation.UIktNavSavedStateConfiguration
+import co.onestep.kmp.uikit.navigation.pop
 import co.onestep.kmp.uikit.utils.PlatformBackHandler
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.continue_camel_case
@@ -117,9 +118,19 @@ internal fun SummaryMainFlow(
     val mainParamCardItem by summaryViewModel.mainParamCardItem
     val coroutineScope = rememberCoroutineScope()
     val showDeleteMeasurementConfirmation = remember { mutableStateOf(false) }
-    val navigator = rememberNavController()
-    val navBackStackEntry by navigator.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+
+    val fullSummary =
+        remember {
+            configuration?.showSummaryScreen == null || configuration.showSummaryScreen == OSTSummaryOptions.Full
+        }
+
+    // Navigation 3 back stack owned by the summary flow; saved via the shared uikit
+    // serializers module (iOS has no reflection-based fallback).
+    val backStack = rememberNavBackStack(
+        UIktNavSavedStateConfiguration,
+        if (fullSummary) SummaryScreenDestination else NoSummaryNoticeDestination,
+    )
+    val currentKey: NavKey? = backStack.lastOrNull()
     val tagBackRequests = remember { MutableSharedFlow<Unit>() }
     var assistiveDevice by remember { mutableStateOf<OSTAssistiveDevice?>(null) }
     var levelOfAssistance by remember { mutableStateOf<OSTLevelOfAssistance?>(null) }
@@ -138,7 +149,7 @@ internal fun SummaryMainFlow(
                 startIcon =
                     IconData(Res.drawable.ic_back_arrow) {
                         backAction()
-                        if (currentRoute == CustomTagsDestination::class.qualifiedName) {
+                        if (backStack.lastOrNull() == CustomTagsDestination) {
                             coroutineScope.launch {
                                 tagBackRequests.emit(Unit)
                             }
@@ -168,11 +179,6 @@ internal fun SummaryMainFlow(
                         emptyList()
                     },
             )
-        }
-
-    val fullSummary =
-        remember {
-            configuration?.showSummaryScreen == null || configuration.showSummaryScreen == OSTSummaryOptions.Full
         }
 
     // Hallway display values from ViewModel state
@@ -231,10 +237,8 @@ internal fun SummaryMainFlow(
 
     // screen: measurement_add_tags — fired when the post-measurement tagging screen or the
     // post-tag questions flow becomes current, matching uikit's post-measurement tag screen.
-    LaunchedEffect(currentRoute) {
-        if (currentRoute == TaggingScreenDestination::class.qualifiedName ||
-            currentRoute == CustomTagsDestination::class.qualifiedName
-        ) {
+    LaunchedEffect(currentKey) {
+        if (currentKey == TaggingScreenDestination || currentKey == CustomTagsDestination) {
             motionMeasurement?.type?.let { type ->
                 recordFlowTracker?.trackAddTagsScreen(type, motionMeasurement.id)
             }
@@ -242,7 +246,7 @@ internal fun SummaryMainFlow(
     }
 
     PlatformBackHandler {
-        if (!navigator.popBackStack()) {
+        if (!backStack.pop()) {
             backAction()
         }
     }
@@ -251,14 +255,10 @@ internal fun SummaryMainFlow(
         modifier
             .fillMaxSize(),
     ) {
-        NavHost(
-            navController = navigator,
-            startDestination = if (fullSummary) SummaryScreenDestination else NoSummaryNoticeDestination,
-            enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start) },
-            exitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start) },
-            popEnterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End) },
-            popExitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End) },
-        ) {
+        UIktNavDisplay(
+            backStack = backStack,
+            onBack = { backStack.pop() },
+            entryProvider = entryProvider {
             summaryScreen(
                 insightsScreenState,
                 gaitLabScreenState,
@@ -284,14 +284,14 @@ internal fun SummaryMainFlow(
                         configuration?.postTaggingData is OSTPostTaggingData.OSTPostTaggingQuestionsFlow -> {
                             SummaryAction(
                                 text = resourceProvider.getString(Res.string.continue_camel_case),
-                                action = { navigator.navigate(CustomTagsDestination) },
+                                action = { backStack.add(CustomTagsDestination) },
                             )
                         }
 
                         configuration?.postTaggingData is OSTPostTaggingData.OSTPostTaggingScreen -> {
                             SummaryAction(
                                 text = resourceProvider.getString(Res.string.continue_camel_case),
-                                action = { navigator.navigate(TaggingScreenDestination) },
+                                action = { backStack.add(TaggingScreenDestination) },
                             )
                         }
 
@@ -304,7 +304,7 @@ internal fun SummaryMainFlow(
                 hallwayWarningText = hallwayWarningText,
                 onHallwayEdit = {
                     summaryViewModel.showHallwayEditDialog()
-                    navigator.navigate(HallwayDistanceDestination)
+                    backStack.add(HallwayDistanceDestination)
                 },
                 // Clicked: activity_summary_tab + the gait_data screen-view. uikit fires these
                 // ONLY for the Gait Lab tab (index != 0), never for the Highlights tab
@@ -331,7 +331,7 @@ internal fun SummaryMainFlow(
                             val uuid = motionMeasurement?.id
                             if (uuid != null) {
                                 val currentReps = mainParamCardItem?.mainParamValue?.toInt()
-                                navigator.navigate(
+                                backStack.add(
                                     StsManualReportDestination(uuid = uuid, initialValue = currentReps),
                                 )
                             }
@@ -340,10 +340,10 @@ internal fun SummaryMainFlow(
             )
             stsManualReportScreen(
                 onSubmitted = { _ ->
-                    navigator.popBackStack()
+                    backStack.pop()
                     summaryViewModel.updateMotionMeasurement()
                 },
-                onClose = { navigator.popBackStack() },
+                onClose = { backStack.pop() },
                 onExitOnFailure = { backAction() },
                 // Summary-path (pen) manual entry emits NO enter_results_manually analytics,
                 // matching uikit (which leaves this path un-instrumented — its SCREEN_ORIGIN_SUMMARY
@@ -357,20 +357,20 @@ internal fun SummaryMainFlow(
                 getNote = { note },
                 onEditAssistiveDeviceClicked = { newNote: String? ->
                     note = newNote
-                    navigator.navigate(EditAssistiveDeviceDestination)
+                    backStack.add(EditAssistiveDeviceDestination)
                 },
                 onEditLevelOfAssistanceClicked = { newNote: String? ->
                     note = newNote
-                    navigator.navigate(EditLevelOfAssistanceDestination)
+                    backStack.add(EditLevelOfAssistanceDestination)
                 },
                 onEditFootwearClicked = { newNote: String? ->
                     note = newNote
-                    navigator.navigate(EditFootwearDestination)
+                    backStack.add(EditFootwearDestination)
                 },
                 onGoToQuestionsClicked = { newNote: String?, question ->
                     note = newNote
                     currentQuestion = question
-                    navigator.navigate(CustomQuestionDestination)
+                    backStack.add(CustomQuestionDestination)
                 },
                 action = { kmpUserInputMetaData ->
                     // Clicked: measurement_submit_tags (post-measurement path). Emits the typed
@@ -400,36 +400,36 @@ internal fun SummaryMainFlow(
                 screenData = {
                     SummaryDataFactory.selectAssistiveDevice {
                         assistiveDevice = it
-                        navigator.popBackStack()
+                        backStack.pop()
                     }
                 },
-                onBackPress = { navigator.popBackStack() },
+                onBackPress = { backStack.pop() },
             )
             editLevelOfAssistanceScreen(
                 screenData = {
                     SummaryDataFactory.selectLevelOfAssistance {
                         levelOfAssistance = it
-                        navigator.popBackStack()
+                        backStack.pop()
                     }
                 },
-                onBackPress = { navigator.popBackStack() },
+                onBackPress = { backStack.pop() },
             )
             editFootwearDestination(
                 screenData = {
                     SummaryDataFactory.selectFootwear {
                         footwear = it
-                        navigator.popBackStack()
+                        backStack.pop()
                     }
                 },
-                onBackPress = { navigator.popBackStack() },
+                onBackPress = { backStack.pop() },
             )
             customQuestionDestination(
                 questionProvider = { currentQuestion },
                 onItemSelected = { itemSelected ->
                     postTaggingQuestions?.addSelectedAnswers(itemSelected)
-                    navigator.popBackStack()
+                    backStack.pop()
                 },
-                onBackPress = { navigator.popBackStack() },
+                onBackPress = { backStack.pop() },
             )
             customTagsScreen(
                 topBarPadding = ToolBarHeight,
@@ -442,7 +442,7 @@ internal fun SummaryMainFlow(
                 },
                 onToolbarBackRequest = tagBackRequests,
                 onBack = {
-                    navigator.popBackStack()
+                    backStack.pop()
                 },
                 onDone = { _ ->
                     // Clicked: measurement_submit_tags (post-measurement questions-flow path).
@@ -479,11 +479,11 @@ internal fun SummaryMainFlow(
                     configuration?.postTaggingData == null -> backAction()
                     configuration.postTaggingData is OSTPostTaggingData.None -> backAction()
                     configuration.postTaggingData is OSTPostTaggingData.OSTPostTaggingQuestionsFlow -> {
-                        navigator.navigate(CustomTagsDestination)
+                        backStack.add(CustomTagsDestination)
                     }
 
                     configuration.postTaggingData is OSTPostTaggingData.OSTPostTaggingScreen -> {
-                        navigator.navigate(TaggingScreenDestination)
+                        backStack.add(TaggingScreenDestination)
                     }
                 }
             }
@@ -519,26 +519,28 @@ internal fun SummaryMainFlow(
                             uuid = motionMeasurementId,
                             value = value,
                         )
-                        navigator.popBackStack()
+                        backStack.pop()
                     }
                 },
                 onContinueWithoutLength = {
                     summaryViewModel.hideHallwayEditDialog()
-                    navigator.popBackStack()
+                    backStack.pop()
                 },
             )
-        }
-        if (currentRoute != SummaryScreenDestination::class.qualifiedName) {
+            },
+        )
+        if (currentKey != SummaryScreenDestination) {
             Toolbar(
                 toolbarData =
-                    navigator.generateToolBar(
-                        currentRoute,
+                    generateToolBar(
+                        currentKey,
+                        onPop = { backStack.pop() },
                         onTagBackPress = {
                             coroutineScope.launch {
                                 tagBackRequests.emit(Unit)
                             }
                         },
-                        backAction,
+                        backAction = backAction,
                     ),
             )
         }
@@ -610,20 +612,21 @@ private fun updateMetaData(
 }
 
 @Composable
-private fun NavHostController.generateToolBar(
-    currentRoute: String?,
+private fun generateToolBar(
+    currentKey: NavKey?,
+    onPop: () -> Unit,
     onTagBackPress: () -> Unit,
     backAction: () -> Unit,
 ) = ToolBarData(
     startIcon =
         IconData(Res.drawable.ic_back_arrow) {
-            when (currentRoute) {
-                EditAssistiveDeviceDestination::class.qualifiedName -> popBackStack()
-                EditLevelOfAssistanceDestination::class.qualifiedName -> popBackStack()
-                TaggingScreenDestination::class.qualifiedName -> popBackStack()
-                EditFootwearDestination::class.qualifiedName -> popBackStack()
-                CustomTagsDestination::class.qualifiedName -> onTagBackPress()
-                HallwayDistanceDestination::class.qualifiedName -> popBackStack()
+            when (currentKey) {
+                EditAssistiveDeviceDestination -> onPop()
+                EditLevelOfAssistanceDestination -> onPop()
+                TaggingScreenDestination -> onPop()
+                EditFootwearDestination -> onPop()
+                CustomTagsDestination -> onTagBackPress()
+                HallwayDistanceDestination -> onPop()
 
                 else -> backAction()
             }

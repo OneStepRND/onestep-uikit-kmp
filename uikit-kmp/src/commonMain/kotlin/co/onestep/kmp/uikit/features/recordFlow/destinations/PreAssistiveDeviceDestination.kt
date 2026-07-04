@@ -1,8 +1,8 @@
 package co.onestep.kmp.uikit.features.recordFlow.destinations
 
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.models.OSTAssistiveDevice
@@ -19,10 +19,10 @@ data object PreAssistiveDeviceDestination : UIktDestination
  * Gated by [OSTRecordingConfiguration.showPreRecordingAssistiveDeviceSelection]. Mirrors the
  * Android uikit `preAssistiveDeviceScreen`.
  */
-fun NavGraphBuilder.preAssistiveDeviceScreen(
+fun EntryProviderScope<NavKey>.preAssistiveDeviceScreen(
     onDeviceSelected: (OSTAssistiveDevice) -> Unit,
 ) {
-    composable<PreAssistiveDeviceDestination> {
+    entry<PreAssistiveDeviceDestination> {
         // Analytics (screen-view + assistive-device-selected) are fired by the NavGraph:
         // the screen-view via the route-keyed screen-view effect, the selection via the
         // onDeviceSelected callback. Kept here to avoid threading a tracker into leaf screens.

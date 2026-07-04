@@ -1,6 +1,5 @@
 package co.onestep.kmp.uikit.features.recordFlow.screens
 
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -32,11 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
-import androidx.navigation.NavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
 import co.onestep.kmp.uikit.bridge.Permission
 import co.onestep.kmp.uikit.bridge.PermissionStatus
 import co.onestep.kmp.uikit.di.UIKitServiceLocator
@@ -85,6 +82,10 @@ import co.onestep.kmp.uikit.features.recordFlow.screensData.IconData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.PrimaryButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.ToolBarData
+import co.onestep.kmp.uikit.navigation.UIktNavDisplay
+import co.onestep.kmp.uikit.navigation.UIktNavSavedStateConfiguration
+import co.onestep.kmp.uikit.navigation.pop
+import co.onestep.kmp.uikit.navigation.popUpToInclusive
 import co.onestep.kmp.uikit.ui.components.BottomSheet
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.MotionRecorderViewModel
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.RecordingScreenContent
@@ -143,7 +144,6 @@ internal fun RecordFlowNavGraph(
     onAskMicrophonePermission: () -> Unit = {},
     onGoToSettings: () -> Unit = {},
 ) {
-    val navController = rememberNavController()
     val resourceProvider = UIKitServiceLocator.resourceProvider
     val featureFlags = UIKitServiceLocator.featureFlagsBridge
     val permissionsManager = UIKitServiceLocator.permissionsManager
@@ -153,129 +153,6 @@ internal fun RecordFlowNavGraph(
     // tracking is a no-op). Analytics is side-effect-only and never changes flow behavior.
     val recordFlowTracker = UIKitServiceLocator.recordFlowAnalyticsTracker
     val activity = config.activityType
-
-    val viewModel = remember {
-        MotionRecorderViewModel(
-            recorderBridge = UIKitServiceLocator.recorderBridge,
-            audioPlayer = PlatformAudioPlayerAdapter(UIKitServiceLocator.audioPlayer),
-            ttsPlayer = PlatformTTSPlayerAdapter(UIKitServiceLocator.ttsPlayer),
-            preferenceManager = UIKitServiceLocator.preferencesBridge,
-            resourceProvider = resourceProvider,
-        ).apply {
-            setConfiguration(config)
-            // Inject the tracker so the VM can fire the recording-phase measurement events
-            // (countdown / analyzing / stop / start-now), matching uikit's VM-side tracking.
-            analyticsTracker = recordFlowTracker
-        }
-    }
-
-    var resultMeasurement by remember { mutableStateOf<OSTMotionMeasurement?>(null) }
-    var resultError by remember { mutableStateOf<RecordFlowError?>(null) }
-    // The on-screen error identity (canonical code + localized title) while an error screen is
-    // shown, so the toolbar exit_button can report error_code + error_title_string — mirroring
-    // uikit's LocalRecordErrorSink / viewModel.currentError. Set when navigating to
-    // [ErrorResultDestination]; cleared when the error screen leaves the composition.
-    var currentErrorCode by remember { mutableStateOf<String?>(null) }
-    var currentErrorTitle by remember { mutableStateOf<String?>(null) }
-    var showInstructionsSheet by remember { mutableStateOf(false) }
-    var showExitConfirmationDialog by remember { mutableStateOf(false) }
-    var showRecordingExitDialog by remember { mutableStateOf(false) }
-
-    // Toolbar state
-    val showToolbar = viewModel.showToolbar
-    val toolbarData = viewModel.toolbarData
-    val tagBackRequests = remember { MutableSharedFlow<Unit>() }
-    val currentScreenIndex = remember { mutableIntStateOf(0) }
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-
-    // Wire app foreground state to viewModel so analyse() can proceed
-    // Mirrors original Fragment onStart/onStop lifecycle wiring
-    LifecycleStartEffect(Unit) {
-        viewModel.setForegroundState(true)
-        onStopOrDispose {
-            viewModel.setForegroundState(false)
-        }
-    }
-
-    // Set up toolbar data (back + close icons)
-    LaunchedEffect(Unit) {
-        viewModel.setToolBarData(
-            ToolBarData(
-                startIcon =
-                    IconData(Res.drawable.ic_chevron_left) {
-                        val route = navController.currentBackStackEntry?.destination?.route
-                        // Clicked: back_button — toolbar back within the measurement flow.
-                        // screen_name is derived per-destination from the current route
-                        // (simple class name, lowercased), matching uikit MainFlowScreen.
-                        recordFlowTracker?.trackBackClicked(
-                            screenName = route
-                                ?.substringAfterLast('.')
-                                ?.lowercase()
-                                ?: "",
-                            activity = activity,
-                        )
-                        if (route == CustomTagsDestination::class.qualifiedName) {
-                            scope.launch { tagBackRequests.emit(Unit) }
-                        } else {
-                            viewModel.clearJobs()
-                            if (!navController.popBackStack()) {
-                                onDismiss()
-                            }
-                        }
-                    },
-                endIcons =
-                    listOf(
-                        IconData(Res.drawable.ic_close) {
-                            val route = navController.currentBackStackEntry?.destination?.route
-                            // Clicked: exit_button — toolbar close within the measurement flow.
-                            // screen_name is the destination's simple class name with the trailing
-                            // "Destination" stripped (e.g. "ErrorStsShort"), matching uikit.
-                            // error_code/error_title_string are populated only when exiting from an
-                            // error screen (currentErrorCode/Title are null otherwise).
-                            recordFlowTracker?.trackExitClicked(
-                                screenName = route
-                                    ?.substringAfterLast('.')
-                                    ?.removeSuffix("Destination")
-                                    ?: "",
-                                activity = activity,
-                                errorCode = currentErrorCode,
-                                errorTitle = currentErrorTitle,
-                            )
-                            viewModel.clearJobs()
-                            onDismiss()
-                        },
-                    ),
-            ),
-        )
-        viewModel.showToolbar(true)
-        viewModel.showBackButton(true)
-    }
-
-    // Adjust toolbar per destination
-    LaunchedEffect(currentBackStackEntry) {
-        adjustToolBar(currentBackStackEntry?.destination?.route, viewModel, config)
-    }
-
-    // Screen-view analytics: fire the per-destination `screen:` events as each pre-recording
-    // / start destination becomes current, mirroring uikit's per-screen LaunchedEffect
-    // screen-views. Static Balance's condition-setup screen-view is fired via that screen's
-    // own onScreenView callback below (it needs the 1-based condition number + session uuid).
-    LaunchedEffect(currentBackStackEntry) {
-        when (currentBackStackEntry?.destination?.route) {
-            SelectWalkDurationDestination::class.qualifiedName ->
-                recordFlowTracker?.trackWalkSelectDurationScreen(activity)
-            PreAssistiveDeviceDestination::class.qualifiedName ->
-                recordFlowTracker?.trackPreRecordingAssistiveDeviceScreen(activity)
-            PreFootwearDestination::class.qualifiedName ->
-                recordFlowTracker?.trackPreRecordingFootwearScreen(activity)
-            CustomTagsDestination::class.qualifiedName ->
-                recordFlowTracker?.trackPreTagScreen(activity, RecordFlowAnalyticsEvents.TagSource.PRE_TAG)
-            SoundInstructionsDestination::class.qualifiedName ->
-                recordFlowTracker?.trackIncreaseVolumeScreen(activity)
-            StartRecordDestination::class.qualifiedName ->
-                recordFlowTracker?.trackMeasurementStartScreen(activity)
-        }
-    }
 
     // Build the ordered pre-recording destination sequence based on config
     val preRecordDestinations = remember(config) {
@@ -344,31 +221,156 @@ internal fun RecordFlowNavGraph(
         preRecordDestinations.zipWithNext().toMap()
     }
 
+    val startDestination: NavKey = preRecordDestinations.firstOrNull() ?: StartRecordDestination
+
+    // Navigation 3 back stack owned by this flow. The uikit serializers module makes it
+    // saveable across config changes and process death on every platform (iOS has no
+    // reflection-based fallback).
+    val backStack = rememberNavBackStack(UIktNavSavedStateConfiguration, startDestination)
+    val currentKey: NavKey? = backStack.lastOrNull()
+
     // Helper to navigate to the next destination in the pre-recording sequence
     fun navigateToNext(current: UIktDestination) {
         val next = navigationMap[current] ?: return
-        navController.navigateToDestination(next)
+        backStack.add(next)
     }
 
-    val startDestination: Any = preRecordDestinations.firstOrNull() ?: StartRecordDestination
+    val viewModel = remember {
+        MotionRecorderViewModel(
+            recorderBridge = UIKitServiceLocator.recorderBridge,
+            audioPlayer = PlatformAudioPlayerAdapter(UIKitServiceLocator.audioPlayer),
+            ttsPlayer = PlatformTTSPlayerAdapter(UIKitServiceLocator.ttsPlayer),
+            preferenceManager = UIKitServiceLocator.preferencesBridge,
+            resourceProvider = resourceProvider,
+        ).apply {
+            setConfiguration(config)
+            // Inject the tracker so the VM can fire the recording-phase measurement events
+            // (countdown / analyzing / stop / start-now), matching uikit's VM-side tracking.
+            analyticsTracker = recordFlowTracker
+        }
+    }
+
+    var resultMeasurement by remember { mutableStateOf<OSTMotionMeasurement?>(null) }
+    var resultError by remember { mutableStateOf<RecordFlowError?>(null) }
+    // The on-screen error identity (canonical code + localized title) while an error screen is
+    // shown, so the toolbar exit_button can report error_code + error_title_string — mirroring
+    // uikit's LocalRecordErrorSink / viewModel.currentError. Set when navigating to
+    // [ErrorResultDestination]; cleared when the error screen leaves the composition.
+    var currentErrorCode by remember { mutableStateOf<String?>(null) }
+    var currentErrorTitle by remember { mutableStateOf<String?>(null) }
+    var showInstructionsSheet by remember { mutableStateOf(false) }
+    var showExitConfirmationDialog by remember { mutableStateOf(false) }
+    var showRecordingExitDialog by remember { mutableStateOf(false) }
+
+    // Toolbar state
+    val showToolbar = viewModel.showToolbar
+    val toolbarData = viewModel.toolbarData
+    val tagBackRequests = remember { MutableSharedFlow<Unit>() }
+    val currentScreenIndex = remember { mutableIntStateOf(0) }
+
+    // Wire app foreground state to viewModel so analyse() can proceed
+    // Mirrors original Fragment onStart/onStop lifecycle wiring
+    LifecycleStartEffect(Unit) {
+        viewModel.setForegroundState(true)
+        onStopOrDispose {
+            viewModel.setForegroundState(false)
+        }
+    }
+
+    // Set up toolbar data (back + close icons)
+    LaunchedEffect(Unit) {
+        viewModel.setToolBarData(
+            ToolBarData(
+                startIcon =
+                    IconData(Res.drawable.ic_chevron_left) {
+                        val current = backStack.lastOrNull()
+                        // Clicked: back_button — toolbar back within the measurement flow.
+                        // screen_name is derived per-destination from the current key
+                        // (simple class name, lowercased), matching uikit MainFlowScreen.
+                        recordFlowTracker?.trackBackClicked(
+                            screenName = current?.let { it::class.simpleName?.lowercase() }
+                                ?: "",
+                            activity = activity,
+                        )
+                        if (current == CustomTagsDestination) {
+                            scope.launch { tagBackRequests.emit(Unit) }
+                        } else {
+                            viewModel.clearJobs()
+                            if (!backStack.pop()) {
+                                onDismiss()
+                            }
+                        }
+                    },
+                endIcons =
+                    listOf(
+                        IconData(Res.drawable.ic_close) {
+                            val current = backStack.lastOrNull()
+                            // Clicked: exit_button — toolbar close within the measurement flow.
+                            // screen_name is the destination's simple class name with the trailing
+                            // "Destination" stripped (e.g. "ErrorStsShort"), matching uikit.
+                            // error_code/error_title_string are populated only when exiting from an
+                            // error screen (currentErrorCode/Title are null otherwise).
+                            recordFlowTracker?.trackExitClicked(
+                                screenName = current?.let {
+                                    it::class.simpleName?.removeSuffix("Destination")
+                                } ?: "",
+                                activity = activity,
+                                errorCode = currentErrorCode,
+                                errorTitle = currentErrorTitle,
+                            )
+                            viewModel.clearJobs()
+                            onDismiss()
+                        },
+                    ),
+            ),
+        )
+        viewModel.showToolbar(true)
+        viewModel.showBackButton(true)
+    }
+
+    // Adjust toolbar per destination
+    LaunchedEffect(currentKey) {
+        adjustToolBar(currentKey, viewModel, config)
+    }
+
+    // Screen-view analytics: fire the per-destination `screen:` events as each pre-recording
+    // / start destination becomes current, mirroring uikit's per-screen LaunchedEffect
+    // screen-views. Static Balance's condition-setup screen-view is fired via that screen's
+    // own onScreenView callback below (it needs the 1-based condition number + session uuid).
+    LaunchedEffect(currentKey) {
+        when (currentKey) {
+            SelectWalkDurationDestination ->
+                recordFlowTracker?.trackWalkSelectDurationScreen(activity)
+            PreAssistiveDeviceDestination ->
+                recordFlowTracker?.trackPreRecordingAssistiveDeviceScreen(activity)
+            PreFootwearDestination ->
+                recordFlowTracker?.trackPreRecordingFootwearScreen(activity)
+            CustomTagsDestination ->
+                recordFlowTracker?.trackPreTagScreen(activity, RecordFlowAnalyticsEvents.TagSource.PRE_TAG)
+            SoundInstructionsDestination ->
+                recordFlowTracker?.trackIncreaseVolumeScreen(activity)
+            StartRecordDestination ->
+                recordFlowTracker?.trackMeasurementStartScreen(activity)
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(Color.White)) {
         // The toolbar overlays a fixed top inset instead of sitting in a Column above the
-        // NavHost (mirrors the original uikit MainFlowScreen). The NavHost is always
+        // NavDisplay (mirrors the original uikit MainFlowScreen). The NavDisplay is always
         // fillMaxSize() with a constant per-route top inset, so hiding the toolbar — e.g. on the
         // Get Ready / recording screen — no longer collapses a Column slot and stretches the
-        // content; the toolbar just fades away over the reserved space. Because the NavHost is
+        // content; the toolbar just fades away over the reserved space. Because the NavDisplay is
         // inset below the toolbar (not overlapping it) there is no iOS touch conflict.
         //
         // Screens that intentionally render with no top chrome (Recording saved, Summary)
         // reclaim the inset so they keep their full-height layout.
-        val collapseToolbarGap = when (currentBackStackEntry?.destination?.route) {
-            RecordingSavedDestination::class.qualifiedName,
-            SummaryResultDestination::class.qualifiedName -> true
+        val collapseToolbarGap = when (currentKey) {
+            RecordingSavedDestination,
+            SummaryResultDestination -> true
             else -> false
         }
 
-        NavHost(
+        UIktNavDisplay(
             modifier = Modifier
                 .fillMaxSize()
                 // Reserve the toolbar's full height (status bar + ToolBarHeight) so the
@@ -383,13 +385,9 @@ internal fun RecordFlowNavGraph(
                             .padding(top = ToolBarHeight.dp)
                     },
                 ),
-            navController = navController,
-            startDestination = startDestination,
-            enterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start) },
-            exitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start) },
-            popEnterTransition = { slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End) },
-            popExitTransition = { slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End) },
-        ) {
+            backStack = backStack,
+            onBack = { backStack.pop() },
+            entryProvider = entryProvider {
         // --- Pre-recording screens ---
 
         // Hallway distance (for 6min/2min walks)
@@ -475,7 +473,7 @@ internal fun RecordFlowNavGraph(
             onRemoveTags = { viewModel.removeTags(it) },
             onToolbarBackRequest = tagBackRequests,
             currentIndex = currentScreenIndex,
-            onBack = { navController.popBackStack() },
+            onBack = { backStack.pop() },
             onDone = {
                 navigateToNext(CustomTagsDestination)
             },
@@ -490,10 +488,10 @@ internal fun RecordFlowNavGraph(
             resourceProvider = resourceProvider,
             onAskMicrophonePermission = {
                 onAskMicrophonePermission()
-                nextAfterSoundPermission?.let { navController.navigateToDestination(it) }
+                nextAfterSoundPermission?.let { backStack.add(it) }
             },
             onSkip = {
-                nextAfterSoundPermission?.let { navController.navigateToDestination(it) }
+                nextAfterSoundPermission?.let { backStack.add(it) }
             },
             onGoToSettings = onGoToSettings,
         )
@@ -511,9 +509,8 @@ internal fun RecordFlowNavGraph(
             primaryAction = {
                 // Clicked: start_measurement — user tapped Start on the StartRecord screen.
                 recordFlowTracker?.trackStartMeasurementClicked(activity)
-                navController.navigate(RecordingDestination) {
-                    popUpTo(StartRecordDestination) { inclusive = true }
-                }
+                backStack.popUpToInclusive(StartRecordDestination)
+                backStack.add(RecordingDestination)
             },
             secondaryAction = {
                 // screen: measurement_instructions — opened from the StartRecord ("GO") screen.
@@ -579,10 +576,10 @@ internal fun RecordFlowNavGraph(
                 )
                 viewModel.updateBalanceConditionNote(note)
                 viewModel.prepareForNextBalanceCondition()
-                navController.navigate(ConditionSetupDestination) {
-                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                    launchSingleTop = true
-                }
+                // Nav2 popped to the start destination (inclusive) and re-launched Condition
+                // Setup as a fresh single-top entry; in Nav3 that is simply "reset the stack".
+                backStack.clear()
+                backStack.add(ConditionSetupDestination)
             },
             onGoToSummary = { note ->
                 // static_balance_note_added — only the session uuid (never the note text).
@@ -608,7 +605,7 @@ internal fun RecordFlowNavGraph(
         // --- Recording and post-recording screens ---
 
         // Recording screen
-        composable<RecordingDestination> {
+        entry<RecordingDestination> {
             RecordingScreenContent(
                 modifier = Modifier.fillMaxSize(),
                 viewModel = viewModel,
@@ -625,27 +622,23 @@ internal fun RecordFlowNavGraph(
                                 // saved" screen instead of finishing the flow. Static Balance
                                 // uses a web-only summary, so no native summary screen is shown.
                                 viewModel.onBalanceConditionSaved(outcome.measurement)
-                                navController.navigate(RecordingSavedDestination) {
-                                    popUpTo(RecordingDestination) { inclusive = true }
-                                }
+                                backStack.popUpToInclusive(RecordingDestination)
+                                backStack.add(RecordingSavedDestination)
                             } else {
-                                navController.navigate(SummaryResultDestination) {
-                                    popUpTo(RecordingDestination) { inclusive = true }
-                                }
+                                backStack.popUpToInclusive(RecordingDestination)
+                                backStack.add(SummaryResultDestination)
                             }
                         }
 
                         is RecordFlowOutcome.EmptyAnalysisWithSteps -> {
-                            navController.navigate(EmptyAnalysisDestination) {
-                                popUpTo(RecordingDestination) { inclusive = true }
-                            }
+                            backStack.popUpToInclusive(RecordingDestination)
+                            backStack.add(EmptyAnalysisDestination)
                         }
 
                         is RecordFlowOutcome.Error -> {
                             resultError = outcome.error
-                            navController.navigate(ErrorResultDestination) {
-                                popUpTo(RecordingDestination) { inclusive = true }
-                            }
+                            backStack.popUpToInclusive(RecordingDestination)
+                            backStack.add(ErrorResultDestination)
                         }
                     }
                 },
@@ -660,15 +653,14 @@ internal fun RecordFlowNavGraph(
                         activityType = activityType,
                         networkStatus = true,
                     )
-                    navController.navigate(ErrorResultDestination) {
-                        popUpTo(RecordingDestination) { inclusive = true }
-                    }
+                    backStack.popUpToInclusive(RecordingDestination)
+                    backStack.add(ErrorResultDestination)
                 },
             )
         }
 
         // Summary result
-        composable<SummaryResultDestination> {
+        entry<SummaryResultDestination> {
             val measurement = resultMeasurement
             if (measurement != null) {
                 OSTMeasurementSummary(
@@ -692,7 +684,7 @@ internal fun RecordFlowNavGraph(
         // Empty analysis result — the "steps measured" no-score screen reached from the
         // walk / dual-task empty-analysis path. Ports uikit's emptyAnalysisWithStepsScreen:
         // Continue -> onDone; no retry (uikit's screen has none).
-        composable<EmptyAnalysisDestination> {
+        entry<EmptyAnalysisDestination> {
             val steps = resultMeasurement?.metadata?.steps
             LaunchedEffect(Unit) {
                 // This manual-entry screen is reached from the no-score / error path.
@@ -733,7 +725,7 @@ internal fun RecordFlowNavGraph(
         }
 
         // Error result — the specific screen is selected by [resultError] (set by ResultHandler).
-        composable<ErrorResultDestination> {
+        entry<ErrorResultDestination> {
             val error = resultError ?: RecordFlowError.General
             val errorMeasurement = viewModel.motionMeasurement.value
             // STS "Enter results manually" secondary action for the STS Short/Static/Position
@@ -752,7 +744,7 @@ internal fun RecordFlowNavGraph(
                             activity = activity,
                             screenOrigin = RecordFlowAnalyticsTracker.SCREEN_ORIGIN_ERROR,
                         )
-                        navController.navigate(
+                        backStack.add(
                             StsManualReportDestination(
                                 uuid = errorMeasurement.id,
                                 initialValue = null,
@@ -844,9 +836,8 @@ internal fun RecordFlowNavGraph(
                             )
                     }
                     viewModel.clearJobs()
-                    navController.navigate(StartRecordDestination) {
-                        popUpTo(ErrorResultDestination) { inclusive = true }
-                    }
+                    backStack.popUpToInclusive(ErrorResultDestination)
+                    backStack.add(StartRecordDestination)
                 },
                 // Secondary CTA: "View instructions" opens the instructions sheet on analysis
                 // errors; for the Static Balance short error it is "Finish" — resume to the
@@ -896,9 +887,8 @@ internal fun RecordFlowNavGraph(
                     val refreshed = UIKitServiceLocator.recorderBridge.readSingleMotionMeasurement(uuid)
                     if (refreshed != null) {
                         resultMeasurement = refreshed
-                        navController.navigate(SummaryResultDestination) {
-                            popUpTo(ErrorResultDestination) { inclusive = true }
-                        }
+                        backStack.popUpToInclusive(ErrorResultDestination)
+                        backStack.add(SummaryResultDestination)
                     } else {
                         // Override saved but local re-read failed — don't strand the user; exit
                         // the flow (the saved value syncs on next fetch).
@@ -906,7 +896,7 @@ internal fun RecordFlowNavGraph(
                     }
                 }
             },
-            onClose = { navController.popBackStack() },
+            onClose = { backStack.pop() },
             // Failure on the connectivity-error screen exits the recording flow rather than
             // dropping the user back on the STS error screen they came from.
             onExitOnFailure = onDismiss,
@@ -925,10 +915,11 @@ internal fun RecordFlowNavGraph(
                 )
             },
         )
-        } // end NavHost
+            }, // end entryProvider
+        ) // end UIktNavDisplay
 
         // Toolbar overlays the reserved top inset (see note above). Drawn on top of the
-        // NavHost's inset region — not overlapping the content — so toggling its visibility
+        // NavDisplay's inset region — not overlapping the content — so toggling its visibility
         // never resizes the screen.
         AnimatedVisibility(
             modifier = Modifier.align(Alignment.TopCenter),
@@ -1009,9 +1000,8 @@ internal fun RecordFlowNavGraph(
                     TextButton(onClick = {
                         showRecordingExitDialog = false
                         viewModel.clearJobs()
-                        navController.navigate(StartRecordDestination) {
-                            popUpTo(RecordingDestination) { inclusive = true }
-                        }
+                        backStack.popUpToInclusive(RecordingDestination)
+                        backStack.add(StartRecordDestination)
                     }) {
                         Text(stringResource(Res.string.yes))
                     }
@@ -1035,54 +1025,33 @@ internal fun RecordFlowNavGraph(
     }
 }
 
-/**
- * Type-safe navigation helper that dispatches to the correct concrete destination type.
- * Required because Navigation Compose uses serialization based on compile-time types.
- */
-private fun NavController.navigateToDestination(destination: UIktDestination) {
-    when (destination) {
-        is ConditionSetupDestination -> navigate(ConditionSetupDestination)
-        is HallwayDistanceDestination -> navigate(HallwayDistanceDestination)
-        is SelectWalkDurationDestination -> navigate(SelectWalkDurationDestination)
-        is ChoosePlacementDestination -> navigate(ChoosePlacementDestination)
-        is PreAssistiveDeviceDestination -> navigate(PreAssistiveDeviceDestination)
-        is PreFootwearDestination -> navigate(PreFootwearDestination)
-        is CustomTagsDestination -> navigate(CustomTagsDestination)
-        is SoundPermissionDestination -> navigate(SoundPermissionDestination)
-        is SoundPermissionDeniedAlwaysDestination -> navigate(SoundPermissionDeniedAlwaysDestination)
-        is SoundInstructionsDestination -> navigate(SoundInstructionsDestination)
-        is StartRecordDestination -> navigate(StartRecordDestination)
-        is RecordingDestination -> navigate(RecordingDestination)
-    }
-}
-
 /** Spec-canonical hallway unit token for analytics: "ft" (imperial) or "m" (metric). */
 private fun hallwayUnit(isImperial: Boolean): String =
     if (isImperial) RecordFlowAnalyticsEvents.Units.FEET else RecordFlowAnalyticsEvents.Units.METERS
 
 private fun adjustToolBar(
-    route: String?,
+    key: NavKey?,
     viewModel: MotionRecorderViewModel,
     config: OSTRecordingConfiguration,
 ) {
-    if (route == null) return
-    when {
+    if (key == null) return
+    when (key) {
         // Get Ready (countdown) keeps a transparent toolbar (chevron + close) per design. The
         // toolbar is hidden later, once recording actually starts, via
         // RecordingScreenContent.onRecording -> showToolbar(false).
-        route == RecordingDestination::class.qualifiedName -> {
+        RecordingDestination -> {
             viewModel.showToolbar(true)
             viewModel.setToolBarTitle(null)
             viewModel.showBackButton(true)
         }
 
-        route == StartRecordDestination::class.qualifiedName -> {
+        StartRecordDestination -> {
             viewModel.showToolbar(true)
             viewModel.setToolBarTitle(config.activityType.displayNameRes)
             viewModel.showBackButton(true)
         }
 
-        route == ConditionSetupDestination::class.qualifiedName -> {
+        ConditionSetupDestination -> {
             viewModel.showToolbar(true)
             viewModel.setToolBarTitle(config.activityType.displayNameRes)
             viewModel.showBackButton(true)
@@ -1090,16 +1059,16 @@ private fun adjustToolBar(
 
         // No toolbar on the "Recording saved" screen — its own "Go to summary" /
         // "Record another test" buttons are the only actions.
-        route == RecordingSavedDestination::class.qualifiedName -> {
+        RecordingSavedDestination -> {
             viewModel.showToolbar(false)
         }
 
-        route == SummaryResultDestination::class.qualifiedName -> {
+        SummaryResultDestination -> {
             viewModel.showToolbar(false)
         }
 
-        route == ErrorResultDestination::class.qualifiedName ||
-            route == EmptyAnalysisDestination::class.qualifiedName -> {
+        ErrorResultDestination,
+        EmptyAnalysisDestination -> {
             viewModel.showToolbar(true)
             viewModel.setToolBarTitle(null)
             viewModel.showBackButton(false)
