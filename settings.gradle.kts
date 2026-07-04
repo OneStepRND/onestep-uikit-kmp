@@ -52,3 +52,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "onestep-uikit-kmp"
 include(":uikit-kmp")
+include(":androidTestApp")
