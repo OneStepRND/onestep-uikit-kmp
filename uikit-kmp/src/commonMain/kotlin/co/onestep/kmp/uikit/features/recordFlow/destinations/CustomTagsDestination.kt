@@ -7,8 +7,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingQuestionData
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.RecordingQuestionScreen
 import co.onestep.kmp.uikit.utils.UIktDestination
@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object CustomTagsDestination : UIktDestination
 
-fun NavGraphBuilder.customTagsScreen(
+fun EntryProviderScope<NavKey>.customTagsScreen(
     topBarPadding: Int = 0,
     preRecordingQuestions: List<OSTRecordingQuestionData>?,
     onAddTags: (List<String>) -> Unit,
@@ -28,7 +28,7 @@ fun NavGraphBuilder.customTagsScreen(
     onBack: () -> Unit,
     onDone: (Int) -> Unit,
 ) {
-    composable<CustomTagsDestination> {
+    entry<CustomTagsDestination> {
         LaunchedEffect(currentIndex) {
             preRecordingQuestions?.get(currentIndex?.value ?: 0)?.selectedAnswers?.let {
                 onRemoveTags(it)

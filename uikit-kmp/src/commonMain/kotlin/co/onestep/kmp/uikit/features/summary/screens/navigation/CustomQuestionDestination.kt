@@ -3,8 +3,8 @@ package co.onestep.kmp.uikit.features.summary.screens.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingQuestionData
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.features.summary.SummaryDataFactory
@@ -14,13 +14,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data object CustomQuestionDestination : UIktDestination
 
-internal fun NavGraphBuilder.customQuestionDestination(
+internal fun EntryProviderScope<NavKey>.customQuestionDestination(
     questionProvider: () -> OSTRecordingQuestionData?,
     onItemSelected: (List<String>) -> Unit,
     onBackPress: () -> Unit,
 ) {
-    composable<CustomQuestionDestination> {
-        val question = questionProvider() ?: return@composable
+    entry<CustomQuestionDestination> {
+        val question = questionProvider() ?: return@entry
         UiKitScreen(
             modifier = Modifier.padding(top = 40.dp),
             onBackPress = onBackPress,

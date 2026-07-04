@@ -3,8 +3,8 @@ package co.onestep.kmp.uikit.features.summary.screens.navigation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.screensData.ToolBarData
 import co.onestep.kmp.uikit.features.summary.models.MainParamItem
 import co.onestep.kmp.uikit.features.summary.models.SummaryListState
@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data object SummaryScreenDestination : UIktDestination
 
-internal fun NavGraphBuilder.summaryScreen(
+internal fun EntryProviderScope<NavKey>.summaryScreen(
     insightsScreenState: SummaryListState,
     gaitLabScreenState: SummaryListState,
     partialScreenState: SummaryListState? = null,
@@ -32,7 +32,7 @@ internal fun NavGraphBuilder.summaryScreen(
     onEditSts: (() -> Unit)? = null,
     onTabSelected: (Int) -> Unit = { },
 ) {
-    composable<SummaryScreenDestination> {
+    entry<SummaryScreenDestination> {
         Summary(
             modifier =
                 Modifier

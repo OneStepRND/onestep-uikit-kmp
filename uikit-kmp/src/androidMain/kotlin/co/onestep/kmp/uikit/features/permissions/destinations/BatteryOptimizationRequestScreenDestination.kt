@@ -4,8 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.permissions.PermissionDataFactory
 import co.onestep.kmp.uikit.features.permissions.PermissionRequestScreen
 import co.onestep.kmp.uikit.features.permissions.PermissionWizardViewModel
@@ -19,12 +19,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object BatteryOptimizationRequestScreenDestination : PermissionDestinations
 
-internal fun NavGraphBuilder.batteryOptimizationPermissionRequestScreen(
+internal fun EntryProviderScope<NavKey>.batteryOptimizationPermissionRequestScreen(
     onRequestPermissions: () -> Unit,
     onBackPress: () -> Unit,
     viewModel: PermissionWizardViewModel,
 ) {
-    composable<BatteryOptimizationRequestScreenDestination> { _ ->
+    entry<BatteryOptimizationRequestScreenDestination> {
         var showInfo by remember { mutableStateOf(false) }
 
         val screenData =

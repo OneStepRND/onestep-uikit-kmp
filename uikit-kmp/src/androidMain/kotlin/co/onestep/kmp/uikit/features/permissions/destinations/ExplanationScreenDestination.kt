@@ -1,7 +1,7 @@
 package co.onestep.kmp.uikit.features.permissions.destinations
 
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.permissions.PermissionWizardViewModel
 import co.onestep.kmp.uikit.features.permissions.PermissionsExplanationScreen
 import kotlinx.serialization.Serializable
@@ -9,11 +9,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object ExplanationScreenDestination : PermissionDestinations
 
-internal fun NavGraphBuilder.permissionExplanationDestination(
+internal fun EntryProviderScope<NavKey>.permissionExplanationDestination(
     viewModel: PermissionWizardViewModel,
     onAskLater: () -> Unit,
 ) {
-    composable<ExplanationScreenDestination> {
+    entry<ExplanationScreenDestination> {
         PermissionsExplanationScreen(
             onClose = {
                 viewModel.trackCloseButtonClick()

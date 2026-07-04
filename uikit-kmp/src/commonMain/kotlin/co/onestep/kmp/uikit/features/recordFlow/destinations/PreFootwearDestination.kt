@@ -1,8 +1,8 @@
 package co.onestep.kmp.uikit.features.recordFlow.destinations
 
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.features.tagging.models.Footwear
@@ -20,10 +20,10 @@ data object PreFootwearDestination : UIktDestination
  * `preFootwearScreen`: the selection is passed up together with its localized display name so the
  * caller can attach it as a tag (`NONE` adds no tag).
  */
-fun NavGraphBuilder.preFootwearScreen(
+fun EntryProviderScope<NavKey>.preFootwearScreen(
     onFootwearSelected: (Footwear, String) -> Unit,
 ) {
-    composable<PreFootwearDestination> {
+    entry<PreFootwearDestination> {
         // Resolve every option's localized display name once so the selection callback (which is
         // not itself composable) can hand the caller the tag string, matching uikit.
         val displayNames = Footwear.entries.associateWith { it.displayName() }

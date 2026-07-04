@@ -24,8 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.components.PrimaryButton
@@ -65,13 +65,13 @@ data object RecordingSavedDestination : UIktDestination
  * `updateBalanceConditionNote`. The clinician then either records another condition (same
  * session) or goes to the web summary (flow finishes; the host app opens the web summary).
  */
-fun NavGraphBuilder.recordingSavedScreen(
+fun EntryProviderScope<NavKey>.recordingSavedScreen(
     conditionLine: () -> String,
     durationSeconds: () -> Int,
     onRecordAnother: (note: String?) -> Unit,
     onGoToSummary: (note: String?) -> Unit,
 ) {
-    composable<RecordingSavedDestination> {
+    entry<RecordingSavedDestination> {
         RecordingSavedScreen(
             conditionLine = conditionLine(),
             durationSeconds = durationSeconds(),

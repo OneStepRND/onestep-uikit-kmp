@@ -1,3 +1,5 @@
 package co.onestep.kmp.uikit.utils
 
-interface UIktDestination
+import androidx.navigation3.runtime.NavKey
+
+interface UIktDestination : NavKey

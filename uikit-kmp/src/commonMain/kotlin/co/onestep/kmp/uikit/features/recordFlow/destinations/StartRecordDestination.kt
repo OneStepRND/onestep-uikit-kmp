@@ -2,8 +2,8 @@ package co.onestep.kmp.uikit.features.recordFlow.destinations
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.models.OSTActivityType
@@ -15,14 +15,14 @@ data object StartRecordDestination : UIktDestination
 
 // Preview skipped: requires NavController
 
-fun NavGraphBuilder.startRecordScreen(
+fun EntryProviderScope<NavKey>.startRecordScreen(
     activityType: OSTActivityType,
     playAudio: ((String) -> Unit)? = null,
     primaryAction: () -> Unit,
     secondaryAction: () -> Unit,
     onBackPress: (() -> Unit)? = null,
 ) {
-    composable<StartRecordDestination> {
+    entry<StartRecordDestination> {
         UiKitScreen(
             modifier = Modifier.fillMaxSize(),
             playAudio = playAudio,

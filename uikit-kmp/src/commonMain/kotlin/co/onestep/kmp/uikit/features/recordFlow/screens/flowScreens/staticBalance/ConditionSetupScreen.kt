@@ -3,8 +3,8 @@ package co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalan
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.components.SelectableOption
 import co.onestep.kmp.uikit.features.recordFlow.components.SelectableSection
 import co.onestep.kmp.uikit.features.recordFlow.components.SelectableSections
@@ -36,12 +36,12 @@ data object ConditionSetupDestination : UIktDestination
  * note is collected here — the single per-condition note is entered post-recording on the
  * "Recording saved" screen. A category with an empty option list is hidden.
  */
-fun NavGraphBuilder.conditionSetupScreen(
+fun EntryProviderScope<NavKey>.conditionSetupScreen(
     balance: OSTBalance,
     onScreenView: () -> Unit,
     onContinue: (OSTBalanceCondition) -> Unit,
 ) {
-    composable<ConditionSetupDestination> {
+    entry<ConditionSetupDestination> {
         ConditionSetupScreen(
             balance = balance,
             onScreenView = onScreenView,

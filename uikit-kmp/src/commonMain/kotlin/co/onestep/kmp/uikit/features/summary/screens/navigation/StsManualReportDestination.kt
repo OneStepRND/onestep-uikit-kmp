@@ -17,9 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
-import androidx.navigation.toRoute
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.kmp.uikit.common.components.WheelPickerScreen
 import co.onestep.kmp.uikit.di.UIKitServiceLocator
@@ -69,7 +68,7 @@ internal data class StsManualReportDestination(
  * @param onScreenView Fired once when the manual-report screen becomes visible (analytics).
  * @param onSaveClicked Fired with the entered value when the user taps Save (analytics).
  */
-internal fun NavGraphBuilder.stsManualReportScreen(
+internal fun EntryProviderScope<NavKey>.stsManualReportScreen(
     onSubmitted: (uuid: String) -> Unit,
     onClose: () -> Unit,
     onExitOnFailure: () -> Unit,
@@ -77,8 +76,7 @@ internal fun NavGraphBuilder.stsManualReportScreen(
     onScreenView: () -> Unit = {},
     onSaveClicked: (value: Int) -> Unit = {},
 ) {
-    composable<StsManualReportDestination> { backStackEntry ->
-        val route: StsManualReportDestination = backStackEntry.toRoute()
+    entry<StsManualReportDestination> { route ->
         val viewModel: StsManualReportViewModel = remember { StsManualReportViewModel() }
         val state by viewModel.state.collectAsState()
         val colors = LocalOSColors.current

@@ -1,8 +1,8 @@
 package co.onestep.kmp.uikit.features.recordFlow.destinations
 
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.utils.UIktDestination
@@ -13,11 +13,11 @@ data object SelectWalkDurationDestination : UIktDestination
 
 // Preview skipped: requires NavController
 
-fun NavGraphBuilder.selectWalkDurationScreen(
+fun EntryProviderScope<NavKey>.selectWalkDurationScreen(
     recordingLimit: String,
     onPrimaryAction: (Int) -> Unit,
 ) {
-    composable<SelectWalkDurationDestination> {
+    entry<SelectWalkDurationDestination> {
         UiKitScreen(
             modifier = Modifier,
             screenData = RecordFlowDataFactory.walkDurationSelectionScreenData(

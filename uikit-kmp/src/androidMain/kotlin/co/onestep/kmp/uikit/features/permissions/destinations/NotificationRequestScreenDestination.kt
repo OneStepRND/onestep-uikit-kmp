@@ -4,9 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
-import androidx.navigation.toRoute
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.permissions.OSTPermissionMode
 import co.onestep.kmp.uikit.features.permissions.PermissionDataFactory
 import co.onestep.kmp.uikit.features.permissions.PermissionRequestScreen
@@ -23,13 +22,12 @@ data class NotificationRequestScreenDestination(
     val permissionMode: OSTPermissionMode,
 ) : PermissionDestinations
 
-internal fun NavGraphBuilder.notificationPermissionRequestScreen(
+internal fun EntryProviderScope<NavKey>.notificationPermissionRequestScreen(
     onRequestPermissions: () -> Unit,
     onBackPress: () -> Unit,
     viewModel: PermissionWizardViewModel,
 ) {
-    composable<NotificationRequestScreenDestination> { backStackEntry ->
-        val args = backStackEntry.toRoute<NotificationRequestScreenDestination>()
+    entry<NotificationRequestScreenDestination> { args ->
         val mode = args.permissionMode
         var showInfo by remember { mutableStateOf(false) }
 

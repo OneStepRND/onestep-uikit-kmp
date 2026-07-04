@@ -4,8 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.permissions.PermissionDataFactory
 import co.onestep.kmp.uikit.features.permissions.PermissionRequestScreen
 import co.onestep.kmp.uikit.features.permissions.PermissionWizardViewModel
@@ -19,12 +19,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object ARRequestScreenDestination : PermissionDestinations
 
-internal fun NavGraphBuilder.arPermissionRequestScreen(
+internal fun EntryProviderScope<NavKey>.arPermissionRequestScreen(
     onRequestPermissions: () -> Unit,
     onBackPress: () -> Unit,
     viewModel: PermissionWizardViewModel,
 ) {
-    composable<ARRequestScreenDestination> {
+    entry<ARRequestScreenDestination> {
         var showInfo by remember { mutableStateOf(false) }
 
         val screenData =

@@ -3,8 +3,8 @@ package co.onestep.kmp.uikit.features.summary.screens.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.components.ToolBarHeight
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTPostTaggingData
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingQuestionData
@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data object TaggingScreenDestination : UIktDestination
 
-internal fun NavGraphBuilder.taggingScreen(
+internal fun EntryProviderScope<NavKey>.taggingScreen(
     getAssistiveDevice: () -> OSTAssistiveDevice?,
     getLevelOfAssistance: () -> OSTLevelOfAssistance?,
     getFootwear: () -> Footwear?,
@@ -31,7 +31,7 @@ internal fun NavGraphBuilder.taggingScreen(
     onGoToQuestionsClicked: (String?, OSTRecordingQuestionData) -> Unit,
     action: (OSTUserInputMetaData) -> Unit,
 ) {
-    composable<TaggingScreenDestination> {
+    entry<TaggingScreenDestination> {
         PostSummaryTagScreen(
             modifier = Modifier.padding(top = ToolBarHeight.dp),
             postTaggingData = postTaggingData,

@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.features.recordFlow.screensData.UiKitScreenData
 import co.onestep.kmp.uikit.utils.UIktDestination
@@ -14,11 +14,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data object EditLevelOfAssistanceDestination : UIktDestination
 
-internal fun NavGraphBuilder.editLevelOfAssistanceScreen(
+internal fun EntryProviderScope<NavKey>.editLevelOfAssistanceScreen(
     screenData: @Composable () -> UiKitScreenData,
     onBackPress: () -> Unit,
 ) {
-    composable<EditLevelOfAssistanceDestination> {
+    entry<EditLevelOfAssistanceDestination> {
         UiKitScreen(
             modifier = Modifier.padding(top = 40.dp),
             screenData = screenData(),

@@ -6,8 +6,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.components.ToolBarHeight
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.features.recordFlow.screensData.PrimaryButtonData
@@ -27,8 +27,8 @@ data object NoSummaryNoticeDestination : UIktDestination
 
 // Preview skipped: requires NavController
 
-fun NavGraphBuilder.noSummaryNoticeScreen(onPrimaryAction: () -> Unit) {
-    composable<NoSummaryNoticeDestination> {
+fun EntryProviderScope<NavKey>.noSummaryNoticeScreen(onPrimaryAction: () -> Unit) {
+    entry<NoSummaryNoticeDestination> {
         NoSummaryNoticeContent(onPrimaryAction = onPrimaryAction)
     }
 }
