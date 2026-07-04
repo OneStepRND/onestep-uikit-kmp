@@ -5,6 +5,7 @@ import co.onestep.android.core.OSTResult
 import co.onestep.android.core.OneStep
 import co.onestep.android.core.getOr
 import co.onestep.android.core.getOrThrow
+import co.onestep.android.core.motionLab.OSTMotionLab as CoreMotionLab
 import co.onestep.android.core.motionLab.OSTMotionMeasurement as CoreMeasurement
 import co.onestep.android.core.motionLab.OSTOrder as CoreOrder
 import co.onestep.android.core.motionLab.getMotionLab
@@ -61,7 +62,12 @@ class AndroidRecorderBridge(private val oneStep: OneStep) : RecorderBridge {
     ) {
         motionLab.setSensorEnhancedMode(sensorEnhancedMode)
         val core = userInputMetadata?.toCore()
-        motionLab.start(activityType = activityType.toCore()) {
+        // null duration = unrestricted walk; the recorder auto-stops when the
+        // duration elapses, which is what moves the recording screen forward.
+        motionLab.start(
+            activityType = activityType.toCore(),
+            durationMillis = duration ?: CoreMotionLab.RECORDER_LIMIT_MILLIS,
+        ) {
             core?.let { from(it) }
             customMetadata?.takeIf { it.isNotEmpty() }?.let { customMetadata(it) }
         }
