@@ -1,3 +1,4 @@
+import io.github.frankois944.spmForKmp.swiftPackageConfig
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
@@ -9,6 +10,8 @@ plugins {
     alias(libs.plugins.maven.publish)
     alias(libs.plugins.signing)
     alias(libs.plugins.nmcp)
+    // Phase 0 spike: SPM import into Kotlin (see spike/SpikeObjCKit)
+    id("io.github.frankois944.spmForKmp") version "1.9.4"
 }
 
 group = "co.onestep.kmp"
@@ -57,6 +60,29 @@ kotlin {
             isStatic = true
             xcf.add(this)
             export(libs.onestep.design.system)
+        }
+        // Phase 0 spike: local @objc Swift package imported into iosMain via spm4Kmp.
+        iosTarget.swiftPackageConfig(cinteropName = "spikeInterop") {
+            minIos = "16.0"
+            dependency {
+                localPackage(
+                    path = "${rootProject.projectDir}/spike/SpikeObjCKit",
+                    packageName = "SpikeObjCKit",
+                    products = {
+                        add("SpikeObjCKit", exportToKotlin = true)
+                    },
+                )
+                // Spike goal (a): binary-target SPM package (XCFramework). Expected to link,
+                // but expose ~no API to Kotlin (pure-Swift surface, no @objc facade yet).
+                remotePackageVersion(
+                    url = uri("https://github.com/OneStepRND/onestep-sdk-ios"),
+                    version = "2.0.8-rc1",
+                    packageName = "onestep-sdk-ios",
+                    products = {
+                        add("OneStepSDK", exportToKotlin = true)
+                    },
+                )
+            }
         }
     }
 
