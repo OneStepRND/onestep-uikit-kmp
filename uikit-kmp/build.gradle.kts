@@ -46,10 +46,11 @@ kotlin {
     }
 
     val xcf = XCFramework("OSTUIKit")
+    // iosX64 (Intel simulator) was dropped: Compose Multiplatform stopped publishing x64 iOS
+    // artifacts after 1.11.0-alpha01, so the target can no longer resolve compose dependencies.
     listOf(
         iosArm64(),
         iosSimulatorArm64(),
-        iosX64(),
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "OSTUIKit"
@@ -71,10 +72,11 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
             // KMP ViewModel + Lifecycle
-            implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0-beta01")
-            implementation("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.9.0-beta01")
-            // KMP Navigation
-            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.9.0-beta01")
+            implementation(libs.lifecycle.viewmodel.compose)
+            implementation(libs.lifecycle.runtime.compose)
+            // KMP Navigation 3
+            implementation(libs.navigation3.ui)
+            implementation(libs.lifecycle.viewmodel.navigation3)
             // Design System
             api(libs.onestep.design.system)
         }
@@ -112,7 +114,7 @@ kotlin {
 
 android {
     namespace = "co.onestep.kmp.uikit"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 26

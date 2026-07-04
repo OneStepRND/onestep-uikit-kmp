@@ -1,7 +1,9 @@
 [versions]
 kotlin = "2.3.0"
 androidGradle = "8.11.1"
-composeMultiplatform = "1.9.0"
+composeMultiplatform = "1.11.1"
+lifecycle = "2.10.0"
+navigation3 = "1.1.1"
 coroutines = "1.10.1"
 kotlinxSerializationJson = "1.8.1"
 coreVersion = "2.0.3"
@@ -12,6 +14,12 @@ activityCompose = "1.10.1"
 
 [libraries]
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+
+# KMP Lifecycle + Navigation 3
+lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 onestep-design-system = { module = "co.onestep:design-system", version.ref = "designSystem" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 

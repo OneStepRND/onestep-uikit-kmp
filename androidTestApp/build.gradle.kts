@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "co.onestep.kmp.uikit.testapp"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "co.onestep.kmp.uikit.testapp"
