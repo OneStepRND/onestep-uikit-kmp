@@ -23,6 +23,15 @@ extension XCTestCase {
         "DUAL_TASK",
     ]
 
+    /// Mock-recording names bundled in the app (each `<name>.json.gz` in Resources/JSONmocks),
+    /// mirroring `MockRecording.options` in the app target. Selecting one makes the SDK upload the
+    /// bundled analyzed recording instead of the real (stationary) data, so the flow reaches a
+    /// deterministic outcome. `success*` → a full analyzed measurement (`recording_completed`);
+    /// `error_*` → the matching analysis-error/empty screen (no completion event).
+    static let mockNone = "None"
+    static let successMocks = ["successWalk", "stsSuccess", "tugSuccess", "dualTaskSuccess"]
+    static let errorMocks = ["error_curvy", "error_no_cycle", "error_position", "error_other", "error_short", "error_static"]
+
     /// Launches the app and returns it once the identified Home screen is showing. If the app comes
     /// up unauthenticated (no persisted patient), connects as the built-in "Avatar" test patient.
     @discardableResult
@@ -136,5 +145,133 @@ extension XCUIElement {
             usleep(300_000)
         }
         return !isHittable
+    }
+
+    /// Polls until the element is hittable again (e.g. the underlying sheet reappears after a
+    /// presented full-screen cover dismisses).
+    @discardableResult
+    func waitUntilHittable(timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if isHittable { return true }
+            usleep(300_000)
+        }
+        return isHittable
+    }
+}
+
+// MARK: - Configure Flow + Compose recording helpers
+
+extension XCTestCase {
+
+    /// Reads the native "Last Event" label on Home (set from the recording flow's result callback),
+    /// or nil if it isn't currently shown. This is the deterministic channel for asserting a
+    /// recording outcome, since the Compose flow/summary themselves expose almost no a11y.
+    func lastEventText(_ app: XCUIApplication) -> String? {
+        let label = app.staticTexts["home.lastEvent"]
+        return label.exists ? label.label : nil
+    }
+
+    /// Forces a Configure Flow toggle to a known state (they default on). No-op if already correct.
+    func setToggle(_ identifier: String, on: Bool, in app: XCUIApplication) {
+        let toggle = app.switches[identifier]
+        guard ensureVisible(toggle, in: app) else { return }
+        let isOn = (toggle.value as? String) == "1"
+        if isOn != on { toggle.tap() }
+    }
+
+    /// Selects a mock in the Configure Flow menu picker. Opens `mockRecordingPicker`, then taps the
+    /// option by its label (SwiftUI menu items surface as buttons, matching the SDK Example app).
+    func selectMock(_ name: String, in app: XCUIApplication) {
+        let picker = app.buttons["mockRecordingPicker"]
+        guard ensureVisible(picker, in: app) else {
+            XCTFail("mockRecordingPicker not found")
+            return
+        }
+        picker.tap()
+        let option = app.buttons[name].firstMatch
+        if option.waitForExistence(timeout: 3) {
+            option.tap()
+        } else {
+            // Fallback: some menu items surface as other element types.
+            let alt = app.descendants(matching: .any).matching(
+                NSPredicate(format: "label == %@", name)
+            ).firstMatch
+            if alt.waitForExistence(timeout: 2) { alt.tap() }
+        }
+    }
+
+    /// Performs the slide-to-stop gesture on the Compose recording screen (a Skia canvas with no
+    /// queryable handle) by dragging the handle along the bottom of the window, left to right. The
+    /// handle sits near the very bottom (~0.93), starting at the left edge.
+    func slideToStop(in app: XCUIApplication) {
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.93))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.93))
+        start.press(forDuration: 0.2, thenDragTo: end)
+    }
+
+    /// Taps the top-left toolbar close/back on a Compose screen by coordinate. Safe to call during
+    /// recording/analysis: the flow HIDES its toolbar then (RecordFlowNavGraph hides it once the
+    /// flow leaves GET_READY), so the tap is a no-op until a screen with a toolbar (the summary or
+    /// an error screen) appears, at which point it dismisses that screen.
+    func tapComposeTopLeftClose(in app: XCUIApplication) {
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.10)).tap()
+    }
+
+    /// Whether a flow element with the exact label exists in ANY element type (Compose surfaces some
+    /// controls as buttons, some as static texts / other). Presence-only, no hittability/wait.
+    func flowElementExists(_ label: String, in app: XCUIApplication) -> Bool {
+        app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", label)).firstMatch.exists
+    }
+
+    /// Taps a flow element by exact label only if it is present AND hittable right now (no waiting),
+    /// trying buttons then static texts. Iterates ALL matches and taps the first hittable one, so a
+    /// covered same-label element (e.g. the Configure Flow `configure.start`, also labeled "Start",
+    /// sitting behind the presented flow) is skipped in favor of the visible flow control. Returns
+    /// whether it tapped. Use when polling across screens whose order isn't known ahead of time.
+    @discardableResult
+    func tapIfHittable(_ label: String, in app: XCUIApplication) -> Bool {
+        let predicate = NSPredicate(format: "label == %@", label)
+        for query in [app.buttons.matching(predicate), app.staticTexts.matching(predicate)] {
+            for index in 0..<query.count {
+                let element = query.element(boundBy: index)
+                if element.exists && element.isHittable {
+                    element.tap()
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    /// Taps a Compose flow element by its exact accessibility label, trying button then static text
+    /// (Compose surfaces some rows as one, some as the other). Returns whether it tapped.
+    @discardableResult
+    func tapFlowLabel(_ label: String, in app: XCUIApplication, timeout: TimeInterval = 10) -> Bool {
+        let button = app.buttons[label].firstMatch
+        if button.waitForExistence(timeout: timeout) {
+            button.tap()
+            return true
+        }
+        let text = app.staticTexts[label].firstMatch
+        if text.waitForExistence(timeout: 2) {
+            text.tap()
+            return true
+        }
+        return false
+    }
+
+    /// Taps the first visible flow CTA (Continue / Start / I'm ready / …) to advance preparation
+    /// screens. Returns whether it tapped anything.
+    @discardableResult
+    func tapFirstFlowCTA(_ app: XCUIApplication) -> Bool {
+        for cta in ["I'm ready", "Continue", "Got it", "Start", "Begin", "Next", "Allow", "Skip"] {
+            let button = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", cta)).firstMatch
+            if button.exists && button.isHittable {
+                button.tap()
+                return true
+            }
+        }
+        return false
     }
 }

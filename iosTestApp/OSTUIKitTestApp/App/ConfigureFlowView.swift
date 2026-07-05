@@ -83,6 +83,43 @@ enum MeasurementPresets {
     }
 }
 
+// MARK: - Mock recording
+
+/// Drives the SDK's mock-recording path. When `MockRecordingName` is set in `UserDefaults` and a
+/// matching `<name>.json.gz` is bundled in `Bundle.main`, the SDK swaps the real recorded data for
+/// the mock payload at S3 upload time (`SDKNetworkService.mockFileData()`), so the backend analyzes
+/// the mock and returns a real, deterministic measurement — even on a stationary device. This is
+/// the iOS analogue of Android's `setMockIMU`, and is UI-agnostic (works with the KMP recording
+/// flow). Mirrors the SDK Example app's `UIKitSelectFlowView`.
+enum MockRecording {
+    /// The `UserDefaults` key the SDK reads at upload time.
+    static let userDefaultsKey = "MockRecordingName"
+
+    /// "None" + the bundled mock names (each has a `<name>.json.gz` in `Resources/JSONmocks/`),
+    /// same set the SDK Example app exposes. `success*` mocks analyze to a full measurement;
+    /// `error_*` mocks analyze to the corresponding error/empty-analysis outcome.
+    static let none = "None"
+    static let options = [
+        none,
+        "successWalk", "stsSuccess", "tugSuccess", "dualTaskSuccess", "romSuccess",
+        "error_curvy", "error_no_cycle", "error_position", "error_other", "error_short", "error_static",
+    ]
+
+    /// Persists (or clears) the selection so the SDK picks it up at the next upload.
+    static func apply(_ selection: String) {
+        if selection == none {
+            UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        } else {
+            UserDefaults.standard.set(selection, forKey: userDefaultsKey)
+        }
+    }
+
+    /// Clears the key so a mock never leaks into a later real recording.
+    static func clear() {
+        UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+    }
+}
+
 // MARK: - Toggle application
 
 extension OSTRecordingConfiguration {
@@ -137,6 +174,7 @@ struct ConfigureFlowView: View {
     @State private var playVoiceOver = true
     @State private var showPhonePositionScreen = true
     @State private var showPermissionExplanationScreen = true
+    @State private var selectedMock = MockRecording.none
     @State private var pendingConfig: OSTRecordingConfiguration?
 
     private var selectedPreset: MeasurementPreset {
@@ -174,9 +212,21 @@ struct ConfigureFlowView: View {
                         .accessibilityIdentifier("toggle.permissionExplanation")
                 }
 
+                // Mock recording: replaces the uploaded data with a bundled analyzed recording, so
+                // the flow produces a deterministic result on a stationary device (see MockRecording).
+                Section("Mock recording") {
+                    Picker("Mock recording", selection: $selectedMock) {
+                        ForEach(MockRecording.options, id: \.self) { name in
+                            Text(name).tag(name)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .accessibilityIdentifier("mockRecordingPicker")
+                }
+
                 Section {
                     Button {
-                        pendingConfig = currentConfig()
+                        startFlow()
                     } label: {
                         Text("START FLOW")
                             .frame(maxWidth: .infinity)
@@ -194,7 +244,7 @@ struct ConfigureFlowView: View {
                 // Always-visible Start (the large in-form button can sit below the fold, so it is
                 // not guaranteed to be in the accessibility tree for XCUITest).
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Start") { pendingConfig = currentConfig() }
+                    Button("Start") { startFlow() }
                         .fontWeight(.semibold)
                         .accessibilityIdentifier("configure.start")
                 }
@@ -203,16 +253,30 @@ struct ConfigureFlowView: View {
                 OSTRecordingFlowView(
                     config: config,
                     onResult: { event in
-                        onEvent("\(config.activityType.name): \(event.name)")
+                        // `event.properties` is a Kotlin Map bridged as [AnyHashable: Any]; only
+                        // `recording_completed` carries `measurement_id`, so its presence lets the
+                        // XCUITest suite tell a real analyzed result from an error/dismiss.
+                        let measurementId = event.properties["measurement_id"] as? String
+                        let idSuffix = measurementId.map { " (id:\($0.prefix(8)))" } ?? ""
+                        onEvent("\(config.activityType.name): \(event.name)\(idSuffix)")
+                        MockRecording.clear()
                         pendingConfig = nil
                     },
                     onDismiss: {
+                        MockRecording.clear()
                         pendingConfig = nil
                     }
                 )
                 .ignoresSafeArea()
             }
         }
+    }
+
+    /// Applies the selected mock (if any) then presents the recording flow. Setting the mock here —
+    /// at the moment recording starts — means it is in place before the SDK's upload swap runs.
+    private func startFlow() {
+        MockRecording.apply(selectedMock)
+        pendingConfig = currentConfig()
     }
 
     private func currentConfig() -> OSTRecordingConfiguration {
