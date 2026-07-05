@@ -6,12 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -57,7 +54,8 @@ fun UiKitFlowSelectionItem(
         shape = RoundedCornerShape(4.dp),
         colors =
             CardDefaults.cardColors(
-                containerColor = LocalOSColors.current.neutral_m4,
+                // Figma "Card selector": white card surface (neutral/m5), text neutral/p3.
+                containerColor = LocalOSColors.current.neutral_m5,
                 contentColor = LocalOSColors.current.neutral_p3,
             ),
         onClick = { onItemSelected(selectionItemData) },
@@ -71,11 +69,11 @@ fun UiKitFlowSelectionItem(
         Row(
             modifier =
                 Modifier
-                    .padding(vertical = Variables.GapL)
-                    .padding(horizontal = 8.dp)
-                    .fillMaxSize(),
+                    // Figma "Card selector": uniform 16dp padding, 15px icon→text gap.
+                    .padding(Variables.GapL)
+                    .fillMaxWidth(),
             verticalAlignment = CenterVertically,
-            horizontalArrangement = Arrangement.Start,
+            horizontalArrangement = Arrangement.spacedBy(15.dp),
         ) {
             selectionItemData.icon?.let {
                 Icon(
@@ -88,13 +86,11 @@ fun UiKitFlowSelectionItem(
                             .align(CenterVertically),
                 )
             }
-            Spacer(modifier = Modifier.width(Variables.GapL))
             FlowRow(
                 horizontalArrangement = Arrangement.Start,
                 verticalArrangement = Arrangement.Center,
             ) {
                 OSText(
-                    modifier = Modifier.padding(start = Variables.GapL),
                     text = selectionItemData.text.text,
                     fontSize = selectionItemData.text.textSize,
                     fontWeight = selectionItemData.text.fontWeight,
