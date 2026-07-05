@@ -2,16 +2,13 @@ package co.onestep.kmp.uikit.features.permissions.ios.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.designsystem.components.PrimaryButton
@@ -46,19 +43,7 @@ internal fun IosRationalizationScreen(
             .padding(horizontal = 24.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Close button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            TextButton(onClick = { coordinator.onDismiss() }) {
-                OSText(
-                    text = "\u2715",
-                    fontSize = 20.sp,
-                    color = colors.neutral_p1,
-                )
-            }
-        }
+        PermissionCloseButton { coordinator.onDismiss() }
 
         Spacer(modifier = Modifier.height(40.dp))
 

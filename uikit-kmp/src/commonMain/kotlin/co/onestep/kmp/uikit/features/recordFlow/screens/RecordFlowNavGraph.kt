@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -89,6 +90,7 @@ import co.onestep.kmp.uikit.navigation.popUpToInclusive
 import co.onestep.kmp.uikit.ui.components.BottomSheet
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.MotionRecorderViewModel
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.RecordingScreenContent
+import co.onestep.kmp.uikit.features.recordFlow.screensData.RecordingScreenData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.isSixOrTwoMinWalk
 import co.onestep.kmp.uikit.features.tagging.models.Footwear
 import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
@@ -164,10 +166,8 @@ internal fun RecordFlowNavGraph(
                 add(ConditionSetupDestination)
             }
 
-            // a) Hallway distance for 6min/2min walks (behind feature flag)
-            if (isSixOrTwoMinWalk(config.activityType) &&
-                featureFlags.isEnabled(FeatureFlag.HALLWAY_DISTANCE)
-            ) {
+            // a) Hallway distance for 6min/2min walks
+            if (isSixOrTwoMinWalk(config.activityType)) {
                 add(HallwayDistanceDestination)
             }
 
@@ -604,12 +604,18 @@ internal fun RecordFlowNavGraph(
 
         // --- Recording and post-recording screens ---
 
-        // Recording screen
+        // Recording screen. RecordingScreenContent is purely presentational (stable data +
+        // lambdas); all ViewModel interaction lives here in the destination entry.
         entry<RecordingDestination> {
-            RecordingScreenContent(
-                modifier = Modifier.fillMaxSize(),
-                viewModel = viewModel,
-                onMeasurementResult = { measurement ->
+            val screenData = viewModel.recodingScreenState.value
+            val stepCount by viewModel.stepCount.collectAsStateWithLifecycle(0)
+
+            // Set the recording lifecycle callbacks once when this destination enters the
+            // composition — same lifecycle as the old RecordingScreenContent LaunchedEffect(Unit),
+            // so the initState / onMeasurementResult / onError timing is unchanged.
+            LaunchedEffect(Unit) {
+                viewModel.initState()
+                viewModel.onMeasurementResult = { measurement ->
                     resultMeasurement = measurement
                     // Route via ResultHandler exactly like the Android uikit flow:
                     // FULL_ANALYSIS -> summary; EMPTY/PARTIAL -> the specific analysis-error
@@ -641,10 +647,8 @@ internal fun RecordFlowNavGraph(
                             backStack.add(ErrorResultDestination)
                         }
                     }
-                },
-                onBackPress = { showRecordingExitDialog = true },
-                onRecording = { viewModel.showToolbar(false) },
-                onError = { error, activityType ->
+                }
+                viewModel.onError = { error, activityType ->
                     // Technical analyser errors ("no result from the lab"). No live network
                     // probe exists in KMP yet, so networkStatus is assumed true — the
                     // connectivity screen still shows for OSTAnalyserError.NetworkError.
@@ -655,7 +659,25 @@ internal fun RecordFlowNavGraph(
                     )
                     backStack.popUpToInclusive(RecordingDestination)
                     backStack.add(ErrorResultDestination)
-                },
+                }
+            }
+
+            // Hide the toolbar once the flow leaves GET_READY (recording/analyzing), mirroring
+            // the old RecordingScreenContent onRecording callback (keyed on the screen state).
+            LaunchedEffect(screenData) {
+                if (screenData.recordScreenStage != RecordingScreenData.RecordScreenStage.GET_READY) {
+                    viewModel.showToolbar(false)
+                }
+            }
+
+            RecordingScreenContent(
+                modifier = Modifier.fillMaxSize(),
+                screenData = screenData,
+                subtitleOverride = viewModel.subtitle.value,
+                stepCount = stepCount,
+                timerValue = viewModel.timerValue.value,
+                onStopped = { viewModel.stopRecording() },
+                onBackPress = { showRecordingExitDialog = true },
             )
         }
 
@@ -685,42 +707,11 @@ internal fun RecordFlowNavGraph(
         // walk / dual-task empty-analysis path. Ports uikit's emptyAnalysisWithStepsScreen:
         // Continue -> onDone; no retry (uikit's screen has none).
         entry<EmptyAnalysisDestination> {
-            val steps = resultMeasurement?.metadata?.steps
-            LaunchedEffect(Unit) {
-                // This manual-entry screen is reached from the no-score / error path.
-                recordFlowTracker?.trackEnterResultsManuallyScreen(
-                    activity = activity,
-                    screenOrigin = RecordFlowAnalyticsTracker.SCREEN_ORIGIN_ERROR,
-                )
-            }
-            EmptyAnalysisScreen(
-                screenData = EmptyAnalysisScreenData(
-                    timeStampMillis = resultMeasurement?.timestamp ?: currentTimeMillis(),
-                    title = stringResource(
-                        Res.string.steps_measured,
-                        steps ?: stringResource(Res.string.no),
-                    ),
-                    steps = steps,
-                    icon = IconData(
-                        icon = Res.drawable.ic_warning,
-                        tintColor = LocalOSColors.current.error_p2,
-                    ),
-                    subtitle = stringResource(Res.string.great_job_on_completing_a_walk),
-                    brandButtonData = PrimaryButtonData(
-                        text = TextData(
-                            stringResource(Res.string.continue_camel_case),
-                            24.sp,
-                            FontWeight.W600,
-                        ),
-                        action = {
-                            recordFlowTracker?.trackEnterResultsManuallySaveClicked(
-                                activity = activity,
-                                value = steps?.toString() ?: "",
-                            )
-                            onDismiss()
-                        },
-                    ),
-                ),
+            EmptyAnalysisDestinationContent(
+                resultMeasurement = resultMeasurement,
+                activity = activity,
+                recordFlowTracker = recordFlowTracker,
+                onDismiss = onDismiss,
             )
         }
 
@@ -921,95 +912,56 @@ internal fun RecordFlowNavGraph(
         // Toolbar overlays the reserved top inset (see note above). Drawn on top of the
         // NavDisplay's inset region — not overlapping the content — so toggling its visibility
         // never resizes the screen.
-        AnimatedVisibility(
-            modifier = Modifier.align(Alignment.TopCenter),
+        RecordFlowToolbar(
             visible = showToolbar.value,
-            enter = slideInVertically() + fadeIn(),
-            exit = slideOutVertically() + fadeOut(),
-        ) {
-            Toolbar(
-                toolbarData = toolbarData.value,
-                toolBarColor = ToolBarColors(
-                    containerColor = Color.Transparent,
-                    contentColor = LocalOSColors.current.neutral_p3,
-                ),
-            )
-        }
+            toolbarData = toolbarData.value,
+            modifier = Modifier.align(Alignment.TopCenter),
+        )
 
         // Short hallway warning dialog (shown when user enters a value below recommended)
         val hallwayState = viewModel.hallwayDistanceState.value
         if (hallwayState.showShortHallwayDialog) {
-            // screen_short_hallway_popup — fired once when the warning dialog is shown.
-            LaunchedEffect(Unit) {
-                recordFlowTracker?.trackShortHallwayPopupShown(activity)
-            }
-            BasicAlertDialog(
-                onDismissRequest = viewModel::dismissShortHallwayDialog,
-                content = {
-                    ShortHallwayLengthDialog(
-                        recommendedValue = hallwayState.recommendedValue,
-                        unitText = hallwayState.unitText,
-                        dontShowAgainChecked = hallwayState.suppressShortHallwayWarning,
-                        onDontShowAgainChange = viewModel::onSuppressShortHallwayWarningChanged,
-                        onDismissClicked = viewModel::dismissShortHallwayDialog,
-                        onStartTestClicked = {
-                            // clicked_short_hallway_start_test — proceed with the short length.
-                            recordFlowTracker?.trackShortHallwayStartTestClicked(activity)
-                            if (viewModel.onShortHallwayStartTest()) {
-                                navigateToNext(HallwayDistanceDestination)
-                            }
-                        },
-                        onEditHallwayClicked = {
-                            // clicked_short_hallway_edit — dismiss to edit the length.
-                            recordFlowTracker?.trackShortHallwayEditClicked(activity)
-                            viewModel.dismissShortHallwayDialog()
-                        },
-                    )
+            HallwayWarningDialog(
+                recommendedValue = hallwayState.recommendedValue,
+                unitText = hallwayState.unitText,
+                dontShowAgainChecked = hallwayState.suppressShortHallwayWarning,
+                onShown = { recordFlowTracker?.trackShortHallwayPopupShown(activity) },
+                onDismiss = viewModel::dismissShortHallwayDialog,
+                onSuppressChange = viewModel::onSuppressShortHallwayWarningChanged,
+                onStartTest = {
+                    // clicked_short_hallway_start_test — proceed with the short length.
+                    recordFlowTracker?.trackShortHallwayStartTestClicked(activity)
+                    if (viewModel.onShortHallwayStartTest()) {
+                        navigateToNext(HallwayDistanceDestination)
+                    }
+                },
+                onEdit = {
+                    // clicked_short_hallway_edit — dismiss to edit the length.
+                    recordFlowTracker?.trackShortHallwayEditClicked(activity)
+                    viewModel.dismissShortHallwayDialog()
                 },
             )
         }
 
         // Exit confirmation dialog shown when user presses back on StartRecord screen
         if (showExitConfirmationDialog) {
-            AlertDialog(
+            ExitConfirmationDialog(
                 onDismissRequest = { showExitConfirmationDialog = false },
-                title = { Text(stringResource(Res.string.stop_recording_dialog_text)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showExitConfirmationDialog = false
-                        viewModel.clearJobs()
-                        onDismiss()
-                    }) {
-                        Text(stringResource(Res.string.yes))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showExitConfirmationDialog = false }) {
-                        Text(stringResource(Res.string.no))
-                    }
+                onConfirm = {
+                    viewModel.clearJobs()
+                    onDismiss()
                 },
             )
         }
 
         // Exit confirmation dialog shown when user presses back during active recording
         if (showRecordingExitDialog) {
-            AlertDialog(
+            ExitConfirmationDialog(
                 onDismissRequest = { showRecordingExitDialog = false },
-                title = { Text(stringResource(Res.string.stop_recording_dialog_text)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showRecordingExitDialog = false
-                        viewModel.clearJobs()
-                        backStack.popUpToInclusive(RecordingDestination)
-                        backStack.add(StartRecordDestination)
-                    }) {
-                        Text(stringResource(Res.string.yes))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showRecordingExitDialog = false }) {
-                        Text(stringResource(Res.string.no))
-                    }
+                onConfirm = {
+                    viewModel.clearJobs()
+                    backStack.popUpToInclusive(RecordingDestination)
+                    backStack.add(StartRecordDestination)
                 },
             )
         }
@@ -1023,6 +975,127 @@ internal fun RecordFlowNavGraph(
             InstructionsContent(instructionsData = instructions)
         }
     }
+}
+
+@Composable
+private fun RecordFlowToolbar(
+    visible: Boolean,
+    toolbarData: ToolBarData,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedVisibility(
+        modifier = modifier,
+        visible = visible,
+        enter = slideInVertically() + fadeIn(),
+        exit = slideOutVertically() + fadeOut(),
+    ) {
+        Toolbar(
+            toolbarData = toolbarData,
+            toolBarColor = ToolBarColors(
+                containerColor = Color.Transparent,
+                contentColor = LocalOSColors.current.neutral_p3,
+            ),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HallwayWarningDialog(
+    recommendedValue: Int,
+    unitText: String,
+    dontShowAgainChecked: Boolean,
+    onShown: () -> Unit,
+    onDismiss: () -> Unit,
+    onSuppressChange: (Boolean) -> Unit,
+    onStartTest: () -> Unit,
+    onEdit: () -> Unit,
+) {
+    LaunchedEffect(Unit) { onShown() }
+    BasicAlertDialog(
+        onDismissRequest = onDismiss,
+        content = {
+            ShortHallwayLengthDialog(
+                recommendedValue = recommendedValue,
+                unitText = unitText,
+                dontShowAgainChecked = dontShowAgainChecked,
+                onDontShowAgainChange = onSuppressChange,
+                onDismissClicked = onDismiss,
+                onStartTestClicked = onStartTest,
+                onEditHallwayClicked = onEdit,
+            )
+        },
+    )
+}
+
+@Composable
+private fun ExitConfirmationDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(stringResource(Res.string.stop_recording_dialog_text)) },
+        confirmButton = {
+            TextButton(onClick = {
+                onDismissRequest()
+                onConfirm()
+            }) {
+                Text(stringResource(Res.string.yes))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(Res.string.no))
+            }
+        },
+    )
+}
+
+@Composable
+private fun EmptyAnalysisDestinationContent(
+    resultMeasurement: OSTMotionMeasurement?,
+    activity: OSTActivityType,
+    recordFlowTracker: RecordFlowAnalyticsTracker?,
+    onDismiss: () -> Unit,
+) {
+    val steps = resultMeasurement?.metadata?.steps
+    LaunchedEffect(Unit) {
+        // This manual-entry screen is reached from the no-score / error path.
+        recordFlowTracker?.trackEnterResultsManuallyScreen(
+            activity = activity,
+            screenOrigin = RecordFlowAnalyticsTracker.SCREEN_ORIGIN_ERROR,
+        )
+    }
+    EmptyAnalysisScreen(
+        screenData = EmptyAnalysisScreenData(
+            timeStampMillis = resultMeasurement?.timestamp ?: currentTimeMillis(),
+            title = stringResource(
+                Res.string.steps_measured,
+                steps ?: stringResource(Res.string.no),
+            ),
+            steps = steps,
+            icon = IconData(
+                icon = Res.drawable.ic_warning,
+                tintColor = LocalOSColors.current.error_p2,
+            ),
+            subtitle = stringResource(Res.string.great_job_on_completing_a_walk),
+            brandButtonData = PrimaryButtonData(
+                text = TextData(
+                    stringResource(Res.string.continue_camel_case),
+                    24.sp,
+                    FontWeight.W600,
+                ),
+                action = {
+                    recordFlowTracker?.trackEnterResultsManuallySaveClicked(
+                        activity = activity,
+                        value = steps?.toString() ?: "",
+                    )
+                    onDismiss()
+                },
+            ),
+        ),
+    )
 }
 
 /** Spec-canonical hallway unit token for analytics: "ft" (imperial) or "m" (metric). */

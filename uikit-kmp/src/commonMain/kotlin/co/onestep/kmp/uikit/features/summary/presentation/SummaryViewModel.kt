@@ -31,7 +31,6 @@ import co.onestep.kmp.uikit.models.OSTInsightType
 import co.onestep.kmp.uikit.models.OSTInsights
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.models.OSTNorm
-import co.onestep.kmp.uikit.models.OSTNormPart
 import co.onestep.kmp.uikit.models.OSTOrder
 import co.onestep.kmp.uikit.models.OSTParamName
 import co.onestep.kmp.uikit.models.OSTParameterMetadata
@@ -46,7 +45,10 @@ import co.onestep.kmp.uikit.utils.CM_UNITS
 import co.onestep.kmp.uikit.utils.ConversionResult
 import co.onestep.kmp.uikit.utils.METERS_TO_FEET_RATIO
 import co.onestep.kmp.uikit.utils.ResourceProvider
+import co.onestep.kmp.uikit.utils.roundValue
 import co.onestep.kmp.uikit.utils.toBubbleColor
+import co.onestep.kmp.uikit.utils.toFormattedDuration
+import co.onestep.kmp.uikit.utils.toImperial
 import co.onestep.kmp.uikit.utils.toLocalizedTimeString
 import co.onestep.kmp.uikit.utils.toMainParamTitle
 import co.onestep.kmp.uikit.utils.useImperialSystem
@@ -119,61 +121,11 @@ internal class SummaryViewModel(
         resetScreen()
         viewModelScope.launch(Dispatchers.Default) {
             motionMeasurement.value = getMotionMeasurement(uuid)
-
             val measurement = motionMeasurement.value ?: return@launch
-
-            // Fetch previous measurement and its parameters
             previousMeasurement = getPreviousMeasurement(measurement.timestamp)
             previousMeasurementParams = previousMeasurement?.paramsByName() ?: emptyMap()
-
             withContext(Dispatchers.Default) {
-                // ===== PHASE 1: Emit main param immediately with gray color =====
-                val mainParamValue = computeMainParamValue(measurement)
-                val mainParamText = computeMainParamText(measurement.type, mainParamValue)
-
-                withContext(Dispatchers.Main) {
-                    mainParamCardItem.value =
-                        buildMainParamCardItem(
-                            measurement,
-                            mainParamValue,
-                            mainParamText,
-                            Color.Gray,
-                        )
-                    isLoading.value = false // UNBLOCK UI NOW
-                }
-
-                // handle minimal walk result
-                if (partialResultHandled()) return@withContext
-
-                // ===== PHASE 2: Emit Gait Lab + real color (local, fast) =====
-                val params = measurement.paramsByName()
-                val circleColor = getMeasurementCircleColor()
-                val gaitLabState = buildGaitLabState(params)
-
-                withContext(Dispatchers.Main) {
-                    gatLabScreenState.value = gaitLabState
-                    // Update with real color (triggers animateColorAsState)
-                    mainParamCardItem.value =
-                        buildMainParamCardItem(
-                            measurement,
-                            mainParamValue,
-                            mainParamText,
-                            circleColor,
-                        )
-                }
-
-                // ===== PHASE 3: Fetch insights (network, slow) =====
-                val insights = insightsBridge.getInsightsByUuid(uuid)
-                val tugItem =
-                    if (measurement.type == OSTActivityType.TUG) {
-                        measurement.toTugItemOrNull()
-                    } else {
-                        null
-                    }
-
-                withContext(Dispatchers.Main) {
-                    insightsScreenState.value = buildInsightsState(insights, tugItem)
-                }
+                loadSummary(measurement, emitBeforePartialCheck = true)
             }
         }
     }
@@ -187,65 +139,70 @@ internal class SummaryViewModel(
     fun createSummaryItems(measurement: OSTMotionMeasurement) {
         resetScreen()
         viewModelScope.launch(Dispatchers.Default) {
-            motionMeasurement.value = measurement // Use provided object directly
-
-
-            // Fetch previous measurement and its parameters
+            motionMeasurement.value = measurement
             previousMeasurement = getPreviousMeasurement(measurement.timestamp)
             previousMeasurementParams = previousMeasurement?.paramsByName() ?: emptyMap()
-
             withContext(Dispatchers.Default) {
-                // ===== PHASE 1: Emit main param immediately with gray color =====
-                val mainParamValue = computeMainParamValue(measurement)
-                val mainParamText = computeMainParamText(measurement.type, mainParamValue)
-
-                // handle minimal walk result
-                if (partialResultHandled()) {
-                    isLoading.value = false // UNBLOCK UI NOW
-                    return@withContext
-                }
-
-                withContext(Dispatchers.Main) {
-                    mainParamCardItem.value =
-                        buildMainParamCardItem(
-                            measurement,
-                            mainParamValue,
-                            mainParamText,
-                            Color.Gray,
-                        )
-                    isLoading.value = false // UNBLOCK UI NOW
-                }
-
-                // ===== PHASE 2: Emit Gait Lab + real color (local, fast) =====
-                val params = measurement.paramsByName()
-                val circleColor = getMeasurementCircleColor()
-                val gaitLabState = buildGaitLabState(params)
-
-                withContext(Dispatchers.Main) {
-                    gatLabScreenState.value = gaitLabState
-                    // Update with real color (triggers animateColorAsState)
-                    mainParamCardItem.value =
-                        buildMainParamCardItem(
-                            measurement,
-                            mainParamValue,
-                            mainParamText,
-                            circleColor,
-                        )
-                }
-
-                // ===== PHASE 3: Fetch insights (network, slow) =====
-                val insights = insightsBridge.getInsightsByUuid(measurement.id)
-                val tugItem =
-                    if (measurement.type == OSTActivityType.TUG) {
-                        measurement.toTugItemOrNull()
-                    } else {
-                        null
-                    }
-
-                withContext(Dispatchers.Main) {
-                    insightsScreenState.value = buildInsightsState(insights, tugItem)
-                }
+                loadSummary(measurement, emitBeforePartialCheck = false)
             }
+        }
+    }
+
+    /**
+     * Core 3-phase summary loading shared by both createSummaryItems overloads.
+     *
+     * @param emitBeforePartialCheck true (uuid path) → emit gray main-param card and unblock UI
+     *   before checking for a partial result; false (measurement path) → check partial first so
+     *   a partial result can short-circuit without an unnecessary gray-card flash.
+     */
+    private suspend fun loadSummary(
+        measurement: OSTMotionMeasurement,
+        emitBeforePartialCheck: Boolean,
+    ) {
+        // ===== PHASE 1: Emit main param immediately with gray color =====
+        val mainParamValue = computeMainParamValue(measurement)
+        val mainParamText = computeMainParamText(measurement.type, mainParamValue)
+
+        if (emitBeforePartialCheck) {
+            withContext(Dispatchers.Main) {
+                mainParamCardItem.value =
+                    buildMainParamCardItem(measurement, mainParamValue, mainParamText, Color.Gray)
+                isLoading.value = false // UNBLOCK UI NOW
+            }
+            // handle minimal walk result
+            if (partialResultHandled()) return
+        } else {
+            // handle minimal walk result
+            if (partialResultHandled()) {
+                isLoading.value = false // UNBLOCK UI NOW
+                return
+            }
+            withContext(Dispatchers.Main) {
+                mainParamCardItem.value =
+                    buildMainParamCardItem(measurement, mainParamValue, mainParamText, Color.Gray)
+                isLoading.value = false // UNBLOCK UI NOW
+            }
+        }
+
+        // ===== PHASE 2: Emit Gait Lab + real color (local, fast) =====
+        val params = measurement.paramsByName()
+        val circleColor = getMeasurementCircleColor()
+        val gaitLabState = buildGaitLabState(params)
+
+        withContext(Dispatchers.Main) {
+            gatLabScreenState.value = gaitLabState
+            // Update with real color (triggers animateColorAsState)
+            mainParamCardItem.value =
+                buildMainParamCardItem(measurement, mainParamValue, mainParamText, circleColor)
+        }
+
+        // ===== PHASE 3: Fetch insights (network, slow) =====
+        val insights = insightsBridge.getInsightsByUuid(measurement.id)
+        val tugItem =
+            if (measurement.type == OSTActivityType.TUG) measurement.toTugItemOrNull() else null
+
+        withContext(Dispatchers.Main) {
+            insightsScreenState.value = buildInsightsState(insights, tugItem)
         }
     }
 
@@ -323,7 +280,7 @@ internal class SummaryViewModel(
         return MainParamItem(
             title = motionMeasurement.value?.timestamp?.toMainParamTitle() ?: "",
             steps = metadata?.steps ?: 0,
-            duration = metadata?.seconds?.toStringDuration()
+            duration = metadata?.seconds?.toFormattedDuration()
                 ?: resourceProvider.getString(Res.string.not_available),
             durationUnits = resourceProvider.getString(Res.string.walk_duration_unit),
             animateMainParam = false,
@@ -388,6 +345,26 @@ internal class SummaryViewModel(
                 )
         }
 
+    /** Shared "no additional insights" empty state for background measurements. */
+    private fun noAdditionalInsightsEmptyState(): EmptyStateData =
+        EmptyStateData(
+            icon = IconData(Res.drawable.ic_message_alert),
+            title =
+                TextData(
+                    text = resourceProvider.getString(Res.string.no_additional_insights),
+                    textSize = 28.sp,
+                    fontWeight = FontWeight.W700,
+                ),
+            subtitle =
+                TextData(
+                    text = resourceProvider.getString(
+                        Res.string.you_did_great_we_encountered_a_problem_in_loading_additional_insights,
+                    ),
+                    textSize = 18.sp,
+                    fontWeight = FontWeight.W400,
+                ),
+        )
+
     private suspend fun buildGaitLabState(params: Map<OSTParamName, Float>): SummaryListState {
         val norms =
             params
@@ -436,71 +413,22 @@ internal class SummaryViewModel(
                 val walkingWalkScore =
                     dailyBackgroundMeasurement.parametersByName()[OSTParamName.WALKING_WALK_SCORE]
 
+                // Build gait lab state (reuses buildGaitLabState; replace its generic error with
+                // the background-specific "no additional insights" empty state).
+                val params = dailyBackgroundMeasurement.parametersByName()
+                val rawGaitLabState = buildGaitLabState(params)
+                val finalGaitLabState = when (rawGaitLabState) {
+                    is SummaryListState.GaitLab.Error ->
+                        SummaryListState.GaitLab.Error(noAdditionalInsightsEmptyState())
+                    else -> rawGaitLabState
+                }
+
                 // Background measurements don't have insights
                 withContext(Dispatchers.Main) {
                     isLoading.value = false
-
                     insightsScreenState.value =
-                        SummaryListState.Insights.Error(
-                            EmptyStateData(
-                                icon = IconData(Res.drawable.ic_message_alert),
-                                title =
-                                    TextData(
-                                        text = resourceProvider.getString(Res.string.no_additional_insights),
-                                        textSize = 28.sp,
-                                        fontWeight = FontWeight.W700,
-                                    ),
-                                subtitle =
-                                    TextData(
-                                        text =
-                                            resourceProvider.getString(
-                                                Res.string.you_did_great_we_encountered_a_problem_in_loading_additional_insights,
-                                            ),
-                                        textSize = 18.sp,
-                                        fontWeight = FontWeight.W400,
-                                    ),
-                            ),
-                        )
-
-                    // Process gait lab items from parameters + norms
-                    val params = dailyBackgroundMeasurement.parametersByName()
-                    val norms =
-                        params
-                            .mapNotNull { (paramName, _) ->
-                                motionDataBridge.getNormByName(paramName)?.let { norm ->
-                                    paramName to norm
-                                }
-                            }.toMap()
-
-                    gatLabScreenState.value =
-                        when {
-                            norms.isEmpty() ->
-                                SummaryListState.GaitLab.Error(
-                                    EmptyStateData(
-                                        icon = IconData(Res.drawable.ic_message_alert),
-                                        title =
-                                            TextData(
-                                                text = resourceProvider.getString(Res.string.no_additional_insights),
-                                                textSize = 28.sp,
-                                                fontWeight = FontWeight.W700,
-                                            ),
-                                        subtitle =
-                                            TextData(
-                                                text =
-                                                    resourceProvider.getString(
-                                                        Res.string.you_did_great_we_encountered_a_problem_in_loading_additional_insights,
-                                                    ),
-                                                textSize = 18.sp,
-                                                fontWeight = FontWeight.W400,
-                                            ),
-                                    ),
-                                )
-
-                            else ->
-                                SummaryListState.GaitLab.Success(
-                                    createGaitLabItems(norms, params),
-                                )
-                        }
+                        SummaryListState.Insights.Error(noAdditionalInsightsEmptyState())
+                    gatLabScreenState.value = finalGaitLabState
 
                     // Create MainParamItem for daily background measurement
                     mainParamCardItem.value =
@@ -571,7 +499,7 @@ internal class SummaryViewModel(
                         title = resourceProvider.getString(Res.string.partial_summary_title),
                         subtitle = resourceProvider.getString(Res.string.partial_summary_subtitle),
                         steps = metadata?.steps,
-                        durationText = metadata?.seconds?.toStringDuration(),
+                        durationText = metadata?.seconds?.toFormattedDuration(),
                     )
                     partialScreenState.value = state
                     insightsScreenState.value = state
@@ -755,7 +683,7 @@ internal class SummaryViewModel(
         MainParamItem(
             title = timestamp.toMainParamTitle(),
             mainParamValue = mainParam,
-            duration = metadata.seconds?.toStringDuration() ?: defaultText,
+            duration = metadata.seconds?.toFormattedDuration() ?: defaultText,
             durationUnits = durationUnits,
             steps = metadata.steps ?: 0,
             animateMainParam = shouldAnimateMainParam(),
@@ -792,17 +720,18 @@ internal class SummaryViewModel(
             this
         }
 
-    private fun shouldAnimateMainParam(): Boolean =
-        motionMeasurement.value?.type == OSTActivityType.WALK ||
-                motionMeasurement.value?.type == OSTActivityType.DUAL_TASK_WALK_SUBTRACT ||
-                motionMeasurement.value?.type == OSTActivityType.SIX_MINUTE_WALK ||
-                motionMeasurement.value?.type == OSTActivityType.TWO_MINUTE_WALK
+    /** True for all walk-like activity types that animate the main param and show metadata. */
+    private fun isWalkLikeType(): Boolean {
+        val type = motionMeasurement.value?.type
+        return type == OSTActivityType.WALK ||
+            type == OSTActivityType.DUAL_TASK_WALK_SUBTRACT ||
+            type == OSTActivityType.SIX_MINUTE_WALK ||
+            type == OSTActivityType.TWO_MINUTE_WALK
+    }
 
-    private fun shouldShowMetaData(): Boolean =
-        motionMeasurement.value?.type == OSTActivityType.WALK ||
-                motionMeasurement.value?.type == OSTActivityType.DUAL_TASK_WALK_SUBTRACT ||
-                motionMeasurement.value?.type == OSTActivityType.SIX_MINUTE_WALK ||
-                motionMeasurement.value?.type == OSTActivityType.TWO_MINUTE_WALK
+    private fun shouldAnimateMainParam(): Boolean = isWalkLikeType()
+
+    private fun shouldShowMetaData(): Boolean = isWalkLikeType()
 
     private fun shouldShowTabs() =
         when {
@@ -816,70 +745,41 @@ internal class SummaryViewModel(
             else -> true
         }
 
+    private fun minimalAnalysisBanner() = AnalysisBannerData(
+        title = TextData(resourceProvider.getString(Res.string.minimal_analysis_banner_title), 14.sp, FontWeight.Bold),
+        subtitle = TextData(resourceProvider.getString(Res.string.minimal_analysis_banner_subtitle), 14.sp, FontWeight.Normal),
+    )
+
+    private fun partialAnalysisBanner() = AnalysisBannerData(
+        title = TextData(resourceProvider.getString(Res.string.partial_analysis_banner_title), 14.sp, FontWeight.Bold),
+        subtitle = TextData(resourceProvider.getString(Res.string.partial_analysis_banner_subtitle), 14.sp, FontWeight.Normal),
+    )
+
+    private fun systemErrorBanner() = AnalysisBannerData(
+        subtitle = TextData(resourceProvider.getString(Res.string.no_score_system_error_text), 14.sp, FontWeight.Normal),
+    )
+
+    private fun serverErrorBanner() = AnalysisBannerData(
+        subtitle = TextData(resourceProvider.getString(Res.string.no_score_server_error_text), 14.sp, FontWeight.Normal),
+    )
+
     private fun getBannerErrorData(mainParam: Float?): AnalysisBannerData? {
         if (mainParam != null) return null
         return when {
             // if it's walk
-            shouldShowMetaData() -> if (motionMeasurement.value?.resultState?.isPartialOrEmpty() == true && (motionMeasurement.value?.params
-                    ?: emptyMap()).size < 3
+            shouldShowMetaData() -> if (motionMeasurement.value?.resultState?.isPartialOrEmpty() == true &&
+                (motionMeasurement.value?.params ?: emptyMap()).size < 3
             ) {
-                AnalysisBannerData(
-                    title = TextData(
-                        resourceProvider.getString(Res.string.minimal_analysis_banner_title),
-                        14.sp,
-                        FontWeight.Bold
-                    ),
-                    subtitle = TextData(
-                        resourceProvider.getString(Res.string.minimal_analysis_banner_subtitle),
-                        14.sp,
-                        FontWeight.Normal
-                    ),
-                )
+                minimalAnalysisBanner()
             } else {
-                AnalysisBannerData(
-                    title = TextData(
-                        resourceProvider.getString(Res.string.partial_analysis_banner_title),
-                        14.sp,
-                        FontWeight.Bold
-                    ),
-                    subtitle = TextData(
-                        resourceProvider.getString(Res.string.partial_analysis_banner_subtitle),
-                        14.sp,
-                        FontWeight.Normal
-                    ),
-                )
+                partialAnalysisBanner()
             }
-
-            else -> if (motionMeasurement.value?.error != null) {
-                AnalysisBannerData(
-                    subtitle = TextData(
-                        resourceProvider.getString(Res.string.no_score_system_error_text),
-                        14.sp,
-                        FontWeight.Normal
-                    )
-                )
-            } else {
-                AnalysisBannerData(
-                    subtitle = TextData(
-                        resourceProvider.getString(Res.string.no_score_server_error_text),
-                        14.sp,
-                        FontWeight.Normal
-                    )
-                )
-            }
+            else -> if (motionMeasurement.value?.error != null) systemErrorBanner() else serverErrorBanner()
         }
     }
 
     private fun OSTResultState?.isPartialOrEmpty(): Boolean =
         (this == OSTResultState.PARTIAL_ANALYSIS || this == OSTResultState.EMPTY_ANALYSIS)
-
-    private fun Int?.toStringDuration(): String {
-        val minutes = this?.div(60) ?: 0
-        val remainingSeconds = this?.rem(60) ?: 0
-        return "${minutes.toString().padStart(2, '0')}:${
-            remainingSeconds.toString().padStart(2, '0')
-        }"
-    }
 
     private suspend fun createGaitLabItems(
         norms: Map<OSTParamName, OSTNorm>,
@@ -1233,108 +1133,4 @@ internal class SummaryViewModel(
         )
     }
 
-    // ===== Local helper functions for core types =====
-    // These bridge core SDK types to KMP utility function equivalents,
-    // since the KMP utils expect KMP model types.
-
-    /**
-     * Rounds this Float using OSTParameterMetadata, matching the behavior
-     * of the KMP roundValue that takes OSTParameterMetadata.
-     */
-    private fun Float.roundValue(
-        metadata: OSTParameterMetadata,
-        preferenceManager: PreferencesBridge,
-    ): Float {
-        val expandRounding = (useImperialSystem(preferenceManager) && metadata.units == CM_UNITS)
-        val roundDigits = when {
-            expandRounding -> metadata.roundDigits?.plus(1)
-            else -> metadata.roundDigits
-        }
-        return when (roundDigits) {
-            0f -> toInt().toFloat()
-            else -> {
-                var multiplier = 1f
-                repeat(roundDigits?.toInt() ?: 0) { multiplier *= 10 }
-                kotlin.math.round(this * multiplier) / multiplier
-            }
-        }
-    }
-
-    /**
-     * Converts an OSTNorm to imperial units, matching the behavior
-     * of the KMP OSTNorm?.toImperial extension.
-     */
-    private fun OSTNorm?.toImperial(value: Float): ConversionResult {
-        val units = this?.units
-        return when (units) {
-            co.onestep.kmp.uikit.utils.METERS_PER_SECOND_UNITS -> {
-                val factor = METERS_TO_FEET_RATIO
-                ConversionResult(
-                    value * factor,
-                    this?.copy(
-                        parts = this.parts?.map { part ->
-                            OSTNormPart(
-                                start = part.start * factor,
-                                end = part.end * factor,
-                                color = part.color,
-                                includeStart = part.includeStart,
-                                includeEnd = part.includeEnd,
-                            )
-                        },
-                    ),
-                )
-            }
-
-            CM_UNITS -> {
-                val factor = co.onestep.kmp.uikit.utils.CM_TO_INCHES_RATIO
-                ConversionResult(
-                    value * factor,
-                    this?.copy(
-                        parts = this.parts?.map { part ->
-                            OSTNormPart(
-                                start = part.start * factor,
-                                end = part.end * factor,
-                                color = part.color,
-                                includeStart = part.includeStart,
-                                includeEnd = part.includeEnd,
-                            )
-                        },
-                    ),
-                )
-            }
-
-            co.onestep.kmp.uikit.utils.METERS_UNITS, co.onestep.kmp.uikit.utils.M_UNITS -> {
-                val factor = METERS_TO_FEET_RATIO
-                ConversionResult(
-                    value * factor,
-                    this?.copy(
-                        parts = this.parts?.map { part ->
-                            OSTNormPart(
-                                start = part.start * factor,
-                                end = part.end * factor,
-                                color = part.color,
-                                includeStart = part.includeStart,
-                                includeEnd = part.includeEnd,
-                            )
-                        },
-                    ),
-                )
-            }
-
-            else -> ConversionResult(value, this)
-        }
-    }
-
-    /**
-     * Converts a Float to imperial units based on unit string,
-     * matching the KMP Float.toImperial(units: String?) extension.
-     */
-    private fun Float.toImperial(units: String?): Float =
-        when (units) {
-            co.onestep.kmp.uikit.utils.METERS_PER_SECOND_UNITS -> this * METERS_TO_FEET_RATIO
-            CM_UNITS -> this / co.onestep.kmp.uikit.utils.CM_TO_INCHES_RATIO
-            co.onestep.kmp.uikit.utils.METERS_UNITS -> this * METERS_TO_FEET_RATIO
-            co.onestep.kmp.uikit.utils.M_UNITS -> this * METERS_TO_FEET_RATIO
-            else -> this
-        }
 }

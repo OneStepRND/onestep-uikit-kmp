@@ -1,16 +1,13 @@
 package co.onestep.kmp.uikit.features.permissions.ios.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.TextButton
 import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.designsystem.components.PrimaryButton
 import androidx.compose.runtime.Composable
@@ -29,11 +26,9 @@ import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionChecker
 import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionFlowCoordinator
 import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionScreen
 import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionType
-import co.onestep.kmp.uikit.features.permissions.ios.components.DataUsageInfoSheet
 import co.onestep.kmp.uikit.features.permissions.ios.components.IosSettingsRedirectContent
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.theme.LocalOSColors
-import co.onestep.designsystem.components.TertiaryButton
 import kotlinx.coroutines.launch
 
 /**
@@ -76,7 +71,6 @@ private fun HealthKitRequestContent(
 ) {
     val scope = rememberCoroutineScope()
     var isRequesting by remember { mutableStateOf(false) }
-    var showDataUsage by remember { mutableStateOf(false) }
     val colors = LocalOSColors.current
 
     Column(
@@ -86,19 +80,7 @@ private fun HealthKitRequestContent(
             .padding(horizontal = 24.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Close button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            TextButton(onClick = { coordinator.onDismiss() }) {
-                OSText(
-                    text = "\u2715",
-                    fontSize = 20.sp,
-                    color = colors.neutral_p1,
-                )
-            }
-        }
+        PermissionCloseButton { coordinator.onDismiss() }
 
         Spacer(modifier = Modifier.height(40.dp))
 
@@ -164,9 +146,10 @@ private fun HealthKitRequestContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         // "How is my data used?" link (PRD requirement)
-        TertiaryButton(
-            text = "How is my data used?",
-            onClick = { showDataUsage = true },
+        DataUsageFooter(
+            description = "HealthKit data including step count, walking speed, and step length is used to " +
+                "provide comprehensive walking and mobility insights. This data stays on your " +
+                "device and is only shared with your healthcare provider when you choose to.",
         )
 
         Spacer(modifier = Modifier.weight(1f))
@@ -191,14 +174,5 @@ private fun HealthKitRequestContent(
             size = OSButtonSize.Big,
             enabled = !isRequesting,
         )
-
-        if (showDataUsage) {
-            DataUsageInfoSheet(
-                description = "HealthKit data including step count, walking speed, and step length is used to " +
-                    "provide comprehensive walking and mobility insights. This data stays on your " +
-                    "device and is only shared with your healthcare provider when you choose to.",
-                onDismiss = { showDataUsage = false },
-            )
-        }
     }
 }

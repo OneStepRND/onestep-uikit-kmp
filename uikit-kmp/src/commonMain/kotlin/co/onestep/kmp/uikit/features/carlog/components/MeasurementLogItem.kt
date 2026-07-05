@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -222,18 +223,17 @@ internal fun CarLogItemMetadata(
             )
         }
     } else {
-        OSText(
+        Text(
             modifier = Modifier.fillMaxWidth(),
-            text =
-                buildAnnotatedString {
-                    withStyle(SpanStyle(color = LocalOSColors.current.neutral_p1)) {
-                        append(key)
-                    }
-                    append(" ")
-                    withStyle(SpanStyle(color = LocalOSColors.current.neutral_0)) {
-                        append(value.capitalizeWordsAfterComma())
-                    }
-                }.toString(),
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(color = LocalOSColors.current.neutral_p1)) {
+                    append(key)
+                }
+                append(" ")
+                withStyle(SpanStyle(color = LocalOSColors.current.neutral_0)) {
+                    append(value.capitalizeWordsAfterComma())
+                }
+            },
         )
     }
 }

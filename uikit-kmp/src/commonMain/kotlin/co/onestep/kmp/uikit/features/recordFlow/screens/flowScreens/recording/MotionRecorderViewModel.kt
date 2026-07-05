@@ -19,9 +19,7 @@ import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTPrepareData
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTPrepareDuration
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsTracker
-import co.onestep.kmp.uikit.features.recordFlow.configurations.randomUUID
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingInstruction
-import co.onestep.kmp.uikit.features.recordFlow.screensData.HallwayDistanceScreenState
 import co.onestep.kmp.uikit.features.recordFlow.screensData.IconData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.SecondaryButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.RecordingScreenData
@@ -29,9 +27,6 @@ import co.onestep.kmp.uikit.features.recordFlow.screensData.SlideToStopButtonDat
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TimerData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.ToolBarData
-import co.onestep.kmp.uikit.features.recordFlow.screensData.filterHallwayDigits
-import co.onestep.kmp.uikit.features.recordFlow.screensData.hallwayRange
-import co.onestep.kmp.uikit.features.recordFlow.screensData.hallwayRecommended
 import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
 import co.onestep.kmp.uikit.models.OSTAnalyserError
@@ -43,26 +38,17 @@ import co.onestep.kmp.uikit.models.OSTUserInputMetaData
 import co.onestep.kmp.uikit.models.OSTWalkCourseLength.Companion.getWalkCourseLength
 import co.onestep.kmp.uikit.models.currentTimeMillis
 import co.onestep.kmp.uikit.utils.Languages
-import co.onestep.kmp.uikit.utils.METERS_TO_FEET_RATIO
 import co.onestep.kmp.uikit.utils.ResourceProvider
 import co.onestep.kmp.uikit.utils.toDisplayTime
-import co.onestep.kmp.uikit.utils.useImperialSystem
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.measurement_stopped
-import co.onestep.kmp.uikit_kmp.generated.resources.unit_feet
-import co.onestep.kmp.uikit_kmp.generated.resources.unit_meters
 import co.onestep.kmp.uikit_kmp.generated.resources.analyzing
 import co.onestep.kmp.uikit_kmp.generated.resources.analyzing_in_progress
-import co.onestep.kmp.uikit_kmp.generated.resources.change_if_your_testing_area_is_different
 import co.onestep.kmp.uikit_kmp.generated.resources.dual_task_prepare_instructions
-import co.onestep.kmp.uikit_kmp.generated.resources.enter_hallway_length
 import co.onestep.kmp.uikit_kmp.generated.resources.generating_report
 import co.onestep.kmp.uikit_kmp.generated.resources.get_ready
 import co.onestep.kmp.uikit_kmp.generated.resources.go
-import co.onestep.kmp.uikit_kmp.generated.resources.hallway_length_error_range
-import co.onestep.kmp.uikit_kmp.generated.resources.hallway_length_hint
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_play_button
-import co.onestep.kmp.uikit_kmp.generated.resources.last_saved_hallway_length
 import co.onestep.kmp.uikit_kmp.generated.resources.place_the_phone_against_the_thigh
 import co.onestep.kmp.uikit_kmp.generated.resources.place_the_phone_in_position
 import co.onestep.kmp.uikit_kmp.generated.resources.place_the_phone_in_the_pocket
@@ -85,7 +71,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.roundToInt
 import org.jetbrains.compose.resources.StringResource
 
 private const val DEFAULT_DISPLAY_START_TIME = "00:00"
@@ -106,19 +91,16 @@ internal class MotionRecorderViewModel(
     private val _onUiTimeoutExit = Channel<Unit>(Channel.CONFLATED)
     val onUiTimeoutExit = _onUiTimeoutExit.receiveAsFlow()
 
-    private var suppressShortHallwayWarning: Boolean
-        get() = if (configuration.value.activityType == OSTActivityType.SIX_MINUTE_WALK) {
-            preferenceManager.suppressShortHallwayWarning6Min
-        } else {
-            preferenceManager.suppressShortHallwayWarning2Min
-        }
-        set(value) {
-            if (configuration.value.activityType == OSTActivityType.SIX_MINUTE_WALK) {
-                preferenceManager.suppressShortHallwayWarning6Min = value
-            } else {
-                preferenceManager.suppressShortHallwayWarning2Min = value
-            }
-        }
+    // Focused collaborators extracted from this ViewModel (OS God-class decomposition). The
+    // ViewModel remains the single entry point the UI sees and delegates to these for their
+    // respective concerns; behavior is unchanged.
+    private val hallwayManager = HallwayDistanceManager(
+        resourceProvider = resourceProvider,
+        preferenceManager = preferenceManager,
+        activityTypeProvider = { configuration.value.activityType },
+    )
+    private val toolbar = ToolbarStateHolder(resourceProvider)
+    private val balanceManager = BalanceSessionManager()
 
     val recordingLimit: String =
         (recorderBridge.currentRecordingLimit() / 1000 / 60).toInt().toString()
@@ -172,29 +154,24 @@ internal class MotionRecorderViewModel(
 
     private var pocketLocation: PocketLocation? = null
 
-    // --- Static Balance session state (OS-15960) ---------------------------------
+    // --- Static Balance session (OS-15960) — state owned by BalanceSessionManager ---------
     // One session per flow launch: the ViewModel is scoped to the recording flow, so a
     // fresh launch gets a fresh session UUID. Every condition recorded in this launch
     // (including via "Record another test") shares it; it is the Engine's grouping key
     // for the session's perceptions.
 
     /** Groups all Static Balance conditions recorded in this flow launch. */
-    val sessionUuid: String = randomUUID()
-
-    /** Measurement ids of the session's completed conditions, in recording order. */
-    private val sessionMeasurementIds = mutableListOf<String>()
+    val sessionUuid: String get() = balanceManager.sessionUuid
 
     /**
      * The most recently completed condition's measurement. Used to resume to the web
      * summary when a later condition fails (e.g. "recording too short" → Finish) — the
      * host opens its web summary, which shows all of the day's conditions.
      */
-    var lastSavedBalanceMeasurement: OSTMotionMeasurement? = null
-        private set
+    val lastSavedBalanceMeasurement: OSTMotionMeasurement? get() = balanceManager.lastSavedBalanceMeasurement
 
     /** The condition configured for the upcoming/current recording, if any. */
-    var currentBalanceCondition: OSTBalanceCondition? = null
-        private set
+    val currentBalanceCondition: OSTBalanceCondition? get() = balanceManager.currentBalanceCondition
 
     private var isRecording = false
 
@@ -218,63 +195,25 @@ internal class MotionRecorderViewModel(
 
     private var hasPlayedReadyForAnalysisAudio = false
 
-    private var hallwayLengthForCurrentTest: Int? = null
+    // Hallway-distance state is owned by HallwayDistanceManager; the ViewModel exposes it
+    // unchanged for the UI.
+    val hallwayDistanceState get() = hallwayManager.hallwayDistanceState
 
-    private var savedHallwayLength: Int? = null
-
-    var hallwayDistanceState =
-        mutableStateOf(
-            HallwayDistanceScreenState(
-                title = resourceProvider.getString(Res.string.enter_hallway_length),
-                subtitle = resourceProvider.getString(Res.string.hallway_length_hint),
-                unitText = resourceProvider.getString(if (isImperialSystem()) Res.string.unit_feet else Res.string.unit_meters),
-                inputValue = "",
-                errorText = null,
-                canContinue = false,
-                showShortHallwayDialog = false,
-                recommendedValue = hallwayRecommended(isImperialSystem()),
-                suppressShortHallwayWarning = suppressShortHallwayWarning,
-            ),
-        )
-        private set
-
-    var showToolbar = mutableStateOf(true)
-    var toolbarData = mutableStateOf(ToolBarData())
-    private var startIcon = mutableStateOf<IconData?>(null)
+    // Toolbar state is owned by ToolbarStateHolder; delegated below.
+    val showToolbar get() = toolbar.showToolbar
+    val toolbarData get() = toolbar.toolbarData
 
     fun setForegroundState(isForeground: Boolean) {
         appInForeground.value = isForeground
     }
 
-    fun setToolBarData(data: ToolBarData) {
-        toolbarData.value = data
-        startIcon.value = data.startIcon
-    }
+    fun setToolBarData(data: ToolBarData) = toolbar.setToolBarData(data)
 
-    fun showToolbar(show: Boolean) {
-        showToolbar.value = show
-    }
+    fun showToolbar(show: Boolean) = toolbar.showToolbar(show)
 
-    fun showBackButton(show: Boolean) {
-        toolbarData.value =
-            toolbarData.value.copy(
-                startIcon = if (show) startIcon.value else null,
-            )
-    }
+    fun showBackButton(show: Boolean) = toolbar.showBackButton(show)
 
-    fun setToolBarTitle(title: StringResource?) {
-        toolbarData.value =
-            toolbarData.value.copy(
-                title =
-                    title?.let {
-                        TextData(
-                            text = resourceProvider.getString(title),
-                            textSize = 18.sp,
-                            fontWeight = FontWeight.Normal,
-                        )
-                    },
-            )
-    }
+    fun setToolBarTitle(title: StringResource?) = toolbar.setToolBarTitle(title)
 
     private fun collectRecordingState() {
         recordingStateJob =
@@ -343,15 +282,7 @@ internal class MotionRecorderViewModel(
         this.configuration.value = configuration
         audioPlayer.enable(configuration.playVoiceOver)
         ttsPlayer.enable(configuration.prepareScreenData is OSTPrepareData.Tts)
-        val savedMeters = if (configuration.activityType == OSTActivityType.SIX_MINUTE_WALK) {
-            preferenceManager.sixMinHallwayLengthM
-        } else {
-            preferenceManager.twoMinHallwayLengthM
-        }
-        savedHallwayLength = savedMeters?.let {
-            if (isImperialSystem()) (it * METERS_TO_FEET_RATIO).roundToInt() else it.roundToInt()
-        }
-        rebuildHallwayState(inputValue = savedHallwayLength?.toString() ?: "")
+        hallwayManager.loadSavedLength()
     }
 
     fun initState() {
@@ -378,104 +309,96 @@ internal class MotionRecorderViewModel(
 
     private fun updateState(stage: RecordingScreenData.RecordScreenStage) {
         when (stage) {
-            RecordingScreenData.RecordScreenStage.GET_READY -> {
-                // Prepare foreground service early to avoid crashes when recording starts from background
-                viewModelScope.launch {
-                    recorderBridge.prepareForRecording(configuration.value.activityType)
-                }
+            RecordingScreenData.RecordScreenStage.GET_READY -> handleGetReady()
+            RecordingScreenData.RecordScreenStage.RECORDING -> handleRecordingStart()
+            RecordingScreenData.RecordScreenStage.ANALYZING -> handleAnalyzingStart()
+        }
+    }
 
-                configuration.value.prepareScreenData?.let { prepareScreenData ->
-                    val config = configuration.value
-                    var instructions =
-                        resourceProvider.getString(Res.string.dual_task_prepare_instructions)
-                    when (prepareScreenData) {
-                        is OSTPrepareData.Tts -> {
-                            audioPlayer.stopCurrentAudio()
+    private fun handleGetReady() {
+        // Prepare foreground service early to avoid crashes when recording starts from background
+        viewModelScope.launch {
+            recorderBridge.prepareForRecording(configuration.value.activityType)
+        }
 
-                            val tts = prepareScreenData.ttsSpeechText.ifEmpty { null }
+        configuration.value.prepareScreenData?.let { prepareScreenData ->
+            val config = configuration.value
+            var instructions =
+                resourceProvider.getString(Res.string.dual_task_prepare_instructions)
+            when (prepareScreenData) {
+                is OSTPrepareData.Tts -> {
+                    audioPlayer.stopCurrentAudio()
 
-                            if (prepareScreenData.showInstructions && prepareScreenData.ttsSpeechText.isNotEmpty()) {
-                                instructions = prepareScreenData.ttsSpeechText
-                            }
-                            ttsPlayer.speak(tts ?: instructions)
-                            ttsPlayer.setOnDoneListener {
-                                updateState(RecordingScreenData.RecordScreenStage.RECORDING)
-                                ttsPlayer.setOnDoneListener(null)
-                            }
-                        }
+                    val tts = prepareScreenData.ttsSpeechText.ifEmpty { null }
 
-                        is OSTPrepareData.Duration -> {
-                            if (config.playVoiceOver) {
-                                audioPlayer.stopCurrentAudio()
-                                when (prepareScreenData.prepareDuration) {
-                                    OSTPrepareDuration.FIVE_SECONDS -> audioPlayer.playAudio(
-                                        when (language) {
-                                            Languages.HEBREW, Languages.HEBREW_LEGACY -> "countdown_from_5_iw"
-                                            else -> "countdown_from_5"
-                                        },
-                                    )
-
-                                    OSTPrepareDuration.TEN_SECONDS -> audioPlayer.playAudio(
-                                        when (language) {
-                                            Languages.RUSSIAN, Languages.ROMANIAN, Languages.UKRAINIAN -> "countdown_from_10_ru"
-                                            Languages.HEBREW, Languages.HEBREW_LEGACY -> "countdown_from_10_iw"
-                                            else -> "countdown_from_10"
-                                        },
-                                    )
-
-                                    OSTPrepareDuration.NONE -> Unit
-                                }
-                            }
-                            // screen: measurement_countdown — the Get Ready countdown screen
-                            // is shown (Duration prepare with a non-zero countdown), matching
-                            // uikit's countdown screen-view.
-                            if (prepareScreenData.prepareDuration != OSTPrepareDuration.NONE) {
-                                analyticsTracker?.trackMeasurementCountdownScreen(configuration.value.activityType)
-                            }
-                            startTimerJob(prepareScreenData)
-                        }
+                    if (prepareScreenData.showInstructions && prepareScreenData.ttsSpeechText.isNotEmpty()) {
+                        instructions = prepareScreenData.ttsSpeechText
                     }
-                    recodingScreenState.value =
-                        if (config.activityType == OSTActivityType.DUAL_TASK_WALK_SUBTRACT) {
-                            getReadyDualTaskState(instructions)
-                        } else {
-                            getReadyState()
-                        }
-                } ?: run {
-                    updateState(RecordingScreenData.RecordScreenStage.RECORDING)
-                }
-            }
-
-            RecordingScreenData.RecordScreenStage.RECORDING -> {
-                readyTimeJob?.cancel()
-                audioPlayer.stopCurrentAudio()
-                recodingScreenState.value = recordingState()
-                startRecording()
-            }
-
-            RecordingScreenData.RecordScreenStage.ANALYZING -> {
-                // screen: measurement_analyzing — the analyzing UI is first shown.
-                // measurement_seconds is the recorded length in whole seconds (wall-clock
-                // since recording start, matching uikit's recorded-length semantics).
-                val measurementSeconds =
-                    recordingStartedAtMs?.let { ((currentTimeMillis() - it) / 1000L).toInt() } ?: 0
-                analyticsTracker?.trackAnalyzingScreen(configuration.value.activityType, measurementSeconds)
-                isRecording = false
-                recordingJob?.cancel()
-                if (configuration.value.playVoiceOver) {
-                    if (!audioPlayer.isPlaying()) {
-                        audioPlayer.playAudio(
-                            when (language) {
-                                Languages.RUSSIAN, Languages.UKRAINIAN, Languages.ROMANIAN -> "recording_stopped_ru"
-                                Languages.HEBREW, Languages.HEBREW_LEGACY -> "recording_stopped_iw"
-                                else -> "recording_stopped"
-                            },
-                        )
+                    ttsPlayer.speak(tts ?: instructions)
+                    ttsPlayer.setOnDoneListener {
+                        updateState(RecordingScreenData.RecordScreenStage.RECORDING)
+                        ttsPlayer.setOnDoneListener(null)
                     }
                 }
-                recodingScreenState.value = analysingState()
+
+                is OSTPrepareData.Duration -> {
+                    if (config.playVoiceOver) {
+                        audioPlayer.stopCurrentAudio()
+                        when (prepareScreenData.prepareDuration) {
+                            // No Russian variant exists for 5-second countdown
+                            OSTPrepareDuration.FIVE_SECONDS -> audioPlayer.playAudio(
+                                localizedAudioKey("countdown_from_5", ruKey = "countdown_from_5"),
+                            )
+
+                            OSTPrepareDuration.TEN_SECONDS -> audioPlayer.playAudio(
+                                localizedAudioKey("countdown_from_10"),
+                            )
+
+                            OSTPrepareDuration.NONE -> Unit
+                        }
+                    }
+                    // screen: measurement_countdown — the Get Ready countdown screen
+                    // is shown (Duration prepare with a non-zero countdown), matching
+                    // uikit's countdown screen-view.
+                    if (prepareScreenData.prepareDuration != OSTPrepareDuration.NONE) {
+                        analyticsTracker?.trackMeasurementCountdownScreen(configuration.value.activityType)
+                    }
+                    startTimerJob(prepareScreenData)
+                }
+            }
+            recodingScreenState.value =
+                if (config.activityType == OSTActivityType.DUAL_TASK_WALK_SUBTRACT) {
+                    getReadyDualTaskState(instructions)
+                } else {
+                    getReadyState()
+                }
+        } ?: run {
+            updateState(RecordingScreenData.RecordScreenStage.RECORDING)
+        }
+    }
+
+    private fun handleRecordingStart() {
+        readyTimeJob?.cancel()
+        audioPlayer.stopCurrentAudio()
+        recodingScreenState.value = recordingState()
+        startRecording()
+    }
+
+    private fun handleAnalyzingStart() {
+        // screen: measurement_analyzing — the analyzing UI is first shown.
+        // measurement_seconds is the recorded length in whole seconds (wall-clock
+        // since recording start, matching uikit's recorded-length semantics).
+        val measurementSeconds =
+            recordingStartedAtMs?.let { ((currentTimeMillis() - it) / 1000L).toInt() } ?: 0
+        analyticsTracker?.trackAnalyzingScreen(configuration.value.activityType, measurementSeconds)
+        isRecording = false
+        recordingJob?.cancel()
+        if (configuration.value.playVoiceOver) {
+            if (!audioPlayer.isPlaying()) {
+                audioPlayer.playAudio(localizedAudioKey("recording_stopped"))
             }
         }
+        recodingScreenState.value = analysingState()
     }
 
     private fun getReadyDualTaskState(instructions: String) = RecordingScreenData(
@@ -484,33 +407,33 @@ internal class MotionRecorderViewModel(
         instructions = TextData(instructions, 28.sp, FontWeight.W600),
     )
 
+    /** Resolves the Get Ready screen's instruction text based on pocket location, activity type, and balance condition. */
+    private fun getReadyInstructions(): String =
+        pocketLocation?.getReadyTitleKey?.let { key ->
+            when (key) {
+                "place_the_phone_in_the_pocket" -> resourceProvider.getString(Res.string.place_the_phone_in_the_pocket)
+                "place_the_phone_against_the_thigh" -> resourceProvider.getString(Res.string.place_the_phone_against_the_thigh)
+                else -> null
+            }
+        } ?: when (configuration.value.activityType) {
+            OSTActivityType.ROM_KNEE_EXT -> resourceProvider.getString(Res.string.place_the_phone_against_the_thigh)
+
+            // Static Balance: seated condition holds the phone at the chest; all
+            // other stances use pocket/strap placement.
+            OSTActivityType.STATIC_BALANCE ->
+                if (currentBalanceCondition?.codeFor("stance") == "seated") {
+                    resourceProvider.getString(Res.string.static_balance_hold_chest)
+                } else {
+                    resourceProvider.getString(Res.string.static_balance_place_pocket_strap)
+                }
+
+            else -> resourceProvider.getString(Res.string.place_the_phone_in_position)
+        }
+
     private fun getReadyState() = RecordingScreenData(
         recordScreenStage = RecordingScreenData.RecordScreenStage.GET_READY,
         title = TextData(resourceProvider.getString(Res.string.get_ready), 60.sp, FontWeight.W600),
-        instructions = TextData(
-            pocketLocation?.getReadyTitleKey?.let { key ->
-                when (key) {
-                    "place_the_phone_in_the_pocket" -> resourceProvider.getString(Res.string.place_the_phone_in_the_pocket)
-                    "place_the_phone_against_the_thigh" -> resourceProvider.getString(Res.string.place_the_phone_against_the_thigh)
-                    else -> null
-                }
-            }
-                ?: when (configuration.value.activityType) {
-                    OSTActivityType.ROM_KNEE_EXT -> resourceProvider.getString(Res.string.place_the_phone_against_the_thigh)
-
-                    // Static Balance: seated condition holds the phone at the chest; all
-                    // other stances use pocket/strap placement.
-                    OSTActivityType.STATIC_BALANCE ->
-                        if (currentBalanceCondition?.codeFor("stance") == "seated") {
-                            resourceProvider.getString(Res.string.static_balance_hold_chest)
-                        } else {
-                            resourceProvider.getString(Res.string.static_balance_place_pocket_strap)
-                        }
-
-                    else -> resourceProvider.getString(Res.string.place_the_phone_in_position)
-                },
-            28.sp, FontWeight.W600
-        ),
+        instructions = TextData(getReadyInstructions(), 28.sp, FontWeight.W600),
         timerValue = TimerData(TextData(timerValue.value, 115.sp, FontWeight.W600), countdown = true),
         bottomButton = SecondaryButtonData(
             text = TextData(resourceProvider.getString(Res.string.start_now), 24.sp, FontWeight.W600),
@@ -622,7 +545,7 @@ internal class MotionRecorderViewModel(
                             tags = tags,
                             assistiveDevice = assistiveDevice,
                             walkCourseLength =
-                                hallwayLengthForCurrentTest?.let {
+                                hallwayManager.hallwayLengthForCurrentTest?.let {
                                     getWalkCourseLength(it, isImperialSystem())
                                 },
                         ),
@@ -670,11 +593,6 @@ internal class MotionRecorderViewModel(
         this.assistiveDevice = device
     }
 
-    // Utility functions for future pre record tagging feature
-    fun setNote(note: String) {
-        this.note = note
-    }
-
     fun addTags(tagsToAdd: List<String>) {
         this.tags.addAll(tagsToAdd)
     }
@@ -683,15 +601,7 @@ internal class MotionRecorderViewModel(
         tags.removeAll(tagsToRemove)
     }
 
-    fun clearTags() {
-        tags.clear()
-    }
-
-    fun setCustomMetadata(customMetadata: Map<String, Any>) {
-        this.customMetadata.putAll(customMetadata)
-    }
-
-    // --- Static Balance session (OS-15960) ---------------------------------------
+    // --- Static Balance session (OS-15960) — delegated to BalanceSessionManager ----------
 
     /**
      * Sets the Static Balance condition for the upcoming recording. The condition's
@@ -701,18 +611,18 @@ internal class MotionRecorderViewModel(
      * afterwards on the "Recording saved" screen and merged into the same nested object via
      * [updateBalanceConditionNote].
      */
-    fun setBalanceCondition(condition: OSTBalanceCondition) {
-        currentBalanceCondition = condition
-    }
+    fun setBalanceCondition(condition: OSTBalanceCondition) = balanceManager.setBalanceCondition(condition)
 
     /** Records a completed condition's measurement in the session. */
-    fun onBalanceConditionSaved(measurement: OSTMotionMeasurement) {
-        sessionMeasurementIds.add(measurement.id)
-        lastSavedBalanceMeasurement = measurement
-    }
+    fun onBalanceConditionSaved(measurement: OSTMotionMeasurement) = balanceManager.onBalanceConditionSaved(measurement)
 
     /** Number of conditions completed in this session so far. */
-    fun balanceConditionCount(): Int = sessionMeasurementIds.size
+    fun balanceConditionCount(): Int = balanceManager.balanceConditionCount()
+
+    // The two operations below stay on the ViewModel: they reach into the recorder bridge and
+    // the recorder-driven UI state (motionMeasurement, note, tags, customMetadata, timerValue,
+    // recodingScreenState), so they cannot move cleanly into BalanceSessionManager. They
+    // read/clear the session's condition through the manager.
 
     /**
      * Attaches the single per-condition note — entered post-recording on the "Recording
@@ -749,7 +659,7 @@ internal class MotionRecorderViewModel(
      * same [sessionUuid], accumulated measurement ids untouched.
      */
     fun prepareForNextBalanceCondition() {
-        currentBalanceCondition = null
+        balanceManager.clearCurrentCondition()
         note = null
         tags.clear()
         // Drop the per-condition object but keep session_uuid so the next condition stays
@@ -896,10 +806,6 @@ internal class MotionRecorderViewModel(
         }
     }
 
-    fun playAudio(sound: String) {
-        audioPlayer.playAudio(sound)
-    }
-
     private fun startRecordingInstructionsJob(instructionsQueue: List<OSTRecordingInstruction>) {
         ttsInstructionsJob =
             viewModelScope.launch {
@@ -927,161 +833,49 @@ internal class MotionRecorderViewModel(
         ttsPlayer.stopCurrentSpeech()
     }
 
-    fun stopAudio() {
-        audioPlayer.stopCurrentAudio()
+    /**
+     * Returns the localized audio file key for [base] by appending the language suffix.
+     * [ruKey] overrides the Russian/Ukrainian/Romanian key (default: "${base}_ru").
+     * [iwKey] overrides the Hebrew key (default: "${base}_iw").
+     */
+    private fun localizedAudioKey(
+        base: String,
+        ruKey: String = "${base}_ru",
+        iwKey: String = "${base}_iw",
+    ): String = when (language) {
+        Languages.RUSSIAN, Languages.UKRAINIAN, Languages.ROMANIAN -> ruKey
+        Languages.HEBREW, Languages.HEBREW_LEGACY -> iwKey
+        else -> base
     }
 
     fun playReadyForAnalysisAudio() {
+        // Note: the Russian asset is intentionally named "data_is_read_for_analysis_ru"
+        // (matching the actual mp3 filename); Hebrew uses "_heb" instead of "_iw".
         audioPlayer.playAudio(
-            when (language) {
-                Languages.RUSSIAN, Languages.UKRAINIAN, Languages.ROMANIAN -> "data_is_read_for_analysis_ru"
-                Languages.HEBREW, Languages.HEBREW_LEGACY -> "data_is_ready_for_analysis_heb"
-                else -> "data_is_ready_for_analysis"
-            },
+            localizedAudioKey(
+                "data_is_ready_for_analysis",
+                ruKey = "data_is_read_for_analysis_ru",
+                iwKey = "data_is_ready_for_analysis_heb",
+            ),
         )
     }
 
-    fun saveHallwayDistanceToPreferences() {
-        val displayValue = hallwayLengthForCurrentTest ?: return
-        val valueInMeters: Float = if (isImperialSystem()) {
-            displayValue / METERS_TO_FEET_RATIO
-        } else {
-            displayValue.toFloat()
-        }
-        if (configuration.value.activityType == OSTActivityType.SIX_MINUTE_WALK) {
-            preferenceManager.sixMinHallwayLengthM = valueInMeters
-        } else {
-            preferenceManager.twoMinHallwayLengthM = valueInMeters
-        }
-    }
+    // --- Hallway distance — delegated to HallwayDistanceManager --------------------------
 
-    fun onHallwayInputChanged(rawValue: String) {
-        val digits = filterHallwayDigits(rawValue)
-        rebuildHallwayState(
-            inputValue = digits,
-            errorText = hallwayErrorFor(digits),
-            showShortHallwayDialog = false,
-        )
-    }
+    fun saveHallwayDistanceToPreferences() = hallwayManager.saveHallwayDistanceToPreferences()
 
-    fun onHallwayContinue(): Boolean {
-        val inputValue = hallwayDistanceState.value.inputValue
-        val value = inputValue.toIntOrNull()
-        val error = hallwayErrorFor(inputValue, emptyIsError = true)
+    fun onHallwayInputChanged(rawValue: String) = hallwayManager.onHallwayInputChanged(rawValue)
 
-        if (value == null || error != null) {
-            rebuildHallwayState(errorText = error, showShortHallwayDialog = false)
-            return false
-        }
+    fun onHallwayContinue(): Boolean = hallwayManager.onHallwayContinue()
 
-        val recommended = hallwayRecommended(isImperialSystem(), configuration.value.activityType)
-        if (!suppressShortHallwayWarning && value < recommended) {
-            rebuildHallwayState(
-                errorText = null,
-                showShortHallwayDialog = true,
-            )
-            return false
-        }
+    fun onShortHallwayStartTest(): Boolean = hallwayManager.onShortHallwayStartTest()
 
-        commitHallwayLength(value)
-        return true
-    }
+    fun onHallwaySkip() = hallwayManager.onHallwaySkip()
 
-    fun onShortHallwayStartTest(): Boolean {
-        val inputValue = hallwayDistanceState.value.inputValue
-        val value = inputValue.toIntOrNull() ?: return false
-        val error = hallwayErrorFor(inputValue)
+    fun dismissShortHallwayDialog() = hallwayManager.dismissShortHallwayDialog()
 
-        if (error != null) {
-            dismissShortHallwayDialog()
-            rebuildHallwayState(errorText = error, showShortHallwayDialog = false)
-            return false
-        }
+    fun onSuppressShortHallwayWarningChanged(suppress: Boolean) =
+        hallwayManager.onSuppressShortHallwayWarningChanged(suppress)
 
-        commitHallwayLength(value)
-        dismissShortHallwayDialog()
-        return true
-    }
-
-    fun onHallwaySkip() {
-        hallwayLengthForCurrentTest = null
-
-        rebuildHallwayState(
-            errorText = hallwayErrorFor(hallwayDistanceState.value.inputValue),
-            showShortHallwayDialog = false,
-        )
-    }
-
-    fun dismissShortHallwayDialog() {
-        rebuildHallwayState(showShortHallwayDialog = false)
-    }
-
-    fun onSuppressShortHallwayWarningChanged(suppress: Boolean) {
-        suppressShortHallwayWarning = suppress
-        rebuildHallwayState() // refresh the state so the checkbox reflects immediately
-    }
-
-    fun isImperialSystem(): Boolean = useImperialSystem(preferenceManager)
-
-    private fun rebuildHallwayState(
-        inputValue: String = hallwayDistanceState.value.inputValue,
-        errorText: String? = hallwayDistanceState.value.errorText,
-        showShortHallwayDialog: Boolean = hallwayDistanceState.value.showShortHallwayDialog,
-    ) {
-        val isImperial = isImperialSystem()
-        val titleRes: StringResource =
-            if (savedHallwayLength != null) {
-                Res.string.last_saved_hallway_length
-            } else {
-                Res.string.enter_hallway_length
-            }
-
-        val subtitleRes: StringResource =
-            if (savedHallwayLength != null) {
-                Res.string.change_if_your_testing_area_is_different
-            } else {
-                Res.string.hallway_length_hint
-            }
-
-        hallwayDistanceState.value =
-            HallwayDistanceScreenState(
-                title = resourceProvider.getString(titleRes),
-                subtitle = resourceProvider.getString(subtitleRes),
-                unitText = resourceProvider.getString(if (isImperial) Res.string.unit_feet else Res.string.unit_meters),
-                inputValue = inputValue,
-                errorText = errorText,
-                canContinue =
-                    inputValue.toIntOrNull()?.let {
-                        val (rangeMin, rangeMax) = hallwayRange(isImperial)
-                        it in rangeMin..rangeMax
-                    } ?: false,
-                showShortHallwayDialog = showShortHallwayDialog,
-                recommendedValue = hallwayRecommended(isImperial, configuration.value.activityType),
-                suppressShortHallwayWarning = suppressShortHallwayWarning,
-            )
-    }
-
-    private fun hallwayErrorFor(inputValue: String, emptyIsError: Boolean = false): String? {
-        val (min, max) = hallwayRange(isImperialSystem())
-        val value = inputValue.toIntOrNull()
-        return when {
-            value != null && value in min..max -> null
-            inputValue.isEmpty() && !emptyIsError -> null
-            else -> resourceProvider.getString(
-                Res.string.hallway_length_error_range,
-                min, max,
-                resourceProvider.getString(if (isImperialSystem()) Res.string.unit_feet else Res.string.unit_meters),
-            )
-        }
-    }
-
-    private fun commitHallwayLength(displayValue: Int) {
-        hallwayLengthForCurrentTest = displayValue
-
-        rebuildHallwayState(
-            inputValue = displayValue.toString(),
-            errorText = null,
-            showShortHallwayDialog = false,
-        )
-    }
+    fun isImperialSystem(): Boolean = hallwayManager.isImperialSystem()
 }

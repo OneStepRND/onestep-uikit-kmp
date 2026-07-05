@@ -38,7 +38,6 @@ import co.onestep.kmp.uikit.ui.components.BottomSheet
 import co.onestep.kmp.uikit.ui.components.FadingSurfaceToTransparent
 import co.onestep.kmp.uikit.ui.components.Instructions
 import co.onestep.designsystem.components.OSText
-import co.onestep.designsystem.components.SecondaryButton
 import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.designsystem.components.TertiaryButton
 import co.onestep.kmp.uikit.ui.components.PrimaryBrandButton
@@ -171,7 +170,7 @@ internal fun PermissionRequestScreen(
             }
         }
 
-        if (screenData.brandButton != null || screenData.outlineBrandButton != null || screenData.tertiaryButton != null) {
+        if (screenData.brandButton != null || screenData.tertiaryButton != null) {
             Box(
                 modifier =
                     Modifier
@@ -200,17 +199,6 @@ internal fun PermissionRequestScreen(
                                         it.action()
                                     },
                                 ),
-                        )
-                        Spacer(Modifier.height(Variables.GapL))
-                    }
-                    screenData.outlineBrandButton?.let {
-                        SecondaryButton(
-                            text = it.text.text,
-                            onClick = { it.action(); onInfoToggle?.invoke(!showInfo) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag(WALK_FLOW_SCREEN_BORDER_BRAND_BUTTON),
-                            size = OSButtonSize.Big,
                         )
                         Spacer(Modifier.height(Variables.GapL))
                     }
@@ -275,7 +263,7 @@ private fun PermissionRequestScreenPreview() {
 }
 
 @Composable
-fun DataUsageNotice(dismissBottomSheet: () -> Unit = {}) {
+private fun DataUsageNotice(dismissBottomSheet: () -> Unit = {}) {
     Column {
         Box(
             modifier =

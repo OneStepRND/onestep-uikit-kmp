@@ -16,12 +16,9 @@ import co.onestep.kmp.uikit.features.recordFlow.screensData.PrimaryButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.IconData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.MainButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.SecondaryButtonData
-import co.onestep.kmp.uikit.features.recordFlow.screensData.RecordingScreenData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.SelectionItemData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.SelectionListData
-import co.onestep.kmp.uikit.features.recordFlow.screensData.SlideToStopButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
-import co.onestep.kmp.uikit.features.recordFlow.screensData.TimerData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.NoteBannerData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.UiKitScreenData
 import co.onestep.kmp.uikit.features.permissions.PermissionScreenData
@@ -35,14 +32,10 @@ import co.onestep.kmp.uikit_kmp.generated.resources.choose_your_assistive_device
 import co.onestep.kmp.uikit_kmp.generated.resources.choose_your_footwear
 import co.onestep.kmp.uikit_kmp.generated.resources.a_connection_issue
 import co.onestep.kmp.uikit_kmp.generated.resources.allow
-import co.onestep.kmp.uikit_kmp.generated.resources.analyzing
-import co.onestep.kmp.uikit_kmp.generated.resources.analyzing_in_progress
 import co.onestep.kmp.uikit_kmp.generated.resources.continue_camel_case
 import co.onestep.kmp.uikit_kmp.generated.resources.finish
 import co.onestep.kmp.uikit_kmp.generated.resources.five_minutes
 import co.onestep.kmp.uikit_kmp.generated.resources.for_a_successful_analysis_you_need_to_walk_in_a_straight_line
-import co.onestep.kmp.uikit_kmp.generated.resources.get_ready
-import co.onestep.kmp.uikit_kmp.generated.resources.go
 import co.onestep.kmp.uikit_kmp.generated.resources.go_to_settings
 import co.onestep.kmp.uikit_kmp.generated.resources.go_to_the_device_settings_and_then_toggle_on_microphone
 import co.onestep.kmp.uikit_kmp.generated.resources.how_long_do_you_want_to_walk_today
@@ -53,7 +46,6 @@ import co.onestep.kmp.uikit_kmp.generated.resources.ic_info_circle
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_knee_red_stars
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_microphone_stars
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_motion_red_stars
-import co.onestep.kmp.uikit_kmp.generated.resources.ic_play_button
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_routes_red_stars
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_server_red_stars
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_sts_red_stars
@@ -72,13 +64,10 @@ import co.onestep.kmp.uikit_kmp.generated.resources.make_sure_your_phone_is_not_
 import co.onestep.kmp.uikit_kmp.generated.resources.one_minute
 import co.onestep.kmp.uikit_kmp.generated.resources.oops
 import co.onestep.kmp.uikit_kmp.generated.resources.please_make_sure_is_placed_snugly_against_your_thigh_and_follow_the_measurement_instructions
-import co.onestep.kmp.uikit_kmp.generated.resources.recording_in_progress
 import co.onestep.kmp.uikit_kmp.generated.resources.rom_error_position_description
 import co.onestep.kmp.uikit_kmp.generated.resources.rom_static_error_description
 import co.onestep.kmp.uikit_kmp.generated.resources.skip
-import co.onestep.kmp.uikit_kmp.generated.resources.slide_to_stop
 import co.onestep.kmp.uikit_kmp.generated.resources.start
-import co.onestep.kmp.uikit_kmp.generated.resources.start_now
 import co.onestep.kmp.uikit_kmp.generated.resources.static_balance_too_short_error_description
 import co.onestep.kmp.uikit_kmp.generated.resources.sts_enter_results_manually
 import co.onestep.kmp.uikit_kmp.generated.resources.sts_position_error_description
@@ -113,108 +102,6 @@ import org.jetbrains.compose.resources.stringResource
  * Extracted from the original DataFactory (97KB) to only include record-flow-related methods.
  */
 internal object RecordFlowDataFactory {
-
-    @Composable
-    fun getReadyScreenData(
-        instructions: String,
-        timerValue: String,
-        startRecording: () -> Unit,
-    ) = RecordingScreenData(
-        recordScreenStage = RecordingScreenData.RecordScreenStage.GET_READY,
-        title = TextData(
-            text = stringResource(Res.string.get_ready),
-            textSize = 60.sp,
-            fontWeight = FontWeight.Bold,
-        ),
-        instructions = TextData(
-            text = instructions,
-            textSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-        ),
-        timerValue = TimerData(
-            text = TextData(
-                text = timerValue,
-                textSize = 110.sp,
-                fontWeight = FontWeight.ExtraBold,
-            ),
-            countdown = true,
-        ),
-        bottomButton = SecondaryButtonData(
-            text = TextData(
-                text = stringResource(Res.string.start_now),
-                textSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-            ),
-            iconData = IconData(icon = Res.drawable.ic_play_button, tintColor = Color.White),
-            action = startRecording,
-        ),
-    )
-
-    @Composable
-    fun getReadyDualTaskScreenData(
-        instructions: String,
-    ) = RecordingScreenData(
-        recordScreenStage = RecordingScreenData.RecordScreenStage.GET_READY,
-        title = TextData(
-            text = stringResource(Res.string.get_ready),
-            textSize = 60.sp,
-            fontWeight = FontWeight.Bold,
-        ),
-        instructions = TextData(
-            text = instructions,
-            textSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-        ),
-    )
-
-    @Composable
-    fun recordingScreenData(
-        timerValue: String,
-        slideToStopAction: () -> Unit,
-    ) = RecordingScreenData(
-        recordScreenStage = RecordingScreenData.RecordScreenStage.RECORDING,
-        title = TextData(
-            text = stringResource(Res.string.go),
-            textSize = 60.sp,
-            fontWeight = FontWeight.W600,
-        ),
-        instructions = TextData(
-            text = stringResource(Res.string.recording_in_progress),
-            textSize = 28.sp,
-            fontWeight = FontWeight.W600,
-        ),
-        timerValue = TimerData(
-            text = TextData(
-                text = timerValue,
-                textSize = 115.sp,
-                fontWeight = FontWeight.W600,
-            ),
-            countdown = false,
-        ),
-        slideToStopButton = SlideToStopButtonData(
-            textData = TextData(
-                text = stringResource(Res.string.slide_to_stop),
-                textSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-            ),
-            action = slideToStopAction,
-        ),
-    )
-
-    @Composable
-    fun analyseScreenData() = RecordingScreenData(
-        recordScreenStage = RecordingScreenData.RecordScreenStage.ANALYZING,
-        title = TextData(
-            text = stringResource(Res.string.analyzing),
-            textSize = 60.sp,
-            fontWeight = FontWeight.W600,
-        ),
-        instructions = TextData(
-            text = stringResource(Res.string.analyzing_in_progress),
-            textSize = 28.sp,
-            fontWeight = FontWeight.W600,
-        ),
-    )
 
     @Composable
     fun customTagsScreenData(
@@ -281,12 +168,6 @@ internal object RecordFlowDataFactory {
         // (pen icon). Wired only when the STS_MANUAL_REPORT flag is on; ignored for non-STS errors.
         onEnterResultsManually: (() -> Unit)? = null,
     ): UiKitScreenData {
-        fun title(res: org.jetbrains.compose.resources.StringResource) =
-            TextData(resourceProvider.getString(res), textSize = 28.sp, fontWeight = FontWeight.Bold)
-
-        fun subtitle(res: org.jetbrains.compose.resources.StringResource) =
-            TextData(resourceProvider.getString(res), textSize = 20.sp, fontWeight = FontWeight.Normal)
-
         fun primary(res: org.jetbrains.compose.resources.StringResource) =
             PrimaryButtonData(
                 text = TextData(resourceProvider.getString(res), textSize = 24.sp, fontWeight = FontWeight.W600),
@@ -330,166 +211,84 @@ internal object RecordFlowDataFactory {
         val stsSecondary: SecondaryButtonData? = enterResultsManually ?: viewInstructions
 
         return when (error) {
-            RecordFlowError.StaticWalk -> UiKitScreenData(
-                title = title(Res.string.we_didn_t_detect_any_movement),
-                subtitle = subtitle(Res.string.walk_static_error_description),
-                mainIcon = IconData(Res.drawable.ic_motion_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
-
-            RecordFlowError.StaticSts -> UiKitScreenData(
-                title = title(Res.string.we_didnt_detect_any_repetitions),
-                subtitle = subtitle(Res.string.sts_static_error_description),
-                mainIcon = IconData(Res.drawable.ic_sts_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = stsSecondary,
-            )
-
-            RecordFlowError.StaticTug -> UiKitScreenData(
-                title = title(Res.string.we_didn_t_detect_any_movement),
-                subtitle = subtitle(Res.string.tug_static_error_description),
-                mainIcon = IconData(Res.drawable.ic_tug_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
-
-            RecordFlowError.StaticRom -> UiKitScreenData(
-                title = title(Res.string.we_didn_t_detect_any_movement),
-                subtitle = subtitle(Res.string.rom_static_error_description),
-                mainIcon = IconData(Res.drawable.ic_knee_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
-
-            RecordFlowError.WalkPosition -> UiKitScreenData(
-                title = title(Res.string.we_couldn_t_capture_your_steps),
-                subtitle = subtitle(Res.string.walk_position_error_description),
-                mainIcon = IconData(Res.drawable.ic_walk_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
-
-            RecordFlowError.StsPosition -> UiKitScreenData(
-                title = title(Res.string.we_didnt_detect_any_repetitions),
-                subtitle = subtitle(Res.string.sts_position_error_description),
-                mainIcon = IconData(Res.drawable.ic_warning_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = stsSecondary,
-            )
-
-            RecordFlowError.TugPosition -> UiKitScreenData(
-                title = title(Res.string.we_couldn_t_capture_your_steps),
-                subtitle = subtitle(Res.string.tug_position_error_description),
-                mainIcon = IconData(Res.drawable.ic_warning_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
-
-            RecordFlowError.RomPosition -> UiKitScreenData(
-                title = title(Res.string.we_didn_t_detect_any_movement),
-                subtitle = subtitle(Res.string.rom_error_position_description),
-                mainIcon = IconData(Res.drawable.ic_motion_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
-
-            RecordFlowError.WalkShort -> UiKitScreenData(
-                title = title(Res.string.this_measurement_s_recording_was_too_short),
-                subtitle = subtitle(Res.string.walk_too_short_error_description),
-                mainIcon = IconData(Res.drawable.ic_clock_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
-
-            RecordFlowError.StsShort -> UiKitScreenData(
-                title = title(Res.string.this_measurement_s_recording_was_too_short),
-                subtitle = subtitle(Res.string.sts_too_short_error_description),
-                mainIcon = IconData(Res.drawable.ic_clock_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = stsSecondary,
-            )
-
-            RecordFlowError.TugShort -> UiKitScreenData(
-                title = title(Res.string.this_measurement_s_recording_was_too_short),
-                subtitle = subtitle(Res.string.tug_too_short_error_description),
-                mainIcon = IconData(Res.drawable.ic_clock_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
-
+            RecordFlowError.StaticWalk -> analysisError(resourceProvider,
+                Res.string.we_didn_t_detect_any_movement, Res.string.walk_static_error_description,
+                Res.drawable.ic_motion_red_stars, tryAgain, viewInstructions)
+            RecordFlowError.StaticSts -> analysisError(resourceProvider,
+                Res.string.we_didnt_detect_any_repetitions, Res.string.sts_static_error_description,
+                Res.drawable.ic_sts_red_stars, tryAgain, stsSecondary)
+            RecordFlowError.StaticTug -> analysisError(resourceProvider,
+                Res.string.we_didn_t_detect_any_movement, Res.string.tug_static_error_description,
+                Res.drawable.ic_tug_red_stars, tryAgain, viewInstructions)
+            RecordFlowError.StaticRom -> analysisError(resourceProvider,
+                Res.string.we_didn_t_detect_any_movement, Res.string.rom_static_error_description,
+                Res.drawable.ic_knee_red_stars, tryAgain, viewInstructions)
+            RecordFlowError.WalkPosition -> analysisError(resourceProvider,
+                Res.string.we_couldn_t_capture_your_steps, Res.string.walk_position_error_description,
+                Res.drawable.ic_walk_red_stars, tryAgain, viewInstructions)
+            RecordFlowError.StsPosition -> analysisError(resourceProvider,
+                Res.string.we_didnt_detect_any_repetitions, Res.string.sts_position_error_description,
+                Res.drawable.ic_warning_red_stars, tryAgain, stsSecondary)
+            RecordFlowError.TugPosition -> analysisError(resourceProvider,
+                Res.string.we_couldn_t_capture_your_steps, Res.string.tug_position_error_description,
+                Res.drawable.ic_warning_red_stars, tryAgain, viewInstructions)
+            RecordFlowError.RomPosition -> analysisError(resourceProvider,
+                Res.string.we_didn_t_detect_any_movement, Res.string.rom_error_position_description,
+                Res.drawable.ic_motion_red_stars, tryAgain, viewInstructions)
+            RecordFlowError.WalkShort -> analysisError(resourceProvider,
+                Res.string.this_measurement_s_recording_was_too_short, Res.string.walk_too_short_error_description,
+                Res.drawable.ic_clock_red_stars, tryAgain, viewInstructions)
+            RecordFlowError.StsShort -> analysisError(resourceProvider,
+                Res.string.this_measurement_s_recording_was_too_short, Res.string.sts_too_short_error_description,
+                Res.drawable.ic_clock_red_stars, tryAgain, stsSecondary)
+            RecordFlowError.TugShort -> analysisError(resourceProvider,
+                Res.string.this_measurement_s_recording_was_too_short, Res.string.tug_too_short_error_description,
+                Res.drawable.ic_clock_red_stars, tryAgain, viewInstructions)
             // uikit's romShortErrorScreenData intentionally reuses sts_too_short_error_description.
-            RecordFlowError.RomShort -> UiKitScreenData(
-                title = title(Res.string.this_measurement_s_recording_was_too_short),
-                subtitle = subtitle(Res.string.sts_too_short_error_description),
-                mainIcon = IconData(Res.drawable.ic_clock_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
-
+            RecordFlowError.RomShort -> analysisError(resourceProvider,
+                Res.string.this_measurement_s_recording_was_too_short, Res.string.sts_too_short_error_description,
+                Res.drawable.ic_clock_red_stars, tryAgain, viewInstructions)
             // Static Balance short: secondary is "Finish", not "View instructions".
             RecordFlowError.StaticBalanceShort -> UiKitScreenData(
-                title = title(Res.string.this_measurement_s_recording_was_too_short),
-                subtitle = subtitle(Res.string.static_balance_too_short_error_description),
+                title = TextData(resourceProvider.getString(Res.string.this_measurement_s_recording_was_too_short), 28.sp, FontWeight.Bold),
+                subtitle = TextData(resourceProvider.getString(Res.string.static_balance_too_short_error_description), 20.sp, FontWeight.Normal),
                 mainIcon = IconData(Res.drawable.ic_clock_red_stars),
                 brandButton = tryAgain,
                 outlineBrandButton = onSecondaryAction?.let {
                     SecondaryButtonData(
-                        text = TextData(
-                            resourceProvider.getString(Res.string.finish),
-                            textSize = 24.sp,
-                            fontWeight = FontWeight.W600,
-                        ),
+                        text = TextData(resourceProvider.getString(Res.string.finish), textSize = 24.sp, fontWeight = FontWeight.W600),
                         action = it,
                     )
                 },
             )
-
-            RecordFlowError.Curvy -> UiKitScreenData(
-                title = title(Res.string.your_walk_had_too_many_turns),
-                subtitle = subtitle(Res.string.for_a_successful_analysis_you_need_to_walk_in_a_straight_line),
-                mainIcon = IconData(Res.drawable.ic_routes_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
-
-            RecordFlowError.WalkNonRepetitive -> UiKitScreenData(
-                title = title(Res.string.we_couldn_t_capture_your_steps),
-                subtitle = subtitle(Res.string.walk_repetetive_movement_error_description),
-                mainIcon = IconData(Res.drawable.ic_walk_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
-
+            RecordFlowError.Curvy -> analysisError(resourceProvider,
+                Res.string.your_walk_had_too_many_turns,
+                Res.string.for_a_successful_analysis_you_need_to_walk_in_a_straight_line,
+                Res.drawable.ic_routes_red_stars, tryAgain, viewInstructions)
+            RecordFlowError.WalkNonRepetitive -> analysisError(resourceProvider,
+                Res.string.we_couldn_t_capture_your_steps, Res.string.walk_repetetive_movement_error_description,
+                Res.drawable.ic_walk_red_stars, tryAgain, viewInstructions)
             // Technical errors — no "View instructions" secondary in uikit.
             RecordFlowError.Timeout -> UiKitScreenData(
-                title = title(Res.string.timeout_screen_title),
-                subtitle = subtitle(Res.string.timeout_screen_description),
+                title = TextData(resourceProvider.getString(Res.string.timeout_screen_title), 28.sp, FontWeight.Bold),
+                subtitle = TextData(resourceProvider.getString(Res.string.timeout_screen_description), 20.sp, FontWeight.Normal),
                 mainIcon = IconData(Res.drawable.ic_timeout),
                 brandButton = primary(Res.string.continue_camel_case),
             )
-
-            RecordFlowError.ServerIssue -> UiKitScreenData(
-                title = title(Res.string.oops),
-                subtitle = subtitle(Res.string.there_was_a_problem_connecting_to_the_server_please_try_again_later),
-                mainIcon = IconData(Res.drawable.ic_server_red_stars),
-                brandButton = tryAgain,
-            )
-
+            RecordFlowError.ServerIssue -> analysisError(resourceProvider,
+                Res.string.oops,
+                Res.string.there_was_a_problem_connecting_to_the_server_please_try_again_later,
+                Res.drawable.ic_server_red_stars, tryAgain)
             RecordFlowError.Connectivity -> UiKitScreenData(
-                title = title(Res.string.a_connection_issue),
-                subtitle = subtitle(Res.string.it_seems_you_have_internet_connection_issues_check_your_internet_connection_and_press_reload_the_measurement_will_be_uploaded_and_analyzed_once_we_get_internet_connection),
+                title = TextData(resourceProvider.getString(Res.string.a_connection_issue), 28.sp, FontWeight.Bold),
+                subtitle = TextData(resourceProvider.getString(Res.string.it_seems_you_have_internet_connection_issues_check_your_internet_connection_and_press_reload_the_measurement_will_be_uploaded_and_analyzed_once_we_get_internet_connection), 20.sp, FontWeight.Normal),
                 mainIcon = IconData(Res.drawable.ic_connectivity_red_stars),
                 brandButton = primary(Res.string.Reload),
             )
-
-            RecordFlowError.General -> UiKitScreenData(
-                title = title(Res.string.we_need_additional_data_in_order_to_offer_you_meaningful_insights_this_again),
-                subtitle = subtitle(Res.string.please_make_sure_is_placed_snugly_against_your_thigh_and_follow_the_measurement_instructions),
-                mainIcon = IconData(Res.drawable.ic_warning_red_stars),
-                brandButton = tryAgain,
-                outlineBrandButton = viewInstructions,
-            )
+            RecordFlowError.General -> analysisError(resourceProvider,
+                Res.string.we_need_additional_data_in_order_to_offer_you_meaningful_insights_this_again,
+                Res.string.please_make_sure_is_placed_snugly_against_your_thigh_and_follow_the_measurement_instructions,
+                Res.drawable.ic_warning_red_stars, tryAgain, viewInstructions)
         }
     }
 
@@ -574,6 +373,23 @@ internal object RecordFlowDataFactory {
         ) {
             onSelection(it.first())
         },
+    )
+
+    /** Builds a standard analysis-error screen. Used by the 16 error cases that share the same
+     *  title/subtitle/icon/primary/secondary layout in [errorScreenData]. */
+    private fun analysisError(
+        resourceProvider: ResourceProvider,
+        titleRes: org.jetbrains.compose.resources.StringResource,
+        subtitleRes: org.jetbrains.compose.resources.StringResource,
+        iconRes: org.jetbrains.compose.resources.DrawableResource,
+        brandButton: PrimaryButtonData,
+        outlineBrandButton: SecondaryButtonData? = null,
+    ) = UiKitScreenData(
+        title = TextData(resourceProvider.getString(titleRes), 28.sp, FontWeight.Bold),
+        subtitle = TextData(resourceProvider.getString(subtitleRes), 20.sp, FontWeight.Normal),
+        mainIcon = IconData(iconRes),
+        brandButton = brandButton,
+        outlineBrandButton = outlineBrandButton,
     )
 
     /**

@@ -148,7 +148,6 @@ internal fun SummaryMainFlow(
             ToolBarData(
                 startIcon =
                     IconData(Res.drawable.ic_back_arrow) {
-                        backAction()
                         if (backStack.lastOrNull() == CustomTagsDestination) {
                             coroutineScope.launch {
                                 tagBackRequests.emit(Unit)
@@ -620,16 +619,7 @@ private fun generateToolBar(
 ) = ToolBarData(
     startIcon =
         IconData(Res.drawable.ic_back_arrow) {
-            when (currentKey) {
-                EditAssistiveDeviceDestination -> onPop()
-                EditLevelOfAssistanceDestination -> onPop()
-                TaggingScreenDestination -> onPop()
-                EditFootwearDestination -> onPop()
-                CustomTagsDestination -> onTagBackPress()
-                HallwayDistanceDestination -> onPop()
-
-                else -> backAction()
-            }
+            if (currentKey == CustomTagsDestination) onTagBackPress() else onPop()
         },
     endIcons = listOf(IconData(Res.drawable.ic_close) { backAction() }),
 )

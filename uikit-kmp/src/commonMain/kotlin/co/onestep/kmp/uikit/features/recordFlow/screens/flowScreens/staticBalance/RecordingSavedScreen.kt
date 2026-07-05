@@ -152,7 +152,8 @@ internal fun RecordingSavedScreen(
                     )
                 }
                 CustomTextField(
-                    note,
+                    value = note.value,
+                    onValueChange = { note.value = it },
                     modifier = Modifier.padding(vertical = Variables.GapL),
                     hintRes = Res.string.static_balance_observations_hint,
                 )

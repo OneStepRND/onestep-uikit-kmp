@@ -181,6 +181,30 @@ internal object PermissionDataFactory {
             ),
     )
 
+    // F8: shared title/icon for both notification permission methods
+    @Composable
+    private fun notificationTitle(permissionMode: OSTPermissionMode): TextData =
+        TextData(
+            text =
+                when (permissionMode) {
+                    OSTPermissionMode.BACKGROUND ->
+                        stringResource(Res.string.notifications_permission_explanation_request_title_background)
+                    OSTPermissionMode.IN_APP ->
+                        stringResource(Res.string.notifications_permission_explanation_request_title_inapp)
+                    else -> error("Permission mode $permissionMode is not supported on Android")
+                },
+            textSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+        )
+
+    @Composable
+    private fun notificationIcon(permissionMode: OSTPermissionMode): IconData =
+        when (permissionMode) {
+            OSTPermissionMode.BACKGROUND -> IconData(Res.drawable.ic_run_stars)
+            OSTPermissionMode.IN_APP -> IconData(Res.drawable.ic_walk_stars)
+            else -> error("Permission mode $permissionMode is not supported on Android")
+        }
+
     @Composable
     fun notificationPermissionRequest(
         permissionMode: OSTPermissionMode,
@@ -189,19 +213,7 @@ internal object PermissionDataFactory {
         toolBarData: ToolBarData,
     ) = PermissionScreenData(
         toolBarData = toolBarData,
-        title =
-            TextData(
-                text =
-                    when (permissionMode) {
-                        OSTPermissionMode.BACKGROUND ->
-                            stringResource(Res.string.notifications_permission_explanation_request_title_background)
-                        OSTPermissionMode.IN_APP ->
-                            stringResource(Res.string.notifications_permission_explanation_request_title_inapp)
-                        else -> error("Permission mode $permissionMode is not supported on Android")
-                    },
-                textSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-            ),
+        title = notificationTitle(permissionMode),
         content =
             when (permissionMode) {
                 OSTPermissionMode.BACKGROUND ->
@@ -218,12 +230,7 @@ internal object PermissionDataFactory {
                     )
                 else -> error("Permission mode $permissionMode is not supported on Android")
             },
-        mainIcon =
-            when (permissionMode) {
-                OSTPermissionMode.BACKGROUND -> IconData(Res.drawable.ic_run_stars)
-                OSTPermissionMode.IN_APP -> IconData(Res.drawable.ic_walk_stars)
-                else -> error("Permission mode $permissionMode is not supported on Android")
-            },
+        mainIcon = notificationIcon(permissionMode),
         brandButton =
             PrimaryButtonData(
                 text =
@@ -254,19 +261,7 @@ internal object PermissionDataFactory {
         toolBarData: ToolBarData,
     ) = PermissionScreenData(
         toolBarData = toolBarData,
-        title =
-            TextData(
-                text =
-                    when (permissionMode) {
-                        OSTPermissionMode.BACKGROUND ->
-                            stringResource(Res.string.notifications_permission_explanation_request_title_background)
-                        OSTPermissionMode.IN_APP ->
-                            stringResource(Res.string.notifications_permission_explanation_request_title_inapp)
-                        else -> error("Permission mode $permissionMode is not supported on Android")
-                    },
-                textSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-            ),
+        title = notificationTitle(permissionMode),
         content =
             when (permissionMode) {
                 OSTPermissionMode.BACKGROUND ->
@@ -287,12 +282,7 @@ internal object PermissionDataFactory {
                     )
                 else -> error("Permission mode $permissionMode is not supported on Android")
             },
-        mainIcon =
-            when (permissionMode) {
-                OSTPermissionMode.BACKGROUND -> IconData(Res.drawable.ic_run_stars)
-                OSTPermissionMode.IN_APP -> IconData(Res.drawable.ic_walk_stars)
-                else -> error("Permission mode $permissionMode is not supported on Android")
-            },
+        mainIcon = notificationIcon(permissionMode),
         brandButton =
             PrimaryButtonData(
                 text =

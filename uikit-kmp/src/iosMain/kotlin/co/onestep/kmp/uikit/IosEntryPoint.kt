@@ -136,10 +136,7 @@ object OSTUIKitIos {
         checkConfigured()
         return ComposeUIViewController {
             OSTRecordingFlow(config = config, onResult = onResult)
-        }.apply {
-            overrideUserInterfaceStyle = UIUserInterfaceStyle.UIUserInterfaceStyleLight
-            view.backgroundColor = UIColor.whiteColor
-        }
+        }.applyDefaultStyle()
     }
 
     /**
@@ -157,10 +154,7 @@ object OSTUIKitIos {
         checkConfigured()
         return ComposeUIViewController {
             OSTRecordingFlow(config = config, onResult = onResult, onDismiss = onDismiss)
-        }.apply {
-            overrideUserInterfaceStyle = UIUserInterfaceStyle.UIUserInterfaceStyleLight
-            view.backgroundColor = UIColor.whiteColor
-        }
+        }.applyDefaultStyle()
     }
 
     /**
@@ -176,10 +170,7 @@ object OSTUIKitIos {
         checkConfigured()
         return ComposeUIViewController {
             OSTPermissionFlow(mode = mode, onComplete = onComplete)
-        }.apply {
-            overrideUserInterfaceStyle = UIUserInterfaceStyle.UIUserInterfaceStyleLight
-            view.backgroundColor = UIColor.whiteColor
-        }
+        }.applyDefaultStyle()
     }
 
     /**
@@ -199,10 +190,7 @@ object OSTUIKitIos {
                 onContinue = onContinue,
                 onSkip = onSkip,
             )
-        }.apply {
-            overrideUserInterfaceStyle = UIUserInterfaceStyle.UIUserInterfaceStyleLight
-            view.backgroundColor = UIColor.whiteColor
-        }
+        }.applyDefaultStyle()
     }
 
     /**
@@ -224,10 +212,7 @@ object OSTUIKitIos {
                 options = options,
                 onDismiss = onDismiss,
             )
-        }.apply {
-            overrideUserInterfaceStyle = UIUserInterfaceStyle.UIUserInterfaceStyleLight
-            view.backgroundColor = UIColor.whiteColor
-        }
+        }.applyDefaultStyle()
     }
 
     /**
@@ -241,10 +226,7 @@ object OSTUIKitIos {
         checkConfigured()
         return ComposeUIViewController {
             OSTCareLog(onClose = onClose)
-        }.apply {
-            overrideUserInterfaceStyle = UIUserInterfaceStyle.UIUserInterfaceStyleLight
-            view.backgroundColor = UIColor.whiteColor
-        }
+        }.applyDefaultStyle()
     }
 
     private fun checkConfigured() {
@@ -252,4 +234,10 @@ object OSTUIKitIos {
             "OSTUIKitIos.configure() must be called before using any factory methods."
         }
     }
+}
+
+/** Applies the standard light-mode white-background style used by all UIKit view controllers. */
+private fun UIViewController.applyDefaultStyle(): UIViewController = apply {
+    overrideUserInterfaceStyle = UIUserInterfaceStyle.UIUserInterfaceStyleLight
+    view.backgroundColor = UIColor.whiteColor
 }

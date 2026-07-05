@@ -32,7 +32,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,15 +40,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.onestep.kmp.uikit.bridge.RecorderBridge
 import co.onestep.kmp.uikit.features.recordFlow.previewGetReadyRecordingScreen
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import co.onestep.kmp.uikit.features.recordFlow.screensData.RecordingScreenData
-import co.onestep.kmp.uikit.models.OSTActivityType
-import co.onestep.kmp.uikit.models.OSTAnalyserError
-import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.ui.components.AnimatedCounter
 import co.onestep.designsystem.components.OSText
 import co.onestep.kmp.uikit.ui.components.SlideToStopButton
@@ -63,35 +58,28 @@ import co.onestep.kmp.uikit_kmp.generated.resources.slide_to_stop
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
+/**
+ * Presentational recording screen. Takes only stable data + lambdas — all ViewModel
+ * interaction (initState, onMeasurementResult/onError wiring, toolbar hiding) is hoisted up
+ * into [RecordFlowNavGraph]'s `RecordingDestination` entry. [subtitleOverride] is the
+ * ViewModel's transient subtitle (analyzing/uploading/results text); when null the animated
+ * target's own instructions are shown, preserving the crossfade semantics.
+ */
 @Composable
 internal fun RecordingScreenContent(
     modifier: Modifier = Modifier,
-    viewModel: MotionRecorderViewModel,
-    onMeasurementResult: (OSTMotionMeasurement?) -> Unit,
+    screenData: RecordingScreenData,
+    subtitleOverride: String?,
+    stepCount: Int,
+    timerValue: String,
+    onStopped: () -> Unit,
     onBackPress: () -> Unit,
-    onRecording: () -> Unit,
-    onError: (OSTAnalyserError, OSTActivityType?) -> Unit,
 ) {
-    val screenData = viewModel.recodingScreenState
-    val stepCount by viewModel.stepCount.collectAsStateWithLifecycle(0)
-
-    LaunchedEffect(Unit) {
-        viewModel.initState()
-        viewModel.onMeasurementResult = onMeasurementResult
-        viewModel.onError = onError
-    }
-
-    LaunchedEffect(viewModel.recodingScreenState.value) {
-        if (viewModel.recodingScreenState.value.recordScreenStage != RecordingScreenData.RecordScreenStage.GET_READY) {
-            onRecording()
-        }
-    }
-
     PlatformBackHandler { onBackPress() }
 
     AnimatedContent(
         modifier = modifier,
-        targetState = screenData.value,
+        targetState = screenData,
         transitionSpec = {
             slideIntoContainer(
                 AnimatedContentTransitionScope.SlideDirection.End,
@@ -105,10 +93,10 @@ internal fun RecordingScreenContent(
         RecordingScreenStateless(
             modifier = Modifier,
             screenData = currentScreenData,
-            subtitle = viewModel.subtitle.value ?: currentScreenData.instructions.text,
+            subtitle = subtitleOverride ?: currentScreenData.instructions.text,
             stepCount = stepCount,
-            timerValue = viewModel.timerValue.value,
-            onStopped = { viewModel.stopRecording() },
+            timerValue = timerValue,
+            onStopped = onStopped,
         )
     }
 }

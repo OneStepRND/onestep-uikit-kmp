@@ -112,7 +112,6 @@ internal fun Summary(
     toolBarData: ToolBarData,
     continueAction: SummaryAction? = null,
     secondaryAction: (() -> Unit)? = null,
-    selectedTabIndex: Int? = null,
     previewProgress: Float? = null,
     isLoading: Boolean,
     hallwayLengthText: String? = null,
@@ -471,8 +470,7 @@ private fun SmallMainParamCircle(
     )
 }
 
-@Composable
-fun calculateToolbarRange(showPagerAndTabs: Boolean): Pair<Dp, Dp> {
+private fun calculateToolbarRange(showPagerAndTabs: Boolean): Pair<Dp, Dp> {
     val maxToolbarHeight =
         if (showPagerAndTabs) {
             MaxToolbarHeight

@@ -158,6 +158,23 @@ fun CoreMetadata.toKmp(): KmpMetadata = KmpMetadata(
     audioDataPath = audioDataPath,
 )
 
+fun KmpMetadata.toCore(): CoreMetadata = CoreMetadata(
+    locale = locale,
+    seconds = seconds,
+    steps = steps,
+    lastModified = lastModified,
+    note = note,
+    tags = tags,
+    assistiveDevice = assistiveDevice,
+    levelOfAssistance = levelOfAssistance,
+    walkCourseLength = walkCourseLength?.toCore(),
+    selfReport = selfReport,
+    geoLat = geoLat,
+    geoLng = geoLng,
+    dataPath = dataPath,
+    audioDataPath = audioDataPath,
+)
+
 // ── OSTMotionMeasurement ─────────────────────────────────────────────────────
 
 fun CoreMeasurement.toKmp(): KmpMeasurement = KmpMeasurement(
@@ -188,22 +205,7 @@ fun KmpMeasurement.toCore(): CoreMeasurement {
         timestamp = Date(timestamp),
         type = type.toCore(),
         customMetadata = customMetadata.toMap(),
-        metadata = CoreMetadata(
-            locale = metadata.locale,
-            seconds = metadata.seconds,
-            steps = metadata.steps,
-            lastModified = metadata.lastModified,
-            note = metadata.note,
-            tags = metadata.tags,
-            assistiveDevice = metadata.assistiveDevice,
-            levelOfAssistance = metadata.levelOfAssistance,
-            walkCourseLength = metadata.walkCourseLength?.toCore(),
-            selfReport = metadata.selfReport,
-            geoLat = metadata.geoLat,
-            geoLng = metadata.geoLng,
-            dataPath = metadata.dataPath,
-            audioDataPath = metadata.audioDataPath,
-        ),
+        metadata = metadata.toCore(),
         params = coreParams,
         parameterArrays = parameterArrays,
         status = when (status) {
