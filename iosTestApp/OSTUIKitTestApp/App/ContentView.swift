@@ -5,9 +5,11 @@ import OSTUIKitKMP
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
 
+    @State private var showConfigureFlow = false
     @State private var showRecordingWalk = false
     @State private var showRecordingTUG = false
-    @State private var showPermissions = false
+    @State private var showPermissionsInApp = false
+    @State private var showPermissionsBackground = false
     @State private var showCareLog = false
     @State private var showSettings = false
     @State private var showMeasurementPicker = false
@@ -18,36 +20,55 @@ struct ContentView: View {
             List {
                 Section("Recording Flows") {
                     Button {
+                        showConfigureFlow = true
+                    } label: {
+                        Label("Configure & Record", systemImage: "slider.horizontal.3")
+                    }
+                    .accessibilityIdentifier("home.configureAndRecord")
+
+                    Button {
                         showRecordingWalk = true
                     } label: {
                         Label("Walk Recording", systemImage: "figure.walk")
                     }
+                    .accessibilityIdentifier("home.walkRecording")
 
                     Button {
                         showRecordingTUG = true
                     } label: {
                         Label("Timed Up & Go", systemImage: "figure.stand")
                     }
+                    .accessibilityIdentifier("home.tug")
                 }
 
                 Section("Screens") {
                     Button {
-                        showPermissions = true
+                        showPermissionsInApp = true
                     } label: {
-                        Label("Permission Flow", systemImage: "lock.shield")
+                        Label("Permission Flow (In-App)", systemImage: "lock.shield")
                     }
+                    .accessibilityIdentifier("home.permissionInApp")
+
+                    Button {
+                        showPermissionsBackground = true
+                    } label: {
+                        Label("Permission Flow (Background)", systemImage: "lock.rotation")
+                    }
+                    .accessibilityIdentifier("home.permissionBackground")
 
                     Button {
                         showMeasurementPicker = true
                     } label: {
                         Label("Measurement Summary", systemImage: "chart.bar")
                     }
+                    .accessibilityIdentifier("home.measurementSummary")
 
                     Button {
                         showCareLog = true
                     } label: {
                         Label("Care Log", systemImage: "list.clipboard")
                     }
+                    .accessibilityIdentifier("home.careLog")
                 }
 
                 if let lastEvent {
@@ -55,6 +76,7 @@ struct ContentView: View {
                         Text(lastEvent)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("home.lastEvent")
                     }
                 }
             }
@@ -66,6 +88,13 @@ struct ContentView: View {
                     } label: {
                         Image(systemName: "gear")
                     }
+                    .accessibilityIdentifier("home.settings")
+                }
+            }
+            // Configure Flow presents the recording flow itself (fullScreenCover over the sheet).
+            .sheet(isPresented: $showConfigureFlow) {
+                ConfigureFlowView { label in
+                    lastEvent = label
                 }
             }
             .fullScreenCover(isPresented: $showRecordingWalk) {
@@ -102,13 +131,18 @@ struct ContentView: View {
                 )
                 .ignoresSafeArea()
             }
-            .fullScreenCover(isPresented: $showPermissions) {
-                OSTPermissionFlowView(
-                    onComplete: { granted in
-                        lastEvent = "Permissions: \(granted ? "granted" : "denied")"
-                        showPermissions = false
-                    }
-                )
+            .fullScreenCover(isPresented: $showPermissionsInApp) {
+                OSTPermissionFlowView(mode: .inApp) { granted in
+                    lastEvent = "Permissions (in-app): \(granted ? "granted" : "denied")"
+                    showPermissionsInApp = false
+                }
+                .ignoresSafeArea()
+            }
+            .fullScreenCover(isPresented: $showPermissionsBackground) {
+                OSTPermissionFlowView(mode: .background) { granted in
+                    lastEvent = "Permissions (background): \(granted ? "granted" : "denied")"
+                    showPermissionsBackground = false
+                }
                 .ignoresSafeArea()
             }
             .fullScreenCover(isPresented: $showCareLog) {
@@ -131,6 +165,11 @@ struct ContentView: View {
     }
 }
 
+// Allow OSTRecordingConfiguration to drive a `.fullScreenCover(item:)`.
+extension OSTRecordingConfiguration: @retroactive Identifiable {
+    public var id: String { uuid }
+}
+
 // MARK: - Measurement Picker (loads recent measurements for summary view)
 
 struct MeasurementPickerView: View {
@@ -146,6 +185,7 @@ struct MeasurementPickerView: View {
             Group {
                 if isLoading {
                     ProgressView("Loading measurements...")
+                        .accessibilityIdentifier("summary.loading")
                 } else if measurements.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "chart.bar.xaxis")
@@ -159,6 +199,7 @@ struct MeasurementPickerView: View {
                             .multilineTextAlignment(.center)
                     }
                     .padding()
+                    .accessibilityIdentifier("summary.empty")
                 } else {
                     List(measurements, id: \.id) { measurement in
                         Button {
@@ -172,6 +213,7 @@ struct MeasurementPickerView: View {
                                     .foregroundStyle(.secondary)
                             }
                         }
+                        .accessibilityIdentifier("summary.row")
                     }
                 }
             }
@@ -179,6 +221,7 @@ struct MeasurementPickerView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .accessibilityIdentifier("summary.cancel")
                 }
             }
             .fullScreenCover(item: $selectedMeasurement) { measurement in

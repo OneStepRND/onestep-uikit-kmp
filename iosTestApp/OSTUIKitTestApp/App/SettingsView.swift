@@ -79,6 +79,7 @@ struct SettingsView: View {
             TextField("Distinct ID", text: $distinctId)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
+                .accessibilityIdentifier("settings.distinctId")
 
             Button {
                 identify(distinctId: distinctId.trimmingCharacters(in: .whitespaces))
@@ -88,6 +89,7 @@ struct SettingsView: View {
                     .fontWeight(.semibold)
             }
             .disabled(!canIdentify)
+            .accessibilityIdentifier("settings.identify")
         } header: {
             Text("Identity")
         }
@@ -115,6 +117,7 @@ struct SettingsView: View {
                 .fontWeight(.semibold)
             }
             .tint(.orange)
+            .accessibilityIdentifier("settings.connectAvatar")
         }
     }
 
