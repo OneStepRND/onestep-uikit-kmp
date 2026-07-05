@@ -2,6 +2,8 @@ package co.onestep.kmp.uikit.features.summary
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.recordFlow.screensData.AnalysisBannerData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.InfoBottomSheetData
@@ -173,6 +175,7 @@ internal object SummaryDataFactory {
             text = stringResource(Res.string.what_assistive_device_did_you_use),
             textSize = 28.sp,
             fontWeight = FontWeight.W700,
+            textAlign = TextAlign.Start,
         ),
         selectionList = SelectionListData(
             items = OSTAssistiveDevice.entries.map { device ->
@@ -182,7 +185,7 @@ internal object SummaryDataFactory {
                         textSize = 20.sp,
                         fontWeight = FontWeight.W400,
                     ),
-                    icon = IconData(icon = device.icon),
+                    icon = IconData(icon = device.icon, iconSize = 32.dp),
                 )
             },
             onItemSelected = { selectedIndexes ->
@@ -201,6 +204,7 @@ internal object SummaryDataFactory {
             text = stringResource(Res.string.what_level_of_assistance_was_required),
             textSize = 28.sp,
             fontWeight = FontWeight.W700,
+            textAlign = TextAlign.Start,
         ),
         selectionList = SelectionListData(
             items = OSTLevelOfAssistance.entries.map { level ->
@@ -228,6 +232,7 @@ internal object SummaryDataFactory {
             text = stringResource(Res.string.which_type_of_footwear_was_worn_during_the_test),
             textSize = 28.sp,
             fontWeight = FontWeight.W700,
+            textAlign = TextAlign.Start,
         ),
         selectionList = SelectionListData(
             items = Footwear.entries.map { fw ->
@@ -237,7 +242,7 @@ internal object SummaryDataFactory {
                         textSize = 20.sp,
                         fontWeight = FontWeight.W400,
                     ),
-                    icon = IconData(icon = fw.icon),
+                    icon = IconData(icon = fw.icon, iconSize = 32.dp),
                 )
             },
             onItemSelected = { selectedIndexes ->
