@@ -45,6 +45,40 @@ targets:
           fi
         name: "Copy Compose Resources to App Root"
 
+  # UI-test target: drives the app on-device to verify the Measurement Summary renders
+  # (score circle + Highlights/Gait-Lab) against the real SDK data. Captures full-screen
+  # screenshots as attachments (the Compose summary is a Skia view, so verification is visual).
+  OSTUIKitTestAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - OSTUIKitTestAppUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: co.onestep.kmp.uikit.testapp.uitests
+        DEVELOPMENT_TEAM: 55WPGZLRF5
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: "YES"
+    dependencies:
+      - target: OSTUIKitTestApp
+
+schemes:
+  OSTUIKitTestApp:
+    build:
+      targets:
+        OSTUIKitTestApp: all
+    run:
+      config: Debug
+  OSTUIKitTestAppUITests:
+    build:
+      targets:
+        OSTUIKitTestApp: all
+        OSTUIKitTestAppUITests: all
+    test:
+      config: Debug
+      targets:
+        - OSTUIKitTestAppUITests
+
 packages:
   OSTUIKitKMP:
     path: ../uikit-kmp/OSTUIKitKMP
@@ -56,8 +90,8 @@ packages:
   # Uncomment and adjust one of the following:
   onestep-sdk-ios:
     url: https://github.com/OneStepRND/onestep-sdk-ios
-    # Must match the exact version pinned by onestep-uikit-ios-spm (local dev harness).
-    exactVersion: 2.0.8-rc1
+    # Must match the exact version pinned by the OSTUIKitKMP package (uikit-kmp/OSTUIKitKMP/Package.swift).
+    exactVersion: 2.0.10
   # Local alternative:
   # onestep-sdk-ios:
   #   path: /path/to/onestep-sdk-ios
