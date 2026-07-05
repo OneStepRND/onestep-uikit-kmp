@@ -24,7 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
+import co.onestep.kmp.uikit.ui.theme.osClickIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -80,7 +80,7 @@ internal fun MeasurementLogItem(
                 .padding(Variables.GapL)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = ripple(bounded = true),
+                    indication = osClickIndication(bounded = true),
                     onClick = { onClick(measurementItemData.id) },
                 ).test(WALK_LOG_ITEM),
     ) {

@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ripple
+import co.onestep.kmp.uikit.ui.theme.osClickIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -92,7 +92,7 @@ fun Toolbar(
                                 remember {
                                     MutableInteractionSource()
                                 },
-                            indication = ripple(bounded = false),
+                            indication = osClickIndication(bounded = false),
                         ) {
                             it.action?.invoke()
                         }.size(36.dp)
@@ -146,7 +146,7 @@ fun Toolbar(
                                         remember {
                                             MutableInteractionSource()
                                         },
-                                    indication = ripple(bounded = false),
+                                    indication = osClickIndication(bounded = false),
                                 ) {
                                     iconData.action?.invoke()
                                 }.padding(10.dp)

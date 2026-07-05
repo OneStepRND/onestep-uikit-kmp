@@ -1,6 +1,9 @@
 package co.onestep.kmp.uikit.ui.theme
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -34,6 +37,7 @@ private fun calculatePrimaryColors(): ColorScheme {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OneStepUiKitTheme(
     content: @Composable () -> Unit,
@@ -47,8 +51,20 @@ fun OneStepUiKitTheme(
         MaterialTheme(
             colorScheme = calculatePrimaryColors(),
             typography = nunitoTypography,
-            content = content,
-        )
+        ) {
+            // MUST be inside MaterialTheme: MaterialTheme itself does
+            // `LocalIndication provides ripple()`, which would clobber ours if we provided it
+            // outside. Overriding here makes our press feedback win for all content — Material
+            // ripple on Android, a UIKit-style opacity dim on iOS. LocalIndication covers
+            // clickables that read it (incl. design-system OSButton); LocalRippleConfiguration
+            // covers Material3 components that draw their own ripple directly.
+            CompositionLocalProvider(
+                LocalIndication provides osClickIndication(),
+                LocalRippleConfiguration provides osRippleConfiguration(),
+            ) {
+                content()
+            }
+        }
     }
 }
 

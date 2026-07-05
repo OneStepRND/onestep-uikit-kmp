@@ -24,7 +24,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ripple
+import co.onestep.kmp.uikit.ui.theme.osClickIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -313,7 +313,7 @@ internal fun ShortHallwayLengthDialog(
                         .size(24.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = ripple(bounded = false),
+                            indication = osClickIndication(bounded = false),
                         ) {
                             onDismissClicked()
                         },

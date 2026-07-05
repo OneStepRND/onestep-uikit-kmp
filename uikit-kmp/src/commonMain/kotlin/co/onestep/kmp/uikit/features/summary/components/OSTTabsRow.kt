@@ -16,7 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.material3.ripple
+import co.onestep.kmp.uikit.ui.theme.osClickIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -112,7 +112,7 @@ private fun OSTTab(
                         remember {
                             MutableInteractionSource()
                         },
-                    indication = ripple(bounded = true),
+                    indication = osClickIndication(bounded = true),
                     onClick = { onTabSelected(index) },
                 ).padding(Variables.GapL),
         horizontalAlignment = Alignment.CenterHorizontally,
