@@ -17,6 +17,10 @@ typealias KMPNorm = OSTNorm
 typealias KMPParameterMetadata = OSTParameterMetadata
 typealias KMPDiscreteColor = OSTDiscreteColor
 typealias KMPInsights = OSTInsights
+typealias KMPInsight = OSTInsight
+typealias KMPInsightType = OSTInsightType
+typealias KMPIntent = OSTIntent
+typealias KMPNormPart = OSTNormPart
 typealias KMPDailyBackgroundMeasurement = OSTDailyBackgroundMeasurement
 typealias KMPError = OSTError
 
