@@ -4,12 +4,12 @@ import XCTest
 /// types + toggles), launching every measurement's recording flow, a deep drive of a single
 /// recording, both permission modes, and the care log.
 ///
-/// NOTE on mock IMU: unlike the Android test app (which feeds `OSTMockIMU.SUCCESSFUL` into the real
-/// recorder so a walk analyzes to success without movement), the iOS OneStep SDK (2.0.10) exposes no
-/// mock-IMU injection into the live recorder. These tests therefore drive the *real* recorder on
-/// device; with the phone stationary an analysis ends in an error/no-cycle state. The tests assert
-/// the flow launches and progresses, and capture screenshots for visual verification — they do not
-/// assert a successful analyzed measurement, which is not achievable on iOS without SDK support.
+/// NOTE on mock recording: these smoke tests drive the *real* recorder (no mock), so on a
+/// stationary device an analysis ends in an error/no-cycle state — they assert the flow launches and
+/// progresses and capture screenshots, not a successful analyzed measurement. For deterministic
+/// analyzed outcomes (the iOS analogue of Android's mock IMU) see `MockRecordingUITests`, which
+/// selects a bundled mock recording so the SDK returns a real analyzed measurement even when
+/// stationary.
 final class AppFlowUITests: XCTestCase {
 
     override func setUp() {
