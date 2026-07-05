@@ -42,6 +42,8 @@ import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
 import co.onestep.kmp.uikit.utils.test
+import androidx.compose.material3.Icon
+import org.jetbrains.compose.resources.painterResource
 
 const val WALK_FLOW_SCREEN_BRAND_BUTTON = "walk_flow_screen_brand_button"
 const val WALK_FLOW_SCREEN_BORDER_BRAND_BUTTON = "walk_flow_screen_border_brand_button"
@@ -186,14 +188,29 @@ internal fun UiKitScreen(
                         )
                         Spacer(Modifier.height(Variables.GapL))
                     }
-                    screenData.outlineBrandButton?.let {
+                    screenData.outlineBrandButton?.let { secondary ->
+                        // Figma shows a leading ⓘ on the secondary CTA ("View instructions").
+                        // SecondaryButtonData carries it as a DrawableResource; the design-system
+                        // button's `icon` is a composable slot, so render it here (inherits the
+                        // button's content color).
+                        val leadingIcon: (@Composable () -> Unit)? =
+                            secondary.iconData?.let { iconData ->
+                                {
+                                    Icon(
+                                        painter = painterResource(iconData.icon),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                }
+                            }
                         SecondaryButton(
-                            text = it.text.text,
-                            onClick = it.action,
+                            text = secondary.text.text,
+                            onClick = secondary.action,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag(WALK_FLOW_SCREEN_BORDER_BRAND_BUTTON),
                             size = OSButtonSize.Big,
+                            icon = leadingIcon,
                         )
                         Spacer(Modifier.height(Variables.GapXL))
                     }

@@ -74,6 +74,9 @@ struct ContentView: View {
                     onResult: { event in
                         lastEvent = "Walk result: \(event.name)"
                         showRecordingWalk = false
+                    },
+                    onDismiss: {
+                        showRecordingWalk = false
                     }
                 )
                 .ignoresSafeArea()
@@ -91,6 +94,9 @@ struct ContentView: View {
                     ),
                     onResult: { event in
                         lastEvent = "TUG result: \(event.name)"
+                        showRecordingTUG = false
+                    },
+                    onDismiss: {
                         showRecordingTUG = false
                     }
                 )

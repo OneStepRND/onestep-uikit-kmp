@@ -79,7 +79,7 @@ import co.onestep.kmp.uikit_kmp.generated.resources.hallway_length_error_range
 import co.onestep.kmp.uikit_kmp.generated.resources.hallway_length_label
 import co.onestep.kmp.uikit_kmp.generated.resources.hallway_length_title
 import co.onestep.kmp.uikit_kmp.generated.resources.hallway_warning_stride_length
-import co.onestep.kmp.uikit_kmp.generated.resources.ic_back_arrow
+import co.onestep.kmp.uikit_kmp.generated.resources.ic_chevron_left
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_close
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_trash
 import co.onestep.kmp.uikit_kmp.generated.resources.save_result
@@ -111,9 +111,9 @@ internal fun SummaryMainFlow(
         } else {
             SummaryAnalyticsEvents.AppSection.HISTORY
         }
-    val insightsScreenState = summaryViewModel.insightsScreenState.value
-    val gaitLabScreenState = summaryViewModel.gatLabScreenState.value
-    val partialScreenState = summaryViewModel.partialScreenState.value
+    // Summary tab/param state is read INSIDE the summary entry via provider lambdas (see
+    // summaryScreen) — not hoisted here — so NavDisplay entry caching can't freeze it on the
+    // initial Loading snapshot.
     val motionMeasurement = summaryViewModel.motionMeasurement.value
     val mainParamCardItem by summaryViewModel.mainParamCardItem
     val coroutineScope = rememberCoroutineScope()
@@ -143,42 +143,44 @@ internal fun SummaryMainFlow(
     var note by remember { mutableStateOf<String?>(null) }
     var currentQuestion by remember { mutableStateOf<OSTRecordingQuestionData?>(null) }
     val toolbarText = stringResource(Res.string.summary)
-    val toolBarData =
-        remember(mainParamCardItem?.showTrashIcon) {
-            ToolBarData(
-                startIcon =
-                    IconData(Res.drawable.ic_back_arrow) {
-                        if (backStack.lastOrNull() == CustomTagsDestination) {
-                            coroutineScope.launch {
-                                tagBackRequests.emit(Unit)
-                            }
-                        } else {
-                            backAction()
+    // Provider (not a captured value): the summary entry reads this INSIDE its content so the
+    // trash icon reflects mainParamCardItem as it loads (see summaryScreen's docs on NavDisplay
+    // entry caching). Reads mainParamCardItem.value inside → subscribes within the entry.
+    val toolBarDataProvider: () -> ToolBarData = {
+        ToolBarData(
+            startIcon =
+                IconData(Res.drawable.ic_chevron_left) {
+                    if (backStack.lastOrNull() == CustomTagsDestination) {
+                        coroutineScope.launch {
+                            tagBackRequests.emit(Unit)
                         }
-                    },
-                title =
-                    TextData(
-                        toolbarText,
-                        16.sp,
-                        FontWeight.W400,
-                    ),
-                endIcons =
-                    if (mainParamCardItem?.showTrashIcon == true) {
-                        listOf(
-                            IconData(Res.drawable.ic_trash) {
-                                // Clicked: discard_measurement — the trash icon on the summary
-                                // toolbar (before the confirmation dialog), matching uikit.
-                                summaryViewModel.motionMeasurement.value?.let {
-                                    summaryTracker?.trackDiscardMeasurementClicked(it)
-                                }
-                                showDeleteMeasurementConfirmation.value = true
-                            },
-                        )
                     } else {
-                        emptyList()
-                    },
-            )
-        }
+                        backAction()
+                    }
+                },
+            title =
+                TextData(
+                    toolbarText,
+                    16.sp,
+                    FontWeight.W400,
+                ),
+            endIcons =
+                if (summaryViewModel.mainParamCardItem.value?.showTrashIcon == true) {
+                    listOf(
+                        IconData(Res.drawable.ic_trash) {
+                            // Clicked: discard_measurement — the trash icon on the summary
+                            // toolbar (before the confirmation dialog), matching uikit.
+                            summaryViewModel.motionMeasurement.value?.let {
+                                summaryTracker?.trackDiscardMeasurementClicked(it)
+                            }
+                            showDeleteMeasurementConfirmation.value = true
+                        },
+                    )
+                } else {
+                    emptyList()
+                },
+        )
+    }
 
     // Hallway display values from ViewModel state
     val hallwayLengthText =
@@ -259,14 +261,14 @@ internal fun SummaryMainFlow(
             onBack = { backStack.pop() },
             entryProvider = entryProvider {
             summaryScreen(
-                insightsScreenState,
-                gaitLabScreenState,
-                partialScreenState,
-                toolBarData,
-                action =
+                insightsScreenState = { summaryViewModel.insightsScreenState.value },
+                gaitLabScreenState = { summaryViewModel.gatLabScreenState.value },
+                partialScreenState = { summaryViewModel.partialScreenState.value },
+                toolBarData = toolBarDataProvider,
+                action = {
                     when {
                         origin != OSTSummaryOrigin.Recording -> null
-                        partialScreenState != null -> {
+                        summaryViewModel.partialScreenState.value != null -> {
                             SummaryAction(
                                 text = resourceProvider.getString(Res.string.save_result),
                                 action = backAction,
@@ -295,10 +297,11 @@ internal fun SummaryMainFlow(
                         }
 
                         else -> null
-                    },
+                    }
+                },
                 secondaryAction = null,
-                mainParamCardItem,
-                summaryViewModel.isLoading.value,
+                mainParamItem = { summaryViewModel.mainParamCardItem.value },
+                isLoading = { summaryViewModel.isLoading.value },
                 hallwayLengthText = hallwayLengthText,
                 hallwayWarningText = hallwayWarningText,
                 onHallwayEdit = {
@@ -618,7 +621,7 @@ private fun generateToolBar(
     backAction: () -> Unit,
 ) = ToolBarData(
     startIcon =
-        IconData(Res.drawable.ic_back_arrow) {
+        IconData(Res.drawable.ic_chevron_left) {
             if (currentKey == CustomTagsDestination) onTagBackPress() else onPop()
         },
     endIcons = listOf(IconData(Res.drawable.ic_close) { backAction() }),

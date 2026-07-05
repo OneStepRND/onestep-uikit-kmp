@@ -81,8 +81,10 @@ import co.onestep.kmp.uikit_kmp.generated.resources.unit_feet
 import co.onestep.kmp.uikit_kmp.generated.resources.unit_meters
 import co.onestep.kmp.uikit_kmp.generated.resources.walk_duration_unit
 import co.onestep.kmp.uikit_kmp.generated.resources.you_did_great_we_encountered_a_problem_in_loading_additional_insights
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
 
 /**
@@ -98,6 +100,9 @@ internal data class HallwayState(
     val editValue: String = "",
     val editError: String? = null,
 )
+
+/** Upper bound for the (delta-arrow only) previous-measurement read so it can never block the summary. */
+private const val PREVIOUS_MEASUREMENT_TIMEOUT_MS = 8_000L
 
 internal class SummaryViewModel(
     private val resourceProvider: ResourceProvider,
@@ -120,15 +125,66 @@ internal class SummaryViewModel(
     fun createSummaryItems(uuid: String) {
         resetScreen()
         viewModelScope.launch(Dispatchers.Default) {
-            motionMeasurement.value = getMotionMeasurement(uuid)
-            val measurement = motionMeasurement.value ?: return@launch
-            previousMeasurement = getPreviousMeasurement(measurement.timestamp)
-            previousMeasurementParams = previousMeasurement?.paramsByName() ?: emptyMap()
-            withContext(Dispatchers.Default) {
+            try {
+                motionMeasurement.value = getMotionMeasurement(uuid)
+                val measurement = motionMeasurement.value
+                if (measurement == null) {
+                    // Measurement not found — don't leave the screen spinning on shimmer.
+                    failSummaryGracefully()
+                    return@launch
+                }
+                previousMeasurement = safePreviousMeasurement(measurement.timestamp)
+                previousMeasurementParams = previousMeasurement?.paramsByName() ?: emptyMap()
                 loadSummary(measurement, emitBeforePartialCheck = true)
+            } catch (c: CancellationException) {
+                throw c
+            } catch (t: Throwable) {
+                failSummaryGracefully()
             }
         }
     }
+
+    /**
+     * Reads the previous measurement for the delta arrows, but never lets a throw or a hang in the
+     * recorder bridge block the summary — bounded by a timeout and swallowing non-cancellation
+     * failures (returns null → no delta arrows, summary still renders).
+     */
+    private suspend fun safePreviousMeasurement(currentTimestamp: Long): OSTMotionMeasurement? =
+        try {
+            withTimeoutOrNull(PREVIOUS_MEASUREMENT_TIMEOUT_MS) {
+                getPreviousMeasurement(currentTimestamp)
+            }
+        } catch (c: CancellationException) {
+            throw c
+        } catch (t: Throwable) {
+            null
+        }
+
+    /**
+     * Guarantees the summary can never sit on its Loading shimmer forever: clears the blocking
+     * loader and converts any still-Loading tab to its error empty-state. Called from the load
+     * coroutine's catch/early-exit paths.
+     */
+    private suspend fun failSummaryGracefully() {
+        withContext(Dispatchers.Main) {
+            isLoading.value = false
+            if (gatLabScreenState.value is SummaryListState.GaitLab.Loading) {
+                gatLabScreenState.value = SummaryListState.GaitLab.Error(summaryErrorEmptyState())
+            }
+            if (insightsScreenState.value is SummaryListState.Insights.Loading) {
+                insightsScreenState.value = SummaryListState.Insights.Error(summaryErrorEmptyState())
+            }
+        }
+    }
+
+    private fun summaryErrorEmptyState(): EmptyStateData =
+        EmptyStateData(
+            subtitle = TextData(
+                text = resourceProvider.getString(Res.string.system_error_highlights_message),
+                textSize = 18.sp,
+                fontWeight = FontWeight.W400,
+            ),
+        )
 
     /**
      * Creates summary items from a full OSTMotionMeasurement object.
@@ -138,12 +194,26 @@ internal class SummaryViewModel(
      */
     fun createSummaryItems(measurement: OSTMotionMeasurement) {
         resetScreen()
+        motionMeasurement.value = measurement
+        // Render the summary immediately. The previous-measurement read is NOT awaited here — the
+        // iOS recorder bridge read can block/hang (Core Data thread access, OS-15946), which would
+        // otherwise strand the screen on its Loading shimmer forever.
         viewModelScope.launch(Dispatchers.Default) {
-            motionMeasurement.value = measurement
-            previousMeasurement = getPreviousMeasurement(measurement.timestamp)
-            previousMeasurementParams = previousMeasurement?.paramsByName() ?: emptyMap()
-            withContext(Dispatchers.Default) {
+            try {
                 loadSummary(measurement, emitBeforePartialCheck = false)
+            } catch (c: CancellationException) {
+                throw c
+            } catch (t: Throwable) {
+                failSummaryGracefully()
+            }
+        }
+        // Previous measurement feeds the delta arrows only — fetch it off the critical path so a
+        // slow/hanging recorder read never blocks the summary from rendering.
+        viewModelScope.launch(Dispatchers.Default) {
+            val prev = safePreviousMeasurement(measurement.timestamp)
+            if (prev != null) {
+                previousMeasurement = prev
+                previousMeasurementParams = prev.paramsByName()
             }
         }
     }
@@ -197,7 +267,16 @@ internal class SummaryViewModel(
         }
 
         // ===== PHASE 3: Fetch insights (network, slow) =====
-        val insights = insightsBridge.getInsightsByUuid(measurement.id)
+        // A throw here must NOT strand the coroutine: insightsScreenState would stay on its
+        // Loading shimmer forever (the Highlights tab is the default landing tab), which is the
+        // "endless shimmer" seen on iOS. Fall back to the null → error empty state instead.
+        val insights = try {
+            insightsBridge.getInsightsByUuid(measurement.id)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (t: Throwable) {
+            null
+        }
         val tugItem =
             if (measurement.type == OSTActivityType.TUG) measurement.toTugItemOrNull() else null
 

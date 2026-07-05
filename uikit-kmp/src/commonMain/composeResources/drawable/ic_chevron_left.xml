@@ -1,19 +1,17 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="960"
-    android:viewportHeight="960">
+    android:viewportWidth="24"
+    android:viewportHeight="24">
 
     <!--
-      A left-pointing chevron (back), drawn as a single stroked path.
-      Horizontal mirror of ic_chevron so it matches the app's chevron style.
-      The toolbar RTL-mirrors the start icon, so this points right in RTL.
+      Left-pointing chevron (back), matching the Figma design-system asset (node 6056:14827):
+      a filled glyph inset within a 24x24 box at the design's stroke weight — consistent with
+      ic_close, NOT a full-bleed hairline. The toolbar tints this via Icon(tint=...) and
+      RTL-mirrors the start icon, so it points right in RTL.
     -->
     <path
-        android:pathData="M660,00 L260,480 L660,990"
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="50"
-        android:strokeLineCap="square"
-        android:strokeLineJoin="miter"/>
+        android:pathData="M15.5303,5.46967C15.8232,5.76256 15.8232,6.23744 15.5303,6.53033L10.0607,12L15.5303,17.4697C15.8232,17.7626 15.8232,18.2374 15.5303,18.5303C15.2374,18.8232 14.7626,18.8232 14.4697,18.5303L8.46967,12.5303C8.17678,12.2374 8.17678,11.7626 8.46967,11.4697L14.4697,5.46967C14.7626,5.17678 15.2374,5.17678 15.5303,5.46967Z"
+        android:fillColor="#3E3D3B"
+        android:fillType="evenOdd"/>
 </vector>
