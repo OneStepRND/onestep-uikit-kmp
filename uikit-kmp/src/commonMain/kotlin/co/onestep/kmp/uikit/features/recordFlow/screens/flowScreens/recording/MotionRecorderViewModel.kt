@@ -403,8 +403,11 @@ internal class MotionRecorderViewModel(
 
     private fun getReadyDualTaskState(instructions: String) = RecordingScreenData(
         recordScreenStage = RecordingScreenData.RecordScreenStage.GET_READY,
-        title = TextData(resourceProvider.getString(Res.string.get_ready), 60.sp, FontWeight.W600),
-        instructions = TextData(instructions, 28.sp, FontWeight.W600),
+        // Nunito Sans ships only regular/medium/bold real weights; W600 has no matching
+        // font file and iOS renders it light, so the design's Bold titles/subtitles must
+        // use FontWeight.Bold to actually render bold on iOS. (Figma: title/subtitle Bold.)
+        title = TextData(resourceProvider.getString(Res.string.get_ready), 60.sp, FontWeight.Bold),
+        instructions = TextData(instructions, 28.sp, FontWeight.Bold),
     )
 
     /** Resolves the Get Ready screen's instruction text based on pocket location, activity type, and balance condition. */
@@ -432,11 +435,11 @@ internal class MotionRecorderViewModel(
 
     private fun getReadyState() = RecordingScreenData(
         recordScreenStage = RecordingScreenData.RecordScreenStage.GET_READY,
-        title = TextData(resourceProvider.getString(Res.string.get_ready), 60.sp, FontWeight.W600),
-        instructions = TextData(getReadyInstructions(), 28.sp, FontWeight.W600),
-        timerValue = TimerData(TextData(timerValue.value, 115.sp, FontWeight.W600), countdown = true),
+        title = TextData(resourceProvider.getString(Res.string.get_ready), 60.sp, FontWeight.Bold),
+        instructions = TextData(getReadyInstructions(), 28.sp, FontWeight.Bold),
+        timerValue = TimerData(TextData(timerValue.value, 115.sp, FontWeight.Bold), countdown = true),
         bottomButton = SecondaryButtonData(
-            text = TextData(resourceProvider.getString(Res.string.start_now), 24.sp, FontWeight.W600),
+            text = TextData(resourceProvider.getString(Res.string.start_now), 24.sp, FontWeight.Bold),
             iconData = IconData(icon = Res.drawable.ic_play_button, tintColor = Color.White),
             action = {
                 // Clicked: start_measurement_now — user skipped the remaining countdown.
@@ -452,9 +455,9 @@ internal class MotionRecorderViewModel(
 
     private fun recordingState() = RecordingScreenData(
         recordScreenStage = RecordingScreenData.RecordScreenStage.RECORDING,
-        title = TextData(resourceProvider.getString(Res.string.go), 60.sp, FontWeight.W600),
-        instructions = TextData(resourceProvider.getString(Res.string.recording_in_progress), 28.sp, FontWeight.W600),
-        timerValue = TimerData(TextData(timerValue.value, 115.sp, FontWeight.W600), countdown = false),
+        title = TextData(resourceProvider.getString(Res.string.go), 60.sp, FontWeight.Bold),
+        instructions = TextData(resourceProvider.getString(Res.string.recording_in_progress), 28.sp, FontWeight.Bold),
+        timerValue = TimerData(TextData(timerValue.value, 115.sp, FontWeight.Bold), countdown = false),
         slideToStopButton = SlideToStopButtonData(
             textData = TextData(resourceProvider.getString(Res.string.slide_to_stop), 20.sp, FontWeight.Bold),
             action = ::stopRecording,
@@ -463,8 +466,8 @@ internal class MotionRecorderViewModel(
 
     private fun analysingState() = RecordingScreenData(
         recordScreenStage = RecordingScreenData.RecordScreenStage.ANALYZING,
-        title = TextData(resourceProvider.getString(Res.string.analyzing), 60.sp, FontWeight.W600),
-        instructions = TextData(resourceProvider.getString(Res.string.analyzing_in_progress), 28.sp, FontWeight.W600),
+        title = TextData(resourceProvider.getString(Res.string.analyzing), 60.sp, FontWeight.Bold),
+        instructions = TextData(resourceProvider.getString(Res.string.analyzing_in_progress), 28.sp, FontWeight.Bold),
     )
 
     private fun startUiTimeout() {

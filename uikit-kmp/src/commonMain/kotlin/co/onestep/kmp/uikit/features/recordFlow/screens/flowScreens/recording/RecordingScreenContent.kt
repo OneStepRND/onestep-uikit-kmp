@@ -17,15 +17,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -120,17 +122,19 @@ internal fun RecordingScreenStateless(
         label = "stepsFill",
     )
 
-    Box(
+    Column(
         modifier = modifier
             .fillMaxSize()
             .background(colors.neutral_m4),
     ) {
-        // Title centered in the top white area
+        // Title in a compact white header at the top. Previously the title was centered
+        // inside a quarter-height band which — stacked below the reserved toolbar space —
+        // pushed it well below the Figma position. A wrap-height header with top/bottom
+        // padding keeps the title high, matching the design's compact white header.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.25f)
-                .align(Alignment.TopCenter),
+                .padding(top = Variables.GapXL, bottom = Variables.GapXXL),
             contentAlignment = Alignment.Center,
         ) {
             AnimatedContent(
@@ -152,23 +156,46 @@ internal fun RecordingScreenStateless(
             }
         }
 
-        // Colored bottom area with all content
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.75f)
-                .align(Alignment.BottomCenter)
-                .background(screenData.colorTheme),
-        ) {
-            // Water fill wave during recording
-            if (screenData.recordScreenStage.isRecording()) {
-                WaterFillWave(
-                    modifier = Modifier.fillMaxSize(),
-                    percent = animatedPercent,
-                    color = colors.success_p3,
-                    isFlat = true,
-                )
-            }
+        // Colored bottom area with all content — fills the remaining height.
+        // Extracted into its own composable so the enclosing ColumnScope does not leak
+        // into its body; otherwise BoxScope-scoped calls here (align, the top-level
+        // AnimatedVisibility) become ambiguous against ColumnScope overloads.
+        RecordingColoredArea(
+            modifier = Modifier.weight(1f),
+            screenData = screenData,
+            subtitle = subtitle,
+            timerValue = timerValue,
+            animatedPercent = animatedPercent,
+            onStopped = onStopped,
+        )
+    }
+}
+
+@Composable
+private fun RecordingColoredArea(
+    modifier: Modifier = Modifier,
+    screenData: RecordingScreenData,
+    subtitle: String,
+    timerValue: String,
+    animatedPercent: Float,
+    onStopped: () -> Unit,
+) {
+    val colors = LocalOSColors.current
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(screenData.colorTheme),
+    ) {
+        // Water fill wave during recording
+        if (screenData.recordScreenStage.isRecording()) {
+            WaterFillWave(
+                modifier = Modifier.fillMaxSize(),
+                percent = animatedPercent,
+                color = colors.success_p3,
+                isFlat = true,
+            )
+        }
 
             // Instructions and timer
             Column(
@@ -247,8 +274,9 @@ internal fun RecordingScreenStateless(
                 SlideToStopButton(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
                         .padding(horizontal = Variables.GapL)
-                        .padding(bottom = Variables.GapL),
+                        .padding(bottom = Variables.GapXL),
                     trackTextSize = it.textData?.textSize ?: 20.sp,
                     trackText = it.textData?.text ?: stringResource(Res.string.slide_to_stop),
                     trackColor = colors.error_p2,
@@ -269,9 +297,10 @@ internal fun RecordingScreenStateless(
                     horizontalArrangement = Arrangement.Center,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
                         .fillMaxWidth()
                         .padding(horizontal = Variables.GapL)
-                        .padding(bottom = Variables.GapL)
+                        .padding(bottom = Variables.GapXL)
                         .height(60.dp)
                         .clip(RoundedCornerShape(Variables.RadiusR4))
                         .border(
@@ -299,7 +328,6 @@ internal fun RecordingScreenStateless(
                 }
             }
         }
-    }
 }
 
 @Preview
