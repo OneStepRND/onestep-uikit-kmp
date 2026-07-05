@@ -48,7 +48,7 @@ const val WALK_FLOW_SCREEN_BORDER_BRAND_BUTTON = "walk_flow_screen_border_brand_
 const val WALK_FLOW_SCREEN_MAIN_BUTTON = "Walk flow screen main button"
 
 @Composable
-fun UiKitScreen(
+internal fun UiKitScreen(
     screenData: UiKitScreenData,
     modifier: Modifier = Modifier,
     playAudio: ((String) -> Unit)? = null,
@@ -204,7 +204,7 @@ fun UiKitScreen(
 }
 
 @Composable
-fun SelectionList(
+internal fun SelectionList(
     modifier: Modifier = Modifier,
     items: List<SelectionItemData>,
     selectedItems: SnapshotStateList<Boolean>? = null,

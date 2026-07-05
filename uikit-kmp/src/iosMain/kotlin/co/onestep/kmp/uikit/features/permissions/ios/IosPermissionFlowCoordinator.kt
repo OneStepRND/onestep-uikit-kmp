@@ -40,16 +40,11 @@ internal class IosPermissionFlowCoordinator(
      */
     fun initialize() {
         val requiredTypes = IosPermissionSequence.forMode(mode)
-        println("DEBUG COORDINATOR: initialize() requiredTypes=$requiredTypes")
         val pendingTypes = requiredTypes.filter { type ->
-            val status = checker.checkStatus(type)
-            println("DEBUG COORDINATOR: checkStatus($type) = $status")
-            status != IosPermissionStatus.GRANTED
+            checker.checkStatus(type) != IosPermissionStatus.GRANTED
         }
-        println("DEBUG COORDINATOR: pendingTypes=$pendingTypes")
 
         if (pendingTypes.isEmpty()) {
-            println("DEBUG COORDINATOR: All permissions granted, calling onComplete(true)")
             onComplete(true)
             return
         }
@@ -67,34 +62,7 @@ internal class IosPermissionFlowCoordinator(
             preferencesBridge?.let { it.permissionExplanationScreenShown = true }
         }
 
-        // Convert permission types to screens
-        // PRD: "After 1 denial [iOS], the next time the flow is opened, show the 'Go to Settings' variant"
-        for (type in pendingTypes) {
-            val wasPreviouslyDenied = hasBeenRequestedBefore(type) &&
-                checker.checkStatus(type) == IosPermissionStatus.DENIED
-            when (type) {
-                IosPermissionType.MOTION_FITNESS ->
-                    screens.add(IosPermissionScreen.Motion(showSettings = wasPreviouslyDenied))
-                IosPermissionType.LOCATION_WHILE_USING ->
-                    screens.add(IosPermissionScreen.Location(phase = LocationPhase.WHILE_USING, showSettings = wasPreviouslyDenied))
-                IosPermissionType.LOCATION_ALWAYS -> {
-                    // PRD 4.3: Detect location downgrade (was Always, now WhenInUse)
-                    val hasWhileUsing = checker.checkStatus(IosPermissionType.LOCATION_WHILE_USING) == IosPermissionStatus.GRANTED
-                    val wasDowngraded = hasBeenRequestedBefore(IosPermissionType.LOCATION_ALWAYS) && hasWhileUsing
-                    if (wasDowngraded) {
-                        // Downgrade detected: show settings redirect to re-enable "Always"
-                        screens.add(IosPermissionScreen.Location(phase = LocationPhase.ALWAYS, showSettings = true, isDowngraded = true))
-                    } else if (!hasBeenRequestedBefore(IosPermissionType.LOCATION_ALWAYS)) {
-                        screens.add(IosPermissionScreen.Location(phase = LocationPhase.ALWAYS))
-                    }
-                }
-                IosPermissionType.HEALTH_KIT ->
-                    screens.add(IosPermissionScreen.HealthKit(showSettings = wasPreviouslyDenied))
-                IosPermissionType.MICROPHONE -> {
-                    // Microphone is handled separately, not part of the main flow
-                }
-            }
-        }
+        screens.addAll(buildScreensForTypes(pendingTypes))
 
         currentIndex = 0
         _currentScreen.value = screens[currentIndex]
@@ -108,25 +76,20 @@ internal class IosPermissionFlowCoordinator(
     /** Advance to the next screen in the flow. */
     fun nextScreen() {
         currentIndex++
-        println("DEBUG COORDINATOR: nextScreen() currentIndex=$currentIndex screens.size=${screens.size}")
         if (currentIndex >= screens.size) {
-            println("DEBUG COORDINATOR: Reached end, calling onComplete(allGranted=$allGranted)")
             onComplete(allGranted)
             return
         }
         val screen = screens[currentIndex]
         if (screen is IosPermissionScreen.Completed) {
-            println("DEBUG COORDINATOR: Completed screen, calling onComplete(allGranted=$allGranted)")
             onComplete(allGranted)
             return
         }
-        println("DEBUG COORDINATOR: Showing screen: $screen")
         _currentScreen.value = screen
     }
 
     /** Called when a permission is granted — advance to next screen. */
     fun onPermissionGranted(type: IosPermissionType) {
-        println("DEBUG COORDINATOR: onPermissionGranted($type)")
         tracker?.trackAllowClicked(
             permission = type.analyticsName(),
             variant = if (hasBeenRequestedBefore(type)) "after_denied" else "first_time",
@@ -138,7 +101,6 @@ internal class IosPermissionFlowCoordinator(
 
     /** Called when a permission is denied — track denial and exit the flow (PRD: exit on deny). */
     fun onPermissionDenied(type: IosPermissionType) {
-        println("DEBUG COORDINATOR: onPermissionDenied($type)")
         trackPermissionRequested(type)
         allGranted = false
         // PRD Section 6: "If user denies a permission: Exit the flow"
@@ -179,15 +141,6 @@ internal class IosPermissionFlowCoordinator(
         )
     }
 
-    /** Track a permission request screen view. */
-    fun trackScreenView(type: IosPermissionType) {
-        tracker?.trackPermissionRequestScreen(
-            permission = type.analyticsName(),
-            variant = if (hasBeenRequestedBefore(type)) "after_denied" else "first_time",
-            flowName = flowName,
-        )
-    }
-
     /** Track that a permission was requested via PreferencesBridge. */
     fun trackPermissionRequested(type: IosPermissionType) {
         preferencesBridge?.setPermissionRequested(type.preferencesKey())
@@ -198,11 +151,36 @@ internal class IosPermissionFlowCoordinator(
         return preferencesBridge?.hasPermissionRequestedBefore(type.preferencesKey()) ?: false
     }
 
-    /** Get the list of pending permission types (for rationalization screen). */
-    fun getPendingPermissionTypes(): List<IosPermissionType> {
-        return IosPermissionSequence.forMode(mode).filter { type ->
-            checker.checkStatus(type) != IosPermissionStatus.GRANTED
+    // PRD: "After 1 denial [iOS], the next time the flow is opened, show the 'Go to Settings' variant"
+    private fun buildScreensForTypes(pendingTypes: List<IosPermissionType>): List<IosPermissionScreen> {
+        val result = mutableListOf<IosPermissionScreen>()
+        for (type in pendingTypes) {
+            val wasPreviouslyDenied = hasBeenRequestedBefore(type) &&
+                checker.checkStatus(type) == IosPermissionStatus.DENIED
+            when (type) {
+                IosPermissionType.MOTION_FITNESS ->
+                    result.add(IosPermissionScreen.Motion(showSettings = wasPreviouslyDenied))
+                IosPermissionType.LOCATION_WHILE_USING ->
+                    result.add(IosPermissionScreen.Location(phase = LocationPhase.WHILE_USING, showSettings = wasPreviouslyDenied))
+                IosPermissionType.LOCATION_ALWAYS -> {
+                    // PRD 4.3: Detect location downgrade (was Always, now WhenInUse)
+                    val hasWhileUsing = checker.checkStatus(IosPermissionType.LOCATION_WHILE_USING) == IosPermissionStatus.GRANTED
+                    val wasDowngraded = hasBeenRequestedBefore(IosPermissionType.LOCATION_ALWAYS) && hasWhileUsing
+                    if (wasDowngraded) {
+                        // Downgrade detected: show settings redirect to re-enable "Always"
+                        result.add(IosPermissionScreen.Location(phase = LocationPhase.ALWAYS, showSettings = true, isDowngraded = true))
+                    } else if (!hasBeenRequestedBefore(IosPermissionType.LOCATION_ALWAYS)) {
+                        result.add(IosPermissionScreen.Location(phase = LocationPhase.ALWAYS))
+                    }
+                }
+                IosPermissionType.HEALTH_KIT ->
+                    result.add(IosPermissionScreen.HealthKit(showSettings = wasPreviouslyDenied))
+                IosPermissionType.MICROPHONE -> {
+                    // Microphone is handled separately, not part of the main flow
+                }
+            }
         }
+        return result
     }
 }
 

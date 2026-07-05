@@ -14,9 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.designsystem.components.PrimaryButton
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,17 +31,12 @@ import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionFlowCoordinato
 import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionScreen
 import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionStatus
 import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionType
-import co.onestep.kmp.uikit.features.permissions.ios.components.DataUsageInfoSheet
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.theme.LocalOSColors
-import co.onestep.designsystem.components.TertiaryButton
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_run_stars
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
-import platform.Foundation.NSNotificationCenter
-import platform.UIKit.UIApplicationDidBecomeActiveNotification
-import platform.darwin.NSObjectProtocol
 
 /**
  * Motion/Fitness permission screen.
@@ -51,7 +44,8 @@ import platform.darwin.NSObjectProtocol
  * - Request variant: Icon + description + "Allow" button to trigger the request.
  * - Settings variant: Icon + description + inline settings instructions + "Go to Settings" button.
  *
- * Polls CMMotionActivityManager.authorizationStatus() every 500ms to auto-advance.
+ * Return-from-Settings detection is handled by [ObserveReturnFromSettings].
+ * Post-request polling is handled by [PermissionPollingEffect].
  */
 @Composable
 internal fun IosMotionPermissionScreen(
@@ -71,40 +65,23 @@ private fun MotionSettingsContent(
     coordinator: IosPermissionFlowCoordinator,
     checker: IosPermissionChecker,
 ) {
-    var showDataUsage by remember { mutableStateOf(false) }
     val colors = LocalOSColors.current
 
-    // Observe app becoming active (returning from Settings)
-    var becameActive by remember { mutableStateOf(false) }
-    DisposableEffect(Unit) {
-        val observer: NSObjectProtocol = NSNotificationCenter.defaultCenter.addObserverForName(
-            name = UIApplicationDidBecomeActiveNotification,
-            `object` = null,
-            queue = null,
-        ) { _ ->
-            becameActive = true
-        }
-        onDispose {
-            NSNotificationCenter.defaultCenter.removeObserver(observer)
+    // Detect return from Settings and re-check motion permission
+    ObserveReturnFromSettings {
+        val status = checker.checkStatus(IosPermissionType.MOTION_FITNESS)
+        if (status == IosPermissionStatus.GRANTED) {
+            coordinator.onPermissionGranted(IosPermissionType.MOTION_FITNESS)
         }
     }
 
-    LaunchedEffect(becameActive) {
-        if (becameActive) {
-            becameActive = false
-            val status = checker.checkStatus(IosPermissionType.MOTION_FITNESS)
-            if (status == IosPermissionStatus.GRANTED) {
-                coordinator.onPermissionGranted(IosPermissionType.MOTION_FITNESS)
-            }
-        }
-    }
-
-    // Also poll for status changes
+    // The CMMotionActivityManager system prompt can resolve in-process without firing
+    // UIApplicationDidBecomeActiveNotification, so the observer alone can miss the grant —
+    // keep polling while this screen is visible.
     LaunchedEffect(Unit) {
         while (true) {
             delay(500)
-            val status = checker.checkStatus(IosPermissionType.MOTION_FITNESS)
-            if (status == IosPermissionStatus.GRANTED) {
+            if (checker.checkStatus(IosPermissionType.MOTION_FITNESS) == IosPermissionStatus.GRANTED) {
                 coordinator.onPermissionGranted(IosPermissionType.MOTION_FITNESS)
                 break
             }
@@ -118,19 +95,7 @@ private fun MotionSettingsContent(
             .padding(horizontal = 24.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Close button (X) — dismisses the flow
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            TextButton(onClick = { coordinator.onDismiss() }) {
-                OSText(
-                    text = "\u2715",
-                    fontSize = 20.sp,
-                    color = colors.neutral_p1,
-                )
-            }
-        }
+        PermissionCloseButton { coordinator.onDismiss() }
 
         Spacer(modifier = Modifier.height(40.dp))
 
@@ -187,7 +152,7 @@ private fun MotionSettingsContent(
             horizontalArrangement = Arrangement.Center,
         ) {
             OSText(
-                text = "\uD83C\uDFC3",
+                text = "🏃",
                 fontSize = 20.sp,
             )
             Spacer(modifier = Modifier.size(8.dp))
@@ -213,18 +178,9 @@ private fun MotionSettingsContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // "How is my data used?" link
-        TertiaryButton(
-            text = "How is my data used?",
-            onClick = { showDataUsage = true },
+        DataUsageFooter(
+            description = "We access your phone's motion sensors to analyze steps, balance, and how you walk. This helps us provide detailed, clinically relevant insights.",
         )
-
-        if (showDataUsage) {
-            DataUsageInfoSheet(
-                description = "We access your phone's motion sensors to analyze steps, balance, and how you walk. This helps us provide detailed, clinically relevant insights.",
-                onDismiss = { showDataUsage = false },
-            )
-        }
     }
 }
 
@@ -234,39 +190,15 @@ private fun MotionRequestContent(
     checker: IosPermissionChecker,
 ) {
     var requested by remember { mutableStateOf(false) }
-    var showDataUsage by remember { mutableStateOf(false) }
     val colors = LocalOSColors.current
 
     // Poll for status changes after requesting (fire-and-forget + poll pattern)
-    LaunchedEffect(requested) {
-        if (requested) {
-            // Give the system dialog time to appear and be interacted with
-            delay(1000)
-            var attempts = 0
-            val maxAttempts = 60 // 30 seconds max
-            while (attempts < maxAttempts) {
-                delay(500)
-                attempts++
-                val status = checker.checkStatus(IosPermissionType.MOTION_FITNESS)
-                when (status) {
-                    IosPermissionStatus.GRANTED -> {
-                        coordinator.onPermissionGranted(IosPermissionType.MOTION_FITNESS)
-                        return@LaunchedEffect
-                    }
-                    IosPermissionStatus.DENIED,
-                    IosPermissionStatus.RESTRICTED -> {
-                        coordinator.onPermissionDenied(IosPermissionType.MOTION_FITNESS)
-                        return@LaunchedEffect
-                    }
-                    IosPermissionStatus.NOT_DETERMINED -> {
-                        // Still waiting for user response, keep polling
-                    }
-                }
-            }
-            // Timed out waiting — treat as denied
-            coordinator.onPermissionDenied(IosPermissionType.MOTION_FITNESS)
-        }
-    }
+    PermissionPollingEffect(
+        requested = requested,
+        permissionType = IosPermissionType.MOTION_FITNESS,
+        checker = checker,
+        coordinator = coordinator,
+    )
 
     Column(
         modifier = Modifier
@@ -275,19 +207,7 @@ private fun MotionRequestContent(
             .padding(horizontal = 24.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Close button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            TextButton(onClick = { coordinator.onDismiss() }) {
-                OSText(
-                    text = "\u2715",
-                    fontSize = 20.sp,
-                    color = colors.neutral_p1,
-                )
-            }
-        }
+        PermissionCloseButton { coordinator.onDismiss() }
 
         Spacer(modifier = Modifier.height(40.dp))
 
@@ -337,17 +257,8 @@ private fun MotionRequestContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // "How is my data used?" link
-        TertiaryButton(
-            text = "How is my data used?",
-            onClick = { showDataUsage = true },
+        DataUsageFooter(
+            description = "We access your phone's motion sensors to analyze steps, balance, and how you walk. This helps us provide detailed, clinically relevant insights.",
         )
-
-        if (showDataUsage) {
-            DataUsageInfoSheet(
-                description = "We access your phone's motion sensors to analyze steps, balance, and how you walk. This helps us provide detailed, clinically relevant insights.",
-                onDismiss = { showDataUsage = false },
-            )
-        }
     }
 }

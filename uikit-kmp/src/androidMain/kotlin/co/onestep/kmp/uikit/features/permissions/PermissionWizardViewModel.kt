@@ -45,8 +45,6 @@ internal class PermissionWizardViewModel(
     private val _returningFromSettings = MutableStateFlow(false)
     val returningFromSettings: StateFlow<Boolean> = _returningFromSettings
 
-    val showExplanation = MutableStateFlow(false)
-
     private fun updatePermissionState(
         permissionType: PermissionType,
         updater: (PermissionNavigator.PermissionState) -> PermissionNavigator.PermissionState,
@@ -66,34 +64,38 @@ internal class PermissionWizardViewModel(
                 .firstOrNull()
     }
 
+    // F6: probe-completion lookup extracted from initializePermissionStates
+    private fun PermissionType.probeCompleted(): Boolean =
+        when (this) {
+            PermissionType.ACTIVITY_RECOGNITION -> prefs.activityRecognitionProbeCompleted
+            PermissionType.POST_NOTIFICATIONS -> prefs.postNotificationsProbeCompleted
+            else -> false
+        }
+
+    // F6: permission-status resolution extracted from initializePermissionStates
+    private fun PermissionType.resolveStatus(
+        activity: Activity,
+        probeCompleted: Boolean,
+    ): UiKitPermissionStatus =
+        if (androidPermission != null) {
+            permissionsManager.getPermissionStatus(
+                androidPermission!!,
+                activity,
+                probeCompleted = probeCompleted,
+            )
+        } else {
+            if (isGranted(activity)) UiKitPermissionStatus.Granted
+            else UiKitPermissionStatus.UnknownCouldRequest
+        }
+
     private fun initializePermissionStates(activity: Activity) {
         val states =
             permissionSequence
                 .getRequiredPermissions(Build.VERSION.SDK_INT)
                 .associateWith { type ->
                     val isGranted = type.isGranted(activity)
-
-                    val probeCompleted =
-                        when (type) {
-                            PermissionType.ACTIVITY_RECOGNITION -> prefs.activityRecognitionProbeCompleted
-                            PermissionType.POST_NOTIFICATIONS -> prefs.postNotificationsProbeCompleted
-                            else -> false
-                        }
-
-                    val status =
-                        if (type.androidPermission != null) {
-                            permissionsManager.getPermissionStatus(
-                                type.androidPermission!!,
-                                activity,
-                                probeCompleted = probeCompleted,
-                            )
-                        } else {
-                            if (isGranted) {
-                                UiKitPermissionStatus.Granted
-                            } else {
-                                UiKitPermissionStatus.UnknownCouldRequest
-                            }
-                        }
+                    val probeCompleted = type.probeCompleted()
+                    val status = type.resolveStatus(activity, probeCompleted)
 
                     PermissionNavigator.PermissionState(
                         type = type,
@@ -113,6 +115,43 @@ internal class PermissionWizardViewModel(
         _permissionStates.value = states
     }
 
+    // F7: inner else-branch of determineStartDestination extracted for readability
+    private fun resolveFirstUngrantedDestination(): PermissionDestinations {
+        val firstUngranted =
+            _permissionStates.value.entries
+                .firstOrNull { !it.value.isGranted }
+
+        return if (firstUngranted != null) {
+            _currentPermissionType.value = firstUngranted.key
+            val destination =
+                when (firstUngranted.value.status) {
+                    UiKitPermissionStatus.Granted -> {
+                        getRequestDestination(
+                            _currentPermissionType.value ?: PermissionType.ACTIVITY_RECOGNITION,
+                            mode,
+                        )
+                    }
+
+                    UiKitPermissionStatus.UnknownCouldRequest,
+                    UiKitPermissionStatus.DeniedCanRequestAgain,
+                    -> {
+                        getRequestDestination(firstUngranted.key, mode)
+                    }
+
+                    UiKitPermissionStatus.DeniedAlways -> {
+                        getSettingsDestination(firstUngranted.key, mode)
+                    }
+                }
+            trackPermissionScreenShown(firstUngranted.key)
+            destination
+        } else {
+            val permType = _currentPermissionType.value ?: PermissionType.ACTIVITY_RECOGNITION
+            val destination = getRequestDestination(permType, mode)
+            trackPermissionScreenShown(permType)
+            destination
+        }
+    }
+
     fun determineStartDestination(activity: Activity?): PermissionDestinations {
         if (activity == null) return _currentScreen.value
         _currentScreen.value =
@@ -122,44 +161,7 @@ internal class PermissionWizardViewModel(
                     ExplanationScreenDestination
                 }
 
-                else -> {
-                    val firstUngranted =
-                        _permissionStates.value.entries
-                            .firstOrNull { !it.value.isGranted }
-
-                    if (firstUngranted != null) {
-                        _currentPermissionType.value = firstUngranted.key
-
-                        val state = firstUngranted.value
-                        val destination =
-                            when (state.status) {
-                                UiKitPermissionStatus.Granted -> {
-                                    getRequestDestination(
-                                        _currentPermissionType.value ?: PermissionType.ACTIVITY_RECOGNITION,
-                                        mode,
-                                    )
-                                }
-
-                                UiKitPermissionStatus.UnknownCouldRequest,
-                                UiKitPermissionStatus.DeniedCanRequestAgain,
-                                -> {
-                                    getRequestDestination(firstUngranted.key, mode)
-                                }
-
-                                UiKitPermissionStatus.DeniedAlways -> {
-                                    getSettingsDestination(firstUngranted.key, mode)
-                                }
-                            }
-
-                        trackPermissionScreenShown(firstUngranted.key)
-                        destination
-                    } else {
-                        val permType = _currentPermissionType.value ?: PermissionType.ACTIVITY_RECOGNITION
-                        val destination = getRequestDestination(permType, mode)
-                        trackPermissionScreenShown(permType)
-                        destination
-                    }
-                }
+                else -> resolveFirstUngrantedDestination()
             }
         return _currentScreen.value
     }
@@ -304,19 +306,16 @@ internal class PermissionWizardViewModel(
         when (next) {
             is PermissionNavigator.NextAction.ShowExplanation -> {
                 _currentScreen.value = ExplanationScreenDestination
-                showExplanation.value = true
                 analyticsTracker.trackDataSafetyScreen(mode.toAnalyticsFlowName())
             }
 
             is PermissionNavigator.NextAction.ShowPermissionPrompt -> {
                 _currentScreen.value = getRequestDestination(next.permissionType, mode)
-                showExplanation.value = false
                 trackPermissionScreenShown(next.permissionType)
             }
 
             is PermissionNavigator.NextAction.ShowSettingsRedirect -> {
                 _currentScreen.value = getSettingsDestination(next.permissionType, mode)
-                showExplanation.value = false
                 trackPermissionScreenShown(next.permissionType)
             }
 
@@ -372,69 +371,25 @@ internal class PermissionWizardViewModel(
         )
     }
 
-    fun trackAllowButtonClick() {
+    // F1: shared preamble extracted from the four track*Click methods
+    private inline fun trackAction(crossinline action: PermissionAnalyticsTracker.(String, String, String) -> Unit) {
         val currentType = _currentPermissionType.value ?: return
         val permissionName = currentType.toAnalyticsPermissionName() ?: return
         val state = _permissionStates.value[currentType]
-        val variant =
-            determineVariant(
-                state?.probeCompleted ?: false,
-                state?.isGranted ?: false,
-            )
-        analyticsTracker.trackAllowClicked(
-            permissionName,
-            variant,
-            mode.toAnalyticsFlowName(),
+        val variant = determineVariant(
+            state?.probeCompleted ?: false,
+            state?.isGranted ?: false,
         )
+        analyticsTracker.action(permissionName, variant, mode.toAnalyticsFlowName())
     }
 
-    fun trackGoToSettingsButtonClick() {
-        val currentType = _currentPermissionType.value ?: return
-        val permissionName = currentType.toAnalyticsPermissionName() ?: return
-        val state = _permissionStates.value[currentType]
-        val variant =
-            determineVariant(
-                state?.probeCompleted ?: false,
-                state?.isGranted ?: false,
-            )
-        analyticsTracker.trackGoToSettingsClicked(
-            permissionName,
-            variant,
-            mode.toAnalyticsFlowName(),
-        )
-    }
+    fun trackAllowButtonClick() = trackAction { p, v, f -> trackAllowClicked(p, v, f) }
 
-    fun trackCloseButtonClick() {
-        val currentType = _currentPermissionType.value ?: return
-        val permissionName = currentType.toAnalyticsPermissionName() ?: return
-        val state = _permissionStates.value[currentType]
-        val variant =
-            determineVariant(
-                state?.probeCompleted ?: false,
-                state?.isGranted ?: false,
-            )
-        analyticsTracker.trackPermissionCloseClicked(
-            permissionName,
-            variant,
-            mode.toAnalyticsFlowName(),
-        )
-    }
+    fun trackGoToSettingsButtonClick() = trackAction { p, v, f -> trackGoToSettingsClicked(p, v, f) }
 
-    fun trackDataUsageInfoClick() {
-        val currentType = _currentPermissionType.value ?: return
-        val permissionName = currentType.toAnalyticsPermissionName() ?: return
-        val state = _permissionStates.value[currentType]
-        val variant =
-            determineVariant(
-                state?.probeCompleted ?: false,
-                state?.isGranted ?: false,
-            )
-        analyticsTracker.trackHowIsMyDataUsedClicked(
-            permissionName,
-            variant,
-            mode.toAnalyticsFlowName(),
-        )
-    }
+    fun trackCloseButtonClick() = trackAction { p, v, f -> trackPermissionCloseClicked(p, v, f) }
+
+    fun trackDataUsageInfoClick() = trackAction { p, v, f -> trackHowIsMyDataUsedClicked(p, v, f) }
 
     companion object {
         const val TAG = "PermissionWizardViewModel"

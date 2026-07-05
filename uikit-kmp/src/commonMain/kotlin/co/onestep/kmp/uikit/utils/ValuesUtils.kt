@@ -41,6 +41,17 @@ fun Float.toText(): String =
 
 fun Float?.toStringOrDefault(defaultValue: String): String = this?.toInt()?.toString() ?: defaultValue
 
+/**
+ * Formats an Int? count-of-seconds as "M:SS" or "MM:SS".
+ * @param padMinutes true → zero-pad the minutes field to 2 digits ("01:30"); false → no padding ("1:30").
+ */
+fun Int?.toFormattedDuration(padMinutes: Boolean = true): String {
+    val m = (this ?: 0) / 60
+    val s = (this ?: 0) % 60
+    val minStr = if (padMinutes) m.toString().padStart(2, '0') else m.toString()
+    return "$minStr:${s.toString().padStart(2, '0')}"
+}
+
 fun Float?.toRoundedImperialString(
     defaultValue: String,
     preferenceManager: PreferencesBridge,

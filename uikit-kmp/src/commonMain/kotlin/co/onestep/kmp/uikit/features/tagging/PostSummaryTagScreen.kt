@@ -224,7 +224,10 @@ internal fun PostSummaryTagScreen(
                             fontWeight = FontWeight.W400,
                         )
                     }
-                    CustomTextField(newNote)
+                    CustomTextField(
+                        value = newNote.value,
+                        onValueChange = { newNote.value = it },
+                    )
                 }
                 Spacer(modifier = Modifier.height(100.dp))
             }
@@ -286,84 +289,39 @@ internal fun PostSummaryTagScreen(
 private fun AssistiveDeviceQuestion(
     assistiveDevice: OSTAssistiveDevice?,
     onEditAssistiveDeviceClicked: () -> Unit,
-) {
-    Column(
-        Modifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = ripple(bounded = true),
-            onClick = { onEditAssistiveDeviceClicked() },
-        ),
-    ) {
-        Spacer(modifier = Modifier.height(Variables.GapL))
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            OSText(
-                modifier =
-                    Modifier
-                        .align(CenterVertically)
-                        .weight(1f),
-                text = stringResource(Res.string.assistive_device),
-                fontSize = 18.sp,
-                maxLines = 2,
-                fontWeight = FontWeight.W400,
-                textAlign = TextAlign.Start,
-            )
-            Spacer(Modifier.width(Variables.GapL))
-            SecondaryButton(
-                text = stringResource(Res.string.edit),
-                onClick = { onEditAssistiveDeviceClicked() },
-                modifier = Modifier
-                    .wrapContentWidth()
-                    .height(40.dp)
-                    .test(TAG_SCREEN_ASSISTIVE_DEVICE_EDIT_BUTTON),
-                size = OSButtonSize.Small,
-                icon = {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_edit),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                    )
-                },
-            )
-        }
-        Spacer(modifier = Modifier.height(Variables.GapL))
-        OSText(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .testTag(TAG_SCREEN_ASSISTIVE_DEVICE_TEXT)
-                .semantics {
-                    contentDescription = TAG_SCREEN_ASSISTIVE_DEVICE_TEXT
-                },
-            text = assistiveDevice?.displayNameRes?.let { stringResource(it) } ?: BLANK_INPUT,
-            fontSize = 20.sp,
-            lineHeight = 24.sp,
-            fontWeight = FontWeight.W600,
-        )
-        Spacer(modifier = Modifier.height(Variables.GapL))
-    }
-
-    HorizontalDivider(
-        modifier =
-            Modifier
-                .fillMaxWidth(),
-    )
-}
+) = TagQuestionRow(
+    labelRes = Res.string.assistive_device,
+    valueText = assistiveDevice?.displayNameRes?.let { stringResource(it) } ?: BLANK_INPUT,
+    editButtonTestTag = TAG_SCREEN_ASSISTIVE_DEVICE_EDIT_BUTTON,
+    valueTestTag = TAG_SCREEN_ASSISTIVE_DEVICE_TEXT,
+    onEditClicked = onEditAssistiveDeviceClicked,
+)
 
 @Composable
 private fun LevelOfAssistanceQuestion(
     levelOfAssistance: OSTLevelOfAssistance?,
     onEditLevelOfAssistanceClicked: () -> Unit,
+) = TagQuestionRow(
+    labelRes = Res.string.level_of_assistance,
+    valueText = levelOfAssistance?.displayNameRes?.let { stringResource(it) } ?: BLANK_INPUT,
+    editButtonTestTag = TAG_SCREEN_LEVEL_OF_ASSISTANCE_EDIT_BUTTON,
+    valueTestTag = TAG_SCREEN_LEVEL_OF_ASSISTANCE_TEXT,
+    onEditClicked = onEditLevelOfAssistanceClicked,
+)
+
+@Composable
+private fun TagQuestionRow(
+    labelRes: StringResource,
+    valueText: String,
+    editButtonTestTag: String,
+    valueTestTag: String,
+    onEditClicked: () -> Unit,
 ) {
     Column(
         Modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
             indication = ripple(bounded = true),
-            onClick = { onEditLevelOfAssistanceClicked() },
+            onClick = onEditClicked,
         ),
     ) {
         Spacer(modifier = Modifier.height(Variables.GapL))
@@ -378,7 +336,7 @@ private fun LevelOfAssistanceQuestion(
                     Modifier
                         .align(CenterVertically)
                         .weight(1f),
-                text = stringResource(Res.string.level_of_assistance),
+                text = stringResource(labelRes),
                 fontSize = 18.sp,
                 maxLines = 2,
                 fontWeight = FontWeight.W400,
@@ -387,11 +345,11 @@ private fun LevelOfAssistanceQuestion(
             Spacer(Modifier.width(Variables.GapL))
             SecondaryButton(
                 text = stringResource(Res.string.edit),
-                onClick = { onEditLevelOfAssistanceClicked() },
+                onClick = onEditClicked,
                 modifier = Modifier
                     .wrapContentWidth()
                     .height(40.dp)
-                    .test(TAG_SCREEN_LEVEL_OF_ASSISTANCE_EDIT_BUTTON),
+                    .test(editButtonTestTag),
                 size = OSButtonSize.Small,
                 icon = {
                     Icon(
@@ -407,11 +365,8 @@ private fun LevelOfAssistanceQuestion(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .testTag(TAG_SCREEN_LEVEL_OF_ASSISTANCE_TEXT)
-                .semantics {
-                    contentDescription = TAG_SCREEN_LEVEL_OF_ASSISTANCE_TEXT
-                },
-            text = levelOfAssistance?.displayNameRes?.let { stringResource(it) } ?: BLANK_INPUT,
+                .test(valueTestTag),
+            text = valueText,
             fontSize = 20.sp,
             lineHeight = 24.sp,
             fontWeight = FontWeight.W600,
@@ -419,11 +374,7 @@ private fun LevelOfAssistanceQuestion(
         Spacer(modifier = Modifier.height(Variables.GapL))
     }
 
-    HorizontalDivider(
-        modifier =
-            Modifier
-                .fillMaxWidth(),
-    )
+    HorizontalDivider(modifier = Modifier.fillMaxWidth())
 }
 
 @Composable
@@ -495,8 +446,9 @@ private fun PostRecordingQuestion(
 }
 
 @Composable
-fun CustomTextField(
-    text: MutableState<String?>,
+internal fun CustomTextField(
+    value: String?,
+    onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier.padding(Variables.GapL),
     hintRes: StringResource = Res.string.note_hint_text,
 ) {
@@ -519,7 +471,7 @@ fun CustomTextField(
                         keyboardController?.show()
                     },
                 ),
-        contentAlignment = Alignment.TopStart, // Align the hint and text to the top start
+        contentAlignment = Alignment.TopStart,
     ) {
         AnimatedVisibility(
             modifier =
@@ -528,7 +480,7 @@ fun CustomTextField(
                     .padding(18.dp),
             enter = fadeIn(),
             exit = fadeOut(),
-            visible = text.value == null || text.value?.isEmpty() == true,
+            visible = value.isNullOrEmpty(),
         ) {
             OSText(
                 text = stringResource(hintRes),
@@ -539,8 +491,8 @@ fun CustomTextField(
         }
 
         BasicTextField(
-            value = text.value.orEmpty(),
-            onValueChange = { text.value = it },
+            value = value.orEmpty(),
+            onValueChange = onValueChange,
             singleLine = false,
             textStyle =
                 TextStyle(

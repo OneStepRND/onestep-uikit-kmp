@@ -41,6 +41,7 @@ import co.onestep.kmp.uikit.utils.toColorDescription
 import co.onestep.kmp.uikit.utils.toDeviceTimeString
 import co.onestep.kmp.uikit.utils.toLocalizedTimeString
 import co.onestep.kmp.uikit.utils.toPartColor
+import co.onestep.kmp.uikit.utils.toFormattedDuration
 import co.onestep.kmp.uikit.utils.toRoundedImperialString
 import co.onestep.kmp.uikit.utils.toStringOrDefault
 import co.onestep.kmp.uikit.utils.units
@@ -313,22 +314,13 @@ internal class CareLogViewModel(
             day = timestamp.toDateString(),
             type = type,
             title = type.displayNameKey,
-            duration = "${metadata.seconds?.toDisplayTimeMinutes()} min",
+            duration = "${metadata.seconds.toFormattedDuration(padMinutes = false)} min",
             time = timestamp.toDeviceTimeString(),
             icon = Res.drawable.ic_walks,
         )
 
     private fun OSTMotionMeasurement.toMeasurementItemData(): MeasurementItemData {
-        val icon = when (type) {
-            OSTActivityType.WALK -> Res.drawable.ic_walks
-            OSTActivityType.TUG -> Res.drawable.ic_tug
-            OSTActivityType.STS -> Res.drawable.ic_sts
-            OSTActivityType.ROM_KNEE_FLEX -> Res.drawable.ic_knee_extention
-            OSTActivityType.ROM_KNEE_EXT -> Res.drawable.ic_knee_extention
-            OSTActivityType.DUAL_TASK_WALK_SUBTRACT -> Res.drawable.ic_dual_task
-            OSTActivityType.SIX_MINUTE_WALK, OSTActivityType.TWO_MINUTE_WALK -> Res.drawable.ic_6minwalk
-            else -> Res.drawable.ic_walks
-        }
+        val icon = type.toLogIcon()
 
         val mainParam = when (type) {
             OSTActivityType.WALK, OSTActivityType.DUAL_TASK_WALK_SUBTRACT ->
@@ -375,26 +367,12 @@ internal class CareLogViewModel(
                         ?: resourceProvider.getString(Res.string.unavailable),
                 )
 
-            OSTActivityType.SIX_MINUTE_WALK -> {
-                val mainParamKey = motionDataBridge.mainParam(this)?.first
-                    ?: OSTParamName.SIX_MINUTE_WALK_DISTANCE_METERS
-                val parameterMetadata = motionDataBridge.getParameterMetadata(mainParamKey)
-                val unitsStr = parameterMetadata.units(preferencesBridge)
-                resourceProvider.getString(
-                    Res.string.distance,
-                    params[mainParamKey.columnName]
-                        .toRoundedImperialString(
-                            resourceProvider.getString(Res.string.unavailable),
-                            preferencesBridge,
-                            parameterMetadata,
-                        ),
-                    unitsStr ?: resourceProvider.getString(Res.string.distance_default_unit),
-                )
-            }
-
-            OSTActivityType.TWO_MINUTE_WALK -> {
-                val mainParamKey = motionDataBridge.mainParam(this)?.first
-                    ?: OSTParamName.TWO_MINUTE_WALK_DISTANCE_METERS
+            OSTActivityType.SIX_MINUTE_WALK, OSTActivityType.TWO_MINUTE_WALK -> {
+                val defaultKey = if (type == OSTActivityType.SIX_MINUTE_WALK)
+                    OSTParamName.SIX_MINUTE_WALK_DISTANCE_METERS
+                else
+                    OSTParamName.TWO_MINUTE_WALK_DISTANCE_METERS
+                val mainParamKey = motionDataBridge.mainParam(this)?.first ?: defaultKey
                 val parameterMetadata = motionDataBridge.getParameterMetadata(mainParamKey)
                 val unitsStr = parameterMetadata.units(preferencesBridge)
                 resourceProvider.getString(
@@ -417,7 +395,7 @@ internal class CareLogViewModel(
             day = timestamp.toDateString(),
             type = type,
             title = type.displayNameKey,
-            duration = if (type == OSTActivityType.TUG) null else "${metadata.seconds?.toDisplayTimeMinutes()} min",
+            duration = if (type == OSTActivityType.TUG) null else "${metadata.seconds.toFormattedDuration(padMinutes = false)} min",
             time = timestamp.toDeviceTimeString().uppercase(),
             icon = icon,
             mainParam = mainParam.orEmpty(),
@@ -469,9 +447,11 @@ private fun Long.toDateString(): String {
     return full.split("|").firstOrNull()?.trim() ?: full
 }
 
-private fun Int?.toDisplayTimeMinutes(): String {
-    if (this == null) return "0:00"
-    val minutes = this / 60
-    val seconds = this % 60
-    return "$minutes:${seconds.toString().padStart(2, '0')}"
+private fun OSTActivityType?.toLogIcon() = when (this) {
+    OSTActivityType.TUG -> Res.drawable.ic_tug
+    OSTActivityType.STS -> Res.drawable.ic_sts
+    OSTActivityType.ROM_KNEE_FLEX, OSTActivityType.ROM_KNEE_EXT -> Res.drawable.ic_knee_extention
+    OSTActivityType.DUAL_TASK_WALK_SUBTRACT -> Res.drawable.ic_dual_task
+    OSTActivityType.SIX_MINUTE_WALK, OSTActivityType.TWO_MINUTE_WALK -> Res.drawable.ic_6minwalk
+    else -> Res.drawable.ic_walks
 }
