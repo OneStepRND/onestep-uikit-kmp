@@ -97,7 +97,6 @@ private extension MockRecordingUITests {
         // Fewer prep screens → fewer blind gestures. Phone-position adds a required selection;
         // voice-over just adds audio. Leave permission-explanation on (it self-dismisses when
         // permissions are already granted on the device).
-        setToggle("toggle.phonePosition", on: false, in: app)
         setToggle("toggle.voiceOver", on: false, in: app)
 
         selectMock(mock, in: app)
@@ -126,15 +125,15 @@ private extension MockRecordingUITests {
         }
 
         // 2) Advance the pre-recording screens by their real Compose labels — duration ("1 minute")
-        //    → phone placement ("In the pocket") → instructions / get-ready CTAs — until recording
-        //    begins, which the flow signals by HIDING its toolbar (RecordFlowNavGraph hides it once
-        //    the flow leaves GET_READY). The get-ready countdown also auto-advances on its own.
+        //    → instructions / get-ready CTAs — until recording begins, which the flow signals by
+        //    HIDING its toolbar (RecordFlowNavGraph hides it once the flow leaves GET_READY). The
+        //    get-ready countdown also auto-advances on its own.
         // Order matters when a screen shows more than one: prefer the specific progression choices
-        // (duration, placement) before generic CTAs. "Start" taps the big record-ready button; the
+        // (duration) before generic CTAs. "Start" taps the big record-ready button; the
         // covered Configure Flow "Start" is skipped because it isn't hittable. "View instructions"
         // is deliberately excluded (it opens a sheet).
         let advanceLabels = [
-            "1 minute", "In the pocket",
+            "1 minute",
             "I'm ready", "Continue", "Got it", "Start now", "Start", "Begin", "Next", "Skip", "Allow",
         ]
         let prepDeadline = Date().addingTimeInterval(45)

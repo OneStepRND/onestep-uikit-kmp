@@ -128,7 +128,6 @@ extension OSTRecordingConfiguration {
     /// bridged), so we pass all current properties through and override only the toggles.
     func withToggles(
         playVoiceOver: Bool,
-        showPhonePositionScreen: Bool,
         showPermissionExplanationScreen: Bool
     ) -> OSTRecordingConfiguration {
         doCopy(
@@ -139,7 +138,6 @@ extension OSTRecordingConfiguration {
             isCountingDown: isCountingDown,
             prepareScreenData: prepareScreenData,
             playVoiceOver: playVoiceOver,
-            showPhonePositionScreen: showPhonePositionScreen,
             preRecordingQuestions: preRecordingQuestions,
             shouldRecordGeoLocation: shouldRecordGeoLocation,
             showSummaryScreen: showSummaryScreen,
@@ -172,7 +170,6 @@ struct ConfigureFlowView: View {
 
     @State private var selectedKey: String = MeasurementPresets.all.first?.key ?? "WALK"
     @State private var playVoiceOver = true
-    @State private var showPhonePositionScreen = true
     @State private var showPermissionExplanationScreen = true
     @State private var selectedMock = MockRecording.none
     @State private var pendingConfig: OSTRecordingConfiguration?
@@ -206,8 +203,6 @@ struct ConfigureFlowView: View {
                 Section("Options") {
                     Toggle("Play voice over", isOn: $playVoiceOver)
                         .accessibilityIdentifier("toggle.voiceOver")
-                    Toggle("Show phone position screen", isOn: $showPhonePositionScreen)
-                        .accessibilityIdentifier("toggle.phonePosition")
                     Toggle("Show permission explanation", isOn: $showPermissionExplanationScreen)
                         .accessibilityIdentifier("toggle.permissionExplanation")
                 }
@@ -282,7 +277,6 @@ struct ConfigureFlowView: View {
     private func currentConfig() -> OSTRecordingConfiguration {
         selectedPreset.makeConfig().withToggles(
             playVoiceOver: playVoiceOver,
-            showPhonePositionScreen: showPhonePositionScreen,
             showPermissionExplanationScreen: showPermissionExplanationScreen
         )
     }

@@ -9,7 +9,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.onestep.kmp.uikit.bridge.PreferencesBridge
 import co.onestep.kmp.uikit.bridge.RecorderBridge
-import co.onestep.kmp.uikit.data.PocketLocation
 import co.onestep.kmp.uikit.data.WalkDuration
 import co.onestep.kmp.uikit.features.audio.AudioPlayer
 import co.onestep.kmp.uikit.features.audio.TTSPlayer
@@ -51,7 +50,6 @@ import co.onestep.kmp.uikit_kmp.generated.resources.go
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_play_button
 import co.onestep.kmp.uikit_kmp.generated.resources.place_the_phone_against_the_thigh
 import co.onestep.kmp.uikit_kmp.generated.resources.place_the_phone_in_position
-import co.onestep.kmp.uikit_kmp.generated.resources.place_the_phone_in_the_pocket
 import co.onestep.kmp.uikit_kmp.generated.resources.preparing_results
 import co.onestep.kmp.uikit_kmp.generated.resources.recording_in_progress
 import co.onestep.kmp.uikit_kmp.generated.resources.slide_to_stop
@@ -152,7 +150,6 @@ internal class MotionRecorderViewModel(
 
     private val customMetadata: MutableMap<String, Any> = mutableMapOf()
 
-    private var pocketLocation: PocketLocation? = null
 
     // --- Static Balance session (OS-15960) — state owned by BalanceSessionManager ---------
     // One session per flow launch: the ViewModel is scoped to the recording flow, so a
@@ -410,15 +407,9 @@ internal class MotionRecorderViewModel(
         instructions = TextData(instructions, 28.sp, FontWeight.Bold),
     )
 
-    /** Resolves the Get Ready screen's instruction text based on pocket location, activity type, and balance condition. */
+    /** Resolves the Get Ready screen's instruction text based on activity type and balance condition. */
     private fun getReadyInstructions(): String =
-        pocketLocation?.getReadyTitleKey?.let { key ->
-            when (key) {
-                "place_the_phone_in_the_pocket" -> resourceProvider.getString(Res.string.place_the_phone_in_the_pocket)
-                "place_the_phone_against_the_thigh" -> resourceProvider.getString(Res.string.place_the_phone_against_the_thigh)
-                else -> null
-            }
-        } ?: when (configuration.value.activityType) {
+        when (configuration.value.activityType) {
             OSTActivityType.ROM_KNEE_EXT -> resourceProvider.getString(Res.string.place_the_phone_against_the_thigh)
 
             // Static Balance: seated condition holds the phone at the chest; all
@@ -577,10 +568,6 @@ internal class MotionRecorderViewModel(
             delay(1000L)
             timerValue.value = timerValue.value.toDisplayTime(countdown)
         }
-    }
-
-    fun setDevicePosition(position: Int) {
-        pocketLocation = PocketLocation.pocketLocationByIndex(position)
     }
 
     fun setWalkDuration(index: Int) {

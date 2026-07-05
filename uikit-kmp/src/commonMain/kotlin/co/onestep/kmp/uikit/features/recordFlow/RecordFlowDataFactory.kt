@@ -11,7 +11,6 @@ import co.onestep.kmp.uikit.features.tagging.models.Footwear
 import co.onestep.kmp.uikit.models.OSTAssistiveDevice
 import co.onestep.kmp.uikit.models.displayName
 import co.onestep.kmp.uikit.models.icon
-import co.onestep.kmp.uikit.data.PocketLocation
 import co.onestep.kmp.uikit.features.recordFlow.screensData.PrimaryButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.IconData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.MainButtonData
@@ -93,7 +92,6 @@ import co.onestep.kmp.uikit_kmp.generated.resources.we_didn_t_detect_any_movemen
 import co.onestep.kmp.uikit_kmp.generated.resources.we_didnt_detect_any_repetitions
 import co.onestep.kmp.uikit_kmp.generated.resources.we_need_additional_data_in_order_to_offer_you_meaningful_insights_this_again
 import co.onestep.kmp.uikit_kmp.generated.resources.when_prompted_select
-import co.onestep.kmp.uikit_kmp.generated.resources.where_will_the_phone_be_placed
 import co.onestep.kmp.uikit_kmp.generated.resources.your_walk_had_too_many_turns
 import org.jetbrains.compose.resources.stringResource
 
@@ -348,34 +346,7 @@ internal object RecordFlowDataFactory {
         },
     )
 
-    @Composable
-    fun choosePlacementScreenData(
-        onSelection: (Int) -> Unit,
-    ) = UiKitScreenData(
-        mainIcon = null,
-        title = TextData(
-            stringResource(Res.string.where_will_the_phone_be_placed),
-            28.sp,
-            FontWeight.W700,
-            textAlign = TextAlign.Start,
-        ),
-        selectionList = SelectionListData(
-            items = PocketLocation.values.map {
-                SelectionItemData(
-                    text = TextData(
-                        it.displayTitle(),
-                        20.sp,
-                        FontWeight.W400,
-                    ),
-                    icon = IconData(it.imageResource(), iconSize = 70.dp),
-                )
-            },
-        ) {
-            onSelection(it.first())
-        },
-    )
-
-    /** Builds a standard analysis-error screen. Used by the 16 error cases that share the same
+/** Builds a standard analysis-error screen. Used by the 16 error cases that share the same
      *  title/subtitle/icon/primary/secondary layout in [errorScreenData]. */
     private fun analysisError(
         resourceProvider: ResourceProvider,

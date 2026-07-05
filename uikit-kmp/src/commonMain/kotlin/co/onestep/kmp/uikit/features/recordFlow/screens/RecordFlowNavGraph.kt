@@ -52,7 +52,6 @@ import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsEve
 import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsTracker
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.recordFlow.configurations.defaultInstructions
-import co.onestep.kmp.uikit.features.recordFlow.destinations.ChoosePlacementDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.CustomTagsDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.HallwayDistanceDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.PreAssistiveDeviceDestination
@@ -62,7 +61,6 @@ import co.onestep.kmp.uikit.features.recordFlow.destinations.SoundInstructionsDe
 import co.onestep.kmp.uikit.features.recordFlow.destinations.SoundPermissionDeniedAlwaysDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.SoundPermissionDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.StartRecordDestination
-import co.onestep.kmp.uikit.features.recordFlow.destinations.choosePlacementScreen
 import co.onestep.kmp.uikit.features.recordFlow.destinations.customTagsScreen
 import co.onestep.kmp.uikit.features.recordFlow.destinations.hallwayDistanceScreen
 import co.onestep.kmp.uikit.features.recordFlow.destinations.preAssistiveDeviceScreen
@@ -177,10 +175,6 @@ internal fun RecordFlowNavGraph(
                 add(SelectWalkDurationDestination)
             }
 
-            // c) Phone placement selection
-            if (config.showPhonePositionScreen) {
-                add(ChoosePlacementDestination)
-            }
 
             // c.1) Optional pre-recording assistive-device selection
             if (config.showPreRecordingAssistiveDeviceSelection) {
@@ -431,14 +425,6 @@ internal fun RecordFlowNavGraph(
                 recordFlowTracker?.trackWalkDurationSelected(activity, index)
                 viewModel.setWalkDuration(index)
                 navigateToNext(SelectWalkDurationDestination)
-            },
-        )
-
-        // Phone placement selection
-        choosePlacementScreen(
-            onPrimaryAction = { index ->
-                viewModel.setDevicePosition(index)
-                navigateToNext(ChoosePlacementDestination)
             },
         )
 

@@ -138,7 +138,6 @@ private extension TaggingScreenUITests {
         XCTAssertTrue(ensureVisible(activity, in: app), "WALK activity missing")
         activity.tap()
 
-        setToggle("toggle.phonePosition", on: false, in: app)
         setToggle("toggle.voiceOver", on: false, in: app)
         selectMock(mock, in: app)
 
@@ -161,7 +160,7 @@ private extension TaggingScreenUITests {
         }
 
         let advanceLabels = [
-            "1 minute", "In the pocket",
+            "1 minute",
             "I'm ready", "Continue", "Got it", "Start now", "Start", "Begin", "Next", "Skip", "Allow",
         ]
         let deadline = Date().addingTimeInterval(45)
