@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ripple
+import co.onestep.kmp.uikit.ui.theme.osClickIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -73,7 +73,7 @@ fun RoundCtaButton(
                 .scale(scale.value)
                 .clickable(
                     interactionSource = interactionSource,
-                    indication = ripple(bounded = true),
+                    indication = osClickIndication(bounded = true),
                 ) { mainButtonData.action.invoke() },
     ) {
         Box(

@@ -31,7 +31,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ripple
+import co.onestep.kmp.uikit.ui.theme.osClickIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -320,7 +320,7 @@ private fun TagQuestionRow(
     Column(
         Modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
-            indication = ripple(bounded = true),
+            indication = osClickIndication(bounded = true),
             onClick = onEditClicked,
         ),
     ) {
@@ -386,7 +386,7 @@ private fun PostRecordingQuestion(
     Column(
         Modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
-            indication = ripple(bounded = true),
+            indication = osClickIndication(bounded = true),
             onClick = { onGoToQuestionClicked(questionData) },
         ),
     ) {
@@ -465,7 +465,7 @@ internal fun CustomTextField(
                     color = LocalOSColors.current.neutral_m3,
                 ).clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = ripple(bounded = true),
+                    indication = osClickIndication(bounded = true),
                     onClick = {
                         focusRequester.requestFocus()
                         keyboardController?.show()

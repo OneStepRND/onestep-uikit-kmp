@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ripple
+import co.onestep.kmp.uikit.ui.theme.osClickIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -145,7 +145,7 @@ private fun CareLogContentTitle(showInfoSheet: MutableState<Boolean>) {
                 Modifier
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = ripple(bounded = false),
+                        indication = osClickIndication(bounded = false),
                         onClick = {
                             showInfoSheet.value = !showInfoSheet.value
                         },

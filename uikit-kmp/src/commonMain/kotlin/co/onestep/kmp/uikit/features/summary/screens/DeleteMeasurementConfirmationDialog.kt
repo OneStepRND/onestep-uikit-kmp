@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ripple
+import co.onestep.kmp.uikit.ui.theme.osClickIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -72,7 +72,7 @@ internal fun DeleteMeasurementConfirmationDialog(
                                 remember {
                                     MutableInteractionSource()
                                 },
-                            indication = ripple(bounded = false),
+                            indication = osClickIndication(bounded = false),
                         ) {
                             onDismissClicked()
                         },
