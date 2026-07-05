@@ -254,7 +254,7 @@ internal fun PostSummaryTagScreen(
                                 TextData(
                                     stringResource(Res.string.finish),
                                     24.sp,
-                                    fontWeight = FontWeight.W600,
+                                    fontWeight = FontWeight.Bold,
                                 ),
                             action = {
                                 val tags =
@@ -369,7 +369,7 @@ private fun TagQuestionRow(
             text = valueText,
             fontSize = 20.sp,
             lineHeight = 24.sp,
-            fontWeight = FontWeight.W600,
+            fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(Variables.GapL))
     }
@@ -433,7 +433,7 @@ private fun PostRecordingQuestion(
             text = selectedAnswer ?: BLANK_INPUT,
             fontSize = 20.sp,
             lineHeight = 24.sp,
-            fontWeight = FontWeight.W600,
+            fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(Variables.GapL))
     }
