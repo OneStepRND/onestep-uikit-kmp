@@ -41,7 +41,6 @@ final class AppFlowUITests: XCTestCase {
         }
         // Toggles present (may sit below the fold — scroll to reveal).
         XCTAssertTrue(ensureVisible(app.switches["toggle.voiceOver"], in: app))
-        XCTAssertTrue(ensureVisible(app.switches["toggle.phonePosition"], in: app))
         XCTAssertTrue(ensureVisible(app.switches["toggle.permissionExplanation"], in: app))
         attachScreenshot("01-configure-flow")
     }

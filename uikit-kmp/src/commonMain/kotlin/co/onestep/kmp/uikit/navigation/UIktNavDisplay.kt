@@ -12,7 +12,6 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
-import co.onestep.kmp.uikit.features.recordFlow.destinations.ChoosePlacementDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.CustomTagsDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.HallwayDistanceDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.NoSummaryNoticeDestination
@@ -53,7 +52,6 @@ internal val UIktNavSavedStateConfiguration = SavedStateConfiguration {
             // Record flow — pre-recording
             subclass(HallwayDistanceDestination::class)
             subclass(SelectWalkDurationDestination::class)
-            subclass(ChoosePlacementDestination::class)
             subclass(PreAssistiveDeviceDestination::class)
             subclass(PreFootwearDestination::class)
             subclass(CustomTagsDestination::class)

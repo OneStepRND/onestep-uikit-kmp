@@ -16,7 +16,6 @@ import org.jetbrains.compose.resources.stringResource
  * @param isCountingDown Whether to count up or down.
  * @param prepareScreenData Data for prepare screen, can be duration or tts.
  * @param playVoiceOver Whether to play the voice over during the recording.
- * @param showPhonePositionScreen Whether to show the choose phone position screen.
  * @param preRecordingQuestions The tags to show to the user.
  * @param shouldRecordGeoLocation Whether to record the geo location.
  * @param showSummaryScreen Whether to show a summary screen or just a completion notice.
@@ -41,7 +40,6 @@ data class OSTRecordingConfiguration(
     val isCountingDown: Boolean,
     val prepareScreenData: OSTPrepareData? = null,
     val playVoiceOver: Boolean,
-    val showPhonePositionScreen: Boolean,
     val preRecordingQuestions: List<OSTRecordingQuestionData>? = null,
     var shouldRecordGeoLocation: Boolean = false,
     var showSummaryScreen: OSTSummaryOptions = OSTSummaryOptions.Full,
@@ -68,7 +66,6 @@ data class OSTRecordingConfiguration(
             isCountingDown = true,
             prepareScreenData = OSTPrepareData.default(),
             playVoiceOver = true,
-            showPhonePositionScreen = true,
             shouldRecordGeoLocation = false,
             showSummaryScreen = OSTSummaryOptions.Full,
             postTaggingData = OSTPostTaggingData.default(),
@@ -85,7 +82,6 @@ data class OSTRecordingConfiguration(
                 prepareDuration = OSTPrepareDuration.NONE,
             ),
             playVoiceOver = true,
-            showPhonePositionScreen = false,
             showSummaryScreen = OSTSummaryOptions.MINIMAL,
             postTaggingData = OSTPostTaggingData.default(),
         )
@@ -115,7 +111,6 @@ data class OSTRecordingConfiguration(
                 prepareDuration = OSTPrepareDuration.TEN_SECONDS,
             ),
             playVoiceOver = true,
-            showPhonePositionScreen = false,
             showSummaryScreen = OSTSummaryOptions.WEB,
             // Post-recording notes are handled by the dedicated Static Balance
             // "Recording saved" screen, not the generic post-tagging screen.
@@ -146,7 +141,6 @@ data class OSTRecordingConfiguration(
             ),
             playVoiceOver = true,
             preRecordingQuestions = preRecordingQuestions,
-            showPhonePositionScreen = true,
             postTaggingData = OSTPostTaggingData.OSTPostTaggingScreen(
                 postRecordingQuestions ?: listOf(
                     OSTRecordingQuestionData(
@@ -176,7 +170,6 @@ data class OSTRecordingConfiguration(
                 prepareDuration = OSTPrepareDuration.TEN_SECONDS,
             ),
             playVoiceOver = true,
-            showPhonePositionScreen = true,
             preRecordingQuestions = preRecordingQuestions,
             postTaggingData = OSTPostTaggingData.OSTPostTaggingScreen(
                 postRecordingQuestions ?: listOf(
@@ -201,7 +194,6 @@ data class OSTRecordingConfiguration(
                 prepareDuration = OSTPrepareDuration.TEN_SECONDS,
             ),
             playVoiceOver = true,
-            showPhonePositionScreen = false,
             postTaggingData = OSTPostTaggingData.OSTPostTaggingScreen(
                 questions = emptyList(),
                 assistiveDeviceTag = false,
@@ -220,7 +212,6 @@ data class OSTRecordingConfiguration(
                 prepareDuration = OSTPrepareDuration.TEN_SECONDS,
             ),
             playVoiceOver = true,
-            showPhonePositionScreen = false,
             postTaggingData = OSTPostTaggingData.OSTPostTaggingScreen(
                 questions = emptyList(),
                 assistiveDeviceTag = false,
@@ -239,7 +230,6 @@ data class OSTRecordingConfiguration(
                 prepareDuration = OSTPrepareDuration.TEN_SECONDS,
             ),
             playVoiceOver = true,
-            showPhonePositionScreen = true,
             shouldRecordGeoLocation = false,
             showSummaryScreen = OSTSummaryOptions.Full,
             postTaggingData = OSTPostTaggingData.default(),
@@ -256,7 +246,6 @@ data class OSTRecordingConfiguration(
                 prepareDuration = OSTPrepareDuration.TEN_SECONDS,
             ),
             playVoiceOver = true,
-            showPhonePositionScreen = true,
             shouldRecordGeoLocation = false,
             showSummaryScreen = OSTSummaryOptions.Full,
             postTaggingData = OSTPostTaggingData.default(),
@@ -279,7 +268,6 @@ data class OSTRecordingConfiguration(
                 showInstructions = showInstructions,
             ),
             playVoiceOver = true,
-            showPhonePositionScreen = true,
             showSummaryScreen = showSummaryScreen,
             postTaggingData = postTaggingData ?: OSTPostTaggingData.OSTPostTaggingQuestionsFlow(
                 postRecordingQuestions ?: emptyList(),

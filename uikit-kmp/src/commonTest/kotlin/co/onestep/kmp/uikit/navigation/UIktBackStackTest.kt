@@ -2,7 +2,6 @@ package co.onestep.kmp.uikit.navigation
 
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import co.onestep.kmp.uikit.features.recordFlow.destinations.ChoosePlacementDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.SelectWalkDurationDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.StartRecordDestination
 import co.onestep.kmp.uikit.features.recordFlow.screens.ErrorResultDestination
@@ -18,7 +17,7 @@ class UIktBackStackTest {
 
     @Test
     fun popRemovesTopEntry() {
-        val stack = NavBackStack<NavKey>(SelectWalkDurationDestination, ChoosePlacementDestination)
+        val stack = NavBackStack<NavKey>(SelectWalkDurationDestination, StartRecordDestination)
 
         assertTrue(stack.pop())
 
@@ -54,12 +53,12 @@ class UIktBackStackTest {
 
     @Test
     fun popUpToInclusiveIsNoOpWhenTargetIsMissing() {
-        val stack = NavBackStack<NavKey>(SelectWalkDurationDestination, ChoosePlacementDestination)
+        val stack = NavBackStack<NavKey>(SelectWalkDurationDestination, StartRecordDestination)
 
         stack.popUpToInclusive(ErrorResultDestination)
 
         assertEquals(
-            listOf<NavKey>(SelectWalkDurationDestination, ChoosePlacementDestination),
+            listOf<NavKey>(SelectWalkDurationDestination, StartRecordDestination),
             stack.toList(),
         )
     }
