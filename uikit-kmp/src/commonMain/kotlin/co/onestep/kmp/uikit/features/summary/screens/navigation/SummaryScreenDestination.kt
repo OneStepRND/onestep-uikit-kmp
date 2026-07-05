@@ -17,15 +17,24 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data object SummaryScreenDestination : UIktDestination
 
+/**
+ * State is passed as provider lambdas (read INSIDE the entry content), not by value. NavDisplay
+ * caches an entry's content closure per key, so values captured at entry-build time freeze on the
+ * first (Loading) snapshot and never reflect the async summary load — the cause of the endless
+ * shimmer. Reading the state inside the entry subscribes within the entry's own composition, so it
+ * recomposes when the state changes (same convention as the record-flow `stateProvider` screens).
+ */
 internal fun EntryProviderScope<NavKey>.summaryScreen(
-    insightsScreenState: SummaryListState,
-    gaitLabScreenState: SummaryListState,
-    partialScreenState: SummaryListState? = null,
-    toolBarData: ToolBarData,
-    action: SummaryAction? = null,
+    insightsScreenState: () -> SummaryListState,
+    gaitLabScreenState: () -> SummaryListState,
+    partialScreenState: () -> SummaryListState? = { null },
+    toolBarData: () -> ToolBarData,
+    action: () -> SummaryAction? = { null },
     secondaryAction: (() -> Unit)? = null,
-    mainParamItem: MainParamItem?,
-    isLoading: Boolean,
+    mainParamItem: () -> MainParamItem?,
+    isLoading: () -> Boolean,
+    // Hallway strings are built with stringResource (composable) upstream, so they stay plain
+    // values. They only feed the 6-min-walk hallway row (edge case) — no worse than before.
     hallwayLengthText: String?,
     hallwayWarningText: String?,
     onHallwayEdit: () -> Unit,
@@ -38,14 +47,14 @@ internal fun EntryProviderScope<NavKey>.summaryScreen(
                 Modifier
                     .fillMaxSize()
                     .background(LocalOSColors.current.neutral_m4),
-            insightsScreenState = insightsScreenState,
-            gaitLabScreenState = gaitLabScreenState,
-            partialScreenState = partialScreenState,
-            toolBarData = toolBarData,
-            continueAction = action,
+            insightsScreenState = insightsScreenState(),
+            gaitLabScreenState = gaitLabScreenState(),
+            partialScreenState = partialScreenState(),
+            toolBarData = toolBarData(),
+            continueAction = action(),
             secondaryAction = secondaryAction,
-            mainParamItem = mainParamItem,
-            isLoading = isLoading,
+            mainParamItem = mainParamItem(),
+            isLoading = isLoading(),
             hallwayLengthText = hallwayLengthText,
             hallwayWarningText = hallwayWarningText,
             onHallwayEdit = onHallwayEdit,

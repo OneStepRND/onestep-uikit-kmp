@@ -17,6 +17,7 @@ import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -970,6 +971,9 @@ internal fun RecordFlowNavGraph(
     if (showInstructionsSheet) {
         val instructions = config.instructions ?: config.defaultInstructions()
         BottomSheet(
+            // Open straight to full height — the instructions (media + list) need the space,
+            // and the partially-expanded half-sheet clipped the content on iOS.
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             onDismissRequest = { showInstructionsSheet = false },
         ) {
             InstructionsContent(instructionsData = instructions)
