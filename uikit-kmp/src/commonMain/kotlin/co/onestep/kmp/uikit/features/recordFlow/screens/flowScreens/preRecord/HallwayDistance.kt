@@ -13,18 +13,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import co.onestep.kmp.uikit.ui.theme.osClickIndication
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,10 +38,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.recordFlow.components.ToolBarHeight
+import co.onestep.kmp.uikit.features.recordFlow.previewHallwayFresh
 import co.onestep.kmp.uikit.features.recordFlow.previewHallwayValid
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -57,7 +51,7 @@ import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
 import co.onestep.kmp.uikit.ui.components.KeyboardAware
 import co.onestep.designsystem.components.OSText
 import co.onestep.kmp.uikit.ui.components.PrimaryBrandButton
-import co.onestep.designsystem.components.SecondaryButton
+import co.onestep.designsystem.components.TertiaryButton
 import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
@@ -65,13 +59,6 @@ import co.onestep.kmp.uikit.ui.typography.NoirFontFamily
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.continue_camel_case
 import co.onestep.kmp.uikit_kmp.generated.resources.continue_without_hallway_length
-import co.onestep.kmp.uikit_kmp.generated.resources.ic_close
-import co.onestep.kmp.uikit_kmp.generated.resources.short_hallway_dont_show_again
-import co.onestep.kmp.uikit_kmp.generated.resources.short_hallway_edit_hallway_length
-import co.onestep.kmp.uikit_kmp.generated.resources.short_hallway_length_message
-import co.onestep.kmp.uikit_kmp.generated.resources.short_hallway_length_title
-import co.onestep.kmp.uikit_kmp.generated.resources.short_hallway_start_test
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -102,23 +89,22 @@ internal fun HallwayDistanceScreen(
                         Modifier
                             .fillMaxWidth(),
                     text = state.title,
-                    lineHeight = 37.sp,
+                    lineHeight = 36.sp,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                 )
 
                 state.subtitle?.let { text ->
-                    Spacer(modifier = Modifier.height(Variables.GapM))
+                    Spacer(modifier = Modifier.height(Variables.GapL))
 
                     OSText(
                         text = text,
-                        lineHeight = 28.sp,
                         fontSize = 16.sp,
                         color = LocalOSColors.current.neutral_p1,
                     )
                 }
 
-                Spacer(modifier = Modifier.height(Variables.GapXL))
+                Spacer(modifier = Modifier.height(64.dp))
 
                 NumericInputField(
                     inputValue = state.inputValue,
@@ -137,8 +123,8 @@ internal fun HallwayDistanceScreen(
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = Variables.GapL)
-                        .align(Alignment.BottomCenter),
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = Variables.GapL, vertical = Variables.GapXL),
                 ) {
                     PrimaryBrandButton(
                         modifier = Modifier.fillMaxWidth(),
@@ -147,27 +133,23 @@ internal fun HallwayDistanceScreen(
                                 text =
                                     TextData(
                                         text = stringResource(Res.string.continue_camel_case),
-                                        textSize = 20.sp,
-                                        fontWeight = FontWeight.W600,
+                                        textSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
                                     ),
                                 enabled = state.canContinue,
                                 action = onContinue,
                             ),
                     )
 
-                    Spacer(Modifier.height(Variables.GapL))
-
                     if (!state.fromSummary) {
-                        SecondaryButton(
+                        Spacer(Modifier.height(Variables.GapL))
+
+                        TertiaryButton(
                             text = stringResource(Res.string.continue_without_hallway_length),
                             onClick = onContinueWithoutLength,
                             modifier = Modifier.fillMaxWidth(),
                             size = OSButtonSize.Big,
                         )
-                    }
-
-                    if (state.fromSummary) {
-                        Spacer(Modifier.height(Variables.GapXL))
                     }
                 }
             }
@@ -253,7 +235,7 @@ private fun NumericInputField(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(Variables.GapM))
 
                 OSText(
                     text = unitText,
@@ -264,11 +246,11 @@ private fun NumericInputField(
             }
         }
 
-        Spacer(modifier = Modifier.height(Variables.GapS))
+        Spacer(modifier = Modifier.height(Variables.GapL))
 
         HorizontalDivider(
             modifier = Modifier.fillMaxWidth(),
-            color = LocalOSColors.current.neutral_m1,
+            color = LocalOSColors.current.neutral_0,
         )
 
         if (!errorText.isNullOrBlank()) {
@@ -283,132 +265,25 @@ private fun NumericInputField(
     }
 }
 
-@Composable
-internal fun ShortHallwayLengthDialog(
-    recommendedValue: Int,
-    unitText: String,
-    dontShowAgainChecked: Boolean,
-    onDontShowAgainChange: (Boolean) -> Unit,
-    onDismissClicked: () -> Unit,
-    onStartTestClicked: () -> Unit,
-    onEditHallwayClicked: () -> Unit,
-) {
-    Column(
-        Modifier
-            .wrapContentHeight()
-            .background(
-                LocalOSColors.current.neutral_m5,
-                shape = RoundedCornerShape(10.dp),
-            ),
-    ) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .padding(Variables.GapL),
-        ) {
-            Icon(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .size(24.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = osClickIndication(bounded = false),
-                        ) {
-                            onDismissClicked()
-                        },
-                painter = painterResource(Res.drawable.ic_close),
-                contentDescription = "",
-            )
-        }
-
-        OSText(
-            text = stringResource(Res.string.short_hallway_length_title),
-            modifier =
-                Modifier
-                    .align(Alignment.CenterHorizontally),
-            fontSize = 24.sp,
-            lineHeight = 28.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-        )
-
-        OSText(
-            modifier =
-                Modifier
-                    .padding(Variables.GapL)
-                    .align(Alignment.CenterHorizontally),
-            text =
-                stringResource(
-                    Res.string.short_hallway_length_message,
-                    recommendedValue,
-                    unitText,
-                ),
-            fontSize = 18.sp,
-            lineHeight = 24.sp,
-            textAlign = TextAlign.Center,
-        )
-
-        SecondaryButton(
-            text = stringResource(Res.string.short_hallway_start_test),
-            onClick = onStartTestClicked,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Variables.GapL)
-                .height(40.dp),
-            size = OSButtonSize.Big,
-        )
-        PrimaryBrandButton(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Variables.GapL)
-                .height(40.dp),
-            data = PrimaryButtonData(
-                text =
-                    TextData(
-                        stringResource(Res.string.short_hallway_edit_hallway_length),
-                        18.sp,
-                        FontWeight.Normal,
-                    ),
-                action = onEditHallwayClicked,
-            ),
-        )
-        Row(
-            Modifier
-                .padding(horizontal = Variables.GapS)
-                .padding(bottom = Variables.GapL)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    onDontShowAgainChange(!dontShowAgainChecked)
-                },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Checkbox(
-                checked = dontShowAgainChecked,
-                onCheckedChange = onDontShowAgainChange,
-                colors =
-                    CheckboxDefaults.colors(
-                        checkedColor = LocalOSColors.current.primary_p3_main,
-                        uncheckedColor = LocalOSColors.current.neutral_p2,
-                        checkmarkColor = LocalOSColors.current.neutral_m5,
-                    ),
-            )
-            OSText(
-                text = stringResource(Res.string.short_hallway_dont_show_again),
-                fontSize = 14.sp,
-            )
-        }
-    }
-}
-
 @Preview
 @Composable
 private fun HallwayDistanceScreenPreview() {
     PreviewTheme {
         HallwayDistanceScreen(
             state = previewHallwayValid,
+            onValueChange = {},
+            onContinue = {},
+            onContinueWithoutLength = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun HallwayDistanceScreenFreshPreview() {
+    PreviewTheme {
+        HallwayDistanceScreen(
+            state = previewHallwayFresh,
             onValueChange = {},
             onContinue = {},
             onContinueWithoutLength = {},
