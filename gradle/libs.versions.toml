@@ -7,7 +7,7 @@ navigation3 = "1.1.1"
 coroutines = "1.10.1"
 kotlinxSerializationJson = "1.8.1"
 coreVersion = "2.0.3-SB7-SNAPSHOT"
-designSystem = "1.1.0"
+designSystem = "1.3.0"
 media3 = "1.4.1"
 coil = "2.6.0"
 activityCompose = "1.10.1"
@@ -20,7 +20,7 @@ lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifec
 lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
 navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
-onestep-design-system = { module = "co.onestep:design-system", version.ref = "designSystem" }
+onestep-design-system = { module = "co.onestep:design-system-kmp", version.ref = "designSystem" }
 onestep-core = { module = "co.onestep.android:core", version.ref = "coreVersion" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 

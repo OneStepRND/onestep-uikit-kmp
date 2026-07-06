@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -71,7 +70,6 @@ import co.onestep.kmp.uikit.features.recordFlow.destinations.soundPermissionScre
 import co.onestep.kmp.uikit.features.recordFlow.destinations.startRecordScreen
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTBalance
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.errors.ErrorScreen
-import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.preRecord.ShortHallwayLengthDialog
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.ConditionSetupDestination
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.RecordingSavedDestination
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.conditionSetupScreen
@@ -112,12 +110,20 @@ import co.onestep.kmp.uikit_kmp.generated.resources.ic_close
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_warning
 import co.onestep.kmp.uikit_kmp.generated.resources.no
 import co.onestep.kmp.uikit_kmp.generated.resources.steps_measured
+import co.onestep.kmp.uikit_kmp.generated.resources.short_hallway_dont_show_again
+import co.onestep.kmp.uikit_kmp.generated.resources.short_hallway_edit_hallway_length
+import co.onestep.kmp.uikit_kmp.generated.resources.short_hallway_length_message
+import co.onestep.kmp.uikit_kmp.generated.resources.short_hallway_length_title
+import co.onestep.kmp.uikit_kmp.generated.resources.short_hallway_start_test
 import co.onestep.kmp.uikit_kmp.generated.resources.stop_recording_dialog_text
 import co.onestep.kmp.uikit_kmp.generated.resources.yes
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import co.onestep.designsystem.components.ButtonVariant
+import co.onestep.designsystem.components.OSPopup
 import co.onestep.designsystem.theme.LocalOSColors
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.vectorResource
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -989,7 +995,6 @@ private fun RecordFlowToolbar(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HallwayWarningDialog(
     recommendedValue: Int,
@@ -1002,19 +1007,26 @@ private fun HallwayWarningDialog(
     onEdit: () -> Unit,
 ) {
     LaunchedEffect(Unit) { onShown() }
-    BasicAlertDialog(
+    OSPopup(
         onDismissRequest = onDismiss,
-        content = {
-            ShortHallwayLengthDialog(
-                recommendedValue = recommendedValue,
-                unitText = unitText,
-                dontShowAgainChecked = dontShowAgainChecked,
-                onDontShowAgainChange = onSuppressChange,
-                onDismissClicked = onDismiss,
-                onStartTestClicked = onStartTest,
-                onEditHallwayClicked = onEdit,
-            )
-        },
+        title = stringResource(Res.string.short_hallway_length_title),
+        description = stringResource(
+            Res.string.short_hallway_length_message,
+            recommendedValue,
+            unitText,
+        ),
+        closeIcon = vectorResource(Res.drawable.ic_close),
+        // Start Test proceeds with the short length (secondary/outline per design).
+        confirmButtonText = stringResource(Res.string.short_hallway_start_test),
+        confirmButtonVariant = ButtonVariant.Secondary,
+        onConfirm = onStartTest,
+        // Edit Hallway Length is the primary (filled) action.
+        cancelButtonText = stringResource(Res.string.short_hallway_edit_hallway_length),
+        cancelButtonVariant = ButtonVariant.Primary,
+        onCancel = onEdit,
+        checkboxText = stringResource(Res.string.short_hallway_dont_show_again),
+        checkboxChecked = dontShowAgainChecked,
+        onCheckboxCheckedChange = onSuppressChange,
     )
 }
 
