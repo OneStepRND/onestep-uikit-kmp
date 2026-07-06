@@ -1,6 +1,5 @@
 package co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.preRecord
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
@@ -71,88 +68,79 @@ internal fun HallwayDistanceScreen(
     val modifier = if (state.fromSummary) Modifier.padding(top = ToolBarHeight.dp) else Modifier
 
     KeyboardAware {
-        Box(
-            modifier = modifier.fillMaxSize(),
+        // Single top-to-bottom column so content reflows above the buttons: the weight(1f)
+        // spacer pins the buttons to the bottom when there is room (keyboard closed) and
+        // collapses when the keyboard shrinks the height, so the buttons never overlap the
+        // input the way two independently-anchored blocks did.
+        Column(
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .padding(horizontal = Variables.GapL),
         ) {
-            Column(
+            if (state.fromSummary) {
+                Spacer(modifier = Modifier.height(Variables.GapL))
+            }
+
+            OSText(
                 modifier =
                     Modifier
-                        .wrapContentHeight()
-                        .padding(horizontal = Variables.GapL),
-            ) {
-                if (state.fromSummary) {
-                    Spacer(modifier = Modifier.height(Variables.GapL))
-                }
+                        .fillMaxWidth(),
+                text = state.title,
+                lineHeight = 36.sp,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+            )
+
+            state.subtitle?.let { text ->
+                Spacer(modifier = Modifier.height(Variables.GapL))
 
                 OSText(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth(),
-                    text = state.title,
-                    lineHeight = 36.sp,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-
-                state.subtitle?.let { text ->
-                    Spacer(modifier = Modifier.height(Variables.GapL))
-
-                    OSText(
-                        text = text,
-                        fontSize = 16.sp,
-                        color = LocalOSColors.current.neutral_p1,
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(64.dp))
-
-                NumericInputField(
-                    inputValue = state.inputValue,
-                    unitText = state.unitText,
-                    errorText = state.errorText,
-                    onValueChange = onValueChange,
+                    text = text,
+                    fontSize = 16.sp,
+                    color = LocalOSColors.current.neutral_p1,
                 )
             }
 
-            Box(
-                modifier =
-                    Modifier
-                        .background(Color.Transparent)
-                        .align(Alignment.BottomCenter),
-            ) {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                        .padding(horizontal = Variables.GapL, vertical = Variables.GapXL),
-                ) {
-                    PrimaryBrandButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        data =
-                            PrimaryButtonData(
-                                text =
-                                    TextData(
-                                        text = stringResource(Res.string.continue_camel_case),
-                                        textSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                    ),
-                                enabled = state.canContinue,
-                                action = onContinue,
+            Spacer(modifier = Modifier.height(64.dp))
+
+            NumericInputField(
+                inputValue = state.inputValue,
+                unitText = state.unitText,
+                errorText = state.errorText,
+                onValueChange = onValueChange,
+            )
+
+            Spacer(modifier = Modifier.height(Variables.GapXL))
+            Spacer(modifier = Modifier.weight(1f))
+
+            PrimaryBrandButton(
+                modifier = Modifier.fillMaxWidth(),
+                data =
+                    PrimaryButtonData(
+                        text =
+                            TextData(
+                                text = stringResource(Res.string.continue_camel_case),
+                                textSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
                             ),
-                    )
+                        enabled = state.canContinue,
+                        action = onContinue,
+                    ),
+            )
 
-                    if (!state.fromSummary) {
-                        Spacer(Modifier.height(Variables.GapL))
+            if (!state.fromSummary) {
+                Spacer(Modifier.height(Variables.GapL))
 
-                        TertiaryButton(
-                            text = stringResource(Res.string.continue_without_hallway_length),
-                            onClick = onContinueWithoutLength,
-                            modifier = Modifier.fillMaxWidth(),
-                            size = OSButtonSize.Big,
-                        )
-                    }
-                }
+                TertiaryButton(
+                    text = stringResource(Res.string.continue_without_hallway_length),
+                    onClick = onContinueWithoutLength,
+                    modifier = Modifier.fillMaxWidth(),
+                    size = OSButtonSize.Big,
+                )
             }
+
+            Spacer(modifier = Modifier.height(Variables.GapXXL))
         }
     }
 }

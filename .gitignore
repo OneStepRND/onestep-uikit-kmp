@@ -23,3 +23,9 @@ iosTestApp/.claude/
 
 # OMC local state
 .omc/
+
+# ComposeProof MCP tool output (screenshots, local only)
+.composeproof/
+
+# spm4kmp phase-0 spike (lives on spike/spm4kmp-phase0 branch)
+/spike/
