@@ -11,6 +11,7 @@ designSystem = "1.1.0"
 media3 = "1.4.1"
 coil = "2.6.0"
 activityCompose = "1.10.1"
+liquid = "1.1.1"
 
 [libraries]
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
@@ -32,6 +33,9 @@ coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 # Exoplayer - Video player
 media3-expoplyaer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
 media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
+
+# Liquid - RuntimeShader liquid-glass effects (iOS-only usage; see iosMain)
+liquid = { module = "io.github.fletchmckee.liquid:liquid", version.ref = "liquid" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
