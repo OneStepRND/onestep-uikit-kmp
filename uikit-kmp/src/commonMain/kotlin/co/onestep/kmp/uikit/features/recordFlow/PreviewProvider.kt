@@ -64,6 +64,20 @@ internal val previewHallwayValid =
         suppressShortHallwayWarning = false,
     )
 
+// Fresh entry state matching the Figma "Enter the hallway length" design.
+internal val previewHallwayFresh =
+    HallwayDistanceScreenState(
+        title = "Enter the hallway length",
+        subtitle = "(If the test is done in a straight walkway)",
+        unitText = "m",
+        inputValue = "",
+        errorText = null,
+        canContinue = false,
+        showShortHallwayDialog = false,
+        recommendedValue = 30,
+        suppressShortHallwayWarning = false,
+    )
+
 // ── Button mock data ─────────────────────────────────────────────────────────
 
 internal val previewMainButtonData =
