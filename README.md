@@ -9,6 +9,20 @@ into a standalone repo.
   a Swift bridge layer (`OSTUIKitKMP` module) that connects to the native
   [`onestep-sdk-ios`](https://github.com/OneStepRND/onestep-sdk-ios)
 
+## Versions
+
+Current pinned versions (generated from `uikit-kmp/build.gradle.kts` and
+`gradle/libs.versions.toml` — do not edit by hand; run
+`./scripts/update-readme-versions.sh` after a bump):
+
+<!-- versions:start -->
+| Component | Version |
+|---|---|
+| `co.onestep.kmp:uikit-kmp` | `0.2.0` |
+| `co.onestep.android:core` | `2.0.3-SB7-SNAPSHOT` |
+| `co.onestep:design-system` | `1.1.0` |
+<!-- versions:end -->
+
 ## Consuming
 
 ### Android / KMP apps (Maven)
@@ -25,8 +39,8 @@ maven {
     }
 }
 
-// build.gradle.kts
-implementation("co.onestep.kmp:uikit-kmp:0.1.0-SNAPSHOT")
+// build.gradle.kts — see the Versions table above for the current version
+implementation("co.onestep.kmp:uikit-kmp:0.2.0-SNAPSHOT")
 ```
 
 ### iOS apps (Swift Package Manager)
