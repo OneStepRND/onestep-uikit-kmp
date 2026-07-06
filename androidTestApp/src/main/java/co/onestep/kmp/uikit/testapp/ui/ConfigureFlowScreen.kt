@@ -87,12 +87,6 @@ fun ConfigureFlowScreen(
         )
 
         ToggleRow(
-            label = "Show phone position screen",
-            checked = config.showPhonePositionScreen,
-            onCheckedChange = { config = config.copy(showPhonePositionScreen = it) },
-        )
-
-        ToggleRow(
             label = "Show permission explanation",
             checked = config.showPermissionExplanationScreen,
             onCheckedChange = { config = config.copy(showPermissionExplanationScreen = it) },
