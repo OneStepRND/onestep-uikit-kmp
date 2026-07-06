@@ -16,11 +16,9 @@ Current pinned versions (generated from `uikit-kmp/build.gradle.kts` and
 `./scripts/update-readme-versions.sh` after a bump):
 
 <!-- versions:start -->
-| Component | Version |
-|---|---|
-| `co.onestep.kmp:uikit-kmp` | `0.2.0` |
-| `co.onestep.android:core` | `2.0.3-SB7-SNAPSHOT` |
-| `co.onestep:design-system` | `1.1.0` |
+![uikit-kmp](https://img.shields.io/badge/uikit--kmp-0.2.0-blue)
+![core](https://img.shields.io/badge/core-2.0.3--SB7--SNAPSHOT-orange)
+![design-system](https://img.shields.io/badge/design--system-1.1.0-green)
 <!-- versions:end -->
 
 ## Consuming

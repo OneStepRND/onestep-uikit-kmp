@@ -73,12 +73,25 @@ fi
 
 # --- Build the generated block ---------------------------------------------
 
+# shields.io static-badge escaping: '-' -> '--', '_' -> '__', ' ' -> '%20'.
+# Applied to both the label and the message segment of the badge URL.
+badge_escape() {
+  local s="$1"
+  s="${s//_/__}"
+  s="${s//-/--}"
+  s="${s// /%20}"
+  printf '%s' "$s"
+}
+
+badge() { # label message color
+  printf '![%s](https://img.shields.io/badge/%s-%s-%s)' \
+    "$1" "$(badge_escape "$1")" "$(badge_escape "$2")" "$3"
+}
+
 BLOCK="$START_MARKER
-| Component | Version |
-|---|---|
-| \`co.onestep.kmp:uikit-kmp\` | \`${UIKIT_VERSION}\` |
-| \`co.onestep.android:core\` | \`${CORE_VERSION}\` |
-| \`co.onestep:design-system\` | \`${DESIGN_SYSTEM_VERSION}\` |
+$(badge "uikit-kmp" "$UIKIT_VERSION" blue)
+$(badge "core" "$CORE_VERSION" orange)
+$(badge "design-system" "$DESIGN_SYSTEM_VERSION" green)
 $END_MARKER"
 
 if ! grep -qF "$START_MARKER" "$README" || ! grep -qF "$END_MARKER" "$README"; then
