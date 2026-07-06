@@ -98,6 +98,10 @@ kotlin {
         }
 
         iosMain.dependencies {
+            // Liquid-glass (RuntimeShader) effects — iOS only. Kept out of commonMain/androidMain
+            // so the effect and its dependency never reach Android consumers (Android RuntimeShader
+            // also needs API 33+, which this library would otherwise force onto the min floor).
+            implementation(libs.liquid)
         }
     }
 }

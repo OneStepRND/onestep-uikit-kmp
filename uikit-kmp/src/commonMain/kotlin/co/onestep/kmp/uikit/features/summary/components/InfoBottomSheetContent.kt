@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.recordFlow.screensData.InfoBottomSheetData
+import co.onestep.kmp.uikit.ui.theme.OSTLiquidGlassCircle
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
@@ -34,15 +35,19 @@ internal fun InfoBottomSheetContent(
             .padding(horizontal = 24.dp, vertical = 16.dp),
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_close),
-                contentDescription = null,
+            OSTLiquidGlassCircle(
+                onClick = onDismiss,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .size(32.dp)
-                    .clickable { onDismiss() },
-                tint = colors.neutral_p3,
-            )
+                    .size(40.dp),
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_close),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = colors.neutral_p3,
+                )
+            }
         }
 
         Spacer(Modifier.height(Variables.GapXL))
