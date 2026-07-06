@@ -87,7 +87,7 @@ kotlin {
 
         androidMain.dependencies {
             implementation(compose.uiTooling)
-            implementation("co.onestep.android:core:${libs.versions.coreVersion.get()}")
+            implementation(libs.onestep.core)
             implementation(libs.androidx.activity.compose)
             implementation(libs.coil)
             implementation(libs.coil.gif)
