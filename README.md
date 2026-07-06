@@ -4,10 +4,14 @@ Kotlin Multiplatform UI Kit for the OneStep SDK. Extracted from
 [`onestep-sdk-android`](https://github.com/OneStepRND/onestep-sdk-android) (`uikit-kmp` module)
 into a standalone repo.
 
-- **Android**: published as a Maven artifact — `co.onestep.kmp:uikit-kmp`
+- **Android**: published as a Maven artifact — `co.onestep.kmp:uikit-kmp` — to this
+  repo's **GitHub Packages** Maven repository (private)
 - **iOS**: published as an SPM package wrapping the `OSTUIKit.xcframework` binary +
   a Swift bridge layer (`OSTUIKitKMP` module) that connects to the native
   [`onestep-sdk-ios`](https://github.com/OneStepRND/onestep-sdk-ios)
+
+> **Not published to public Maven Central.** Distribution is GitHub Packages (Android)
+> and SPM (iOS) only. Consumers need OneStepRND repo/package access — see below.
 
 ## Versions
 
