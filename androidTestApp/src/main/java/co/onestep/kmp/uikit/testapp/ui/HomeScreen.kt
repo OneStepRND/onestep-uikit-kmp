@@ -1,9 +1,7 @@
 package co.onestep.kmp.uikit.testapp.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,125 +9,123 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * Home screen — the Android mirror of `iosTestApp`'s `ContentView`. Same sections and options:
+ * Recording Flows · Screens · (optional) Last Event, with a gear that opens Settings.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     userId: String,
-    mockImuName: String,
-    mockImuOptions: List<String>,
-    onMockImuSelected: (String) -> Unit,
-    onClickCareLog: () -> Unit,
-    onClickRecordingFlow: () -> Unit,
+    lastEvent: String?,
+    onClickConfigureAndRecord: () -> Unit,
+    onClickWalkRecording: () -> Unit,
+    onClickTug: () -> Unit,
     onClickPermissionInApp: () -> Unit,
     onClickPermissionBackground: () -> Unit,
-    onClickLogout: () -> Unit,
+    onClickMeasurementSummary: () -> Unit,
+    onClickCareLog: () -> Unit,
+    onClickSettings: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(Modifier.height(16.dp))
-
-        Text(text = "KMP UI-KIT", fontSize = 40.sp)
-
-        Text(
-            modifier = Modifier.padding(top = 8.dp),
-            text = "user: $userId",
-            fontSize = 14.sp,
-            color = Color.Gray,
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        MockImuSelector(
-            selected = mockImuName,
-            options = mockImuOptions,
-            onSelected = onMockImuSelected,
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        HomeButton(text = "CARE LOG", onClick = onClickCareLog)
-        HomeButton(text = "RECORDING FLOW", onClick = onClickRecordingFlow)
-        HomeButton(text = "IN-APP PERMISSIONS", onClick = onClickPermissionInApp)
-        HomeButton(text = "BACKGROUND PERMISSIONS", onClick = onClickPermissionBackground)
-
-        Spacer(Modifier.height(24.dp))
-
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onClickLogout,
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("UIKit KMP Test") },
+                actions = {
+                    TextButton(
+                        onClick = onClickSettings,
+                        modifier = Modifier.testTag("home.settings"),
+                    ) { Text("Settings") }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState()),
         ) {
-            Text("LOGOUT")
-        }
-    }
-}
+            Text(
+                modifier = Modifier.padding(start = 16.dp, top = 12.dp),
+                text = "user: $userId",
+                fontSize = 12.sp,
+                color = Color.Gray,
+            )
 
-@Composable
-private fun HomeButton(
-    text: String,
-    onClick: () -> Unit,
-) {
-    Button(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        onClick = onClick,
-    ) {
-        Text(text = text, fontSize = 18.sp)
-    }
-}
+            SectionHeader("Recording Flows")
+            NavRow("Configure & Record", "home.configureAndRecord", onClickConfigureAndRecord)
+            NavRow("Walk Recording", "home.walkRecording", onClickWalkRecording)
+            NavRow("Timed Up & Go", "home.tug", onClickTug)
 
-@Composable
-private fun MockImuSelector(
-    selected: String,
-    options: List<String>,
-    onSelected: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
+            SectionHeader("Screens")
+            NavRow("Permission Flow (In-App)", "home.permissionInApp", onClickPermissionInApp)
+            NavRow("Permission Flow (Background)", "home.permissionBackground", onClickPermissionBackground)
+            NavRow("Measurement Summary", "home.measurementSummary", onClickMeasurementSummary)
+            NavRow("Care Log", "home.careLog", onClickCareLog)
 
-    Box(Modifier.fillMaxWidth()) {
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = { expanded = true },
-            colors = ButtonDefaults.outlinedButtonColors(),
-        ) {
-            Text("Mock IMU: $selected")
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option) },
-                    onClick = {
-                        onSelected(option)
-                        expanded = false
-                    },
+            if (lastEvent != null) {
+                SectionHeader("Last Event")
+                Text(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .testTag("home.lastEvent"),
+                    text = lastEvent,
+                    fontSize = 13.sp,
+                    color = Color.Gray,
                 )
             }
+
+            Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 4.dp),
+        text = text.uppercase(),
+        fontSize = 13.sp,
+        color = MaterialTheme.colorScheme.primary,
+    )
+}
+
+@Composable
+private fun NavRow(
+    label: String,
+    testTag: String,
+    onClick: () -> Unit,
+) {
+    Column {
+        Text(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .testTag(testTag)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            text = label,
+            fontSize = 17.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        HorizontalDivider(Modifier.padding(start = 16.dp))
     }
 }
 
@@ -138,13 +134,14 @@ private fun MockImuSelector(
 private fun HomeScreenPreview() {
     HomeScreen(
         userId = "preview-user",
-        mockImuName = "SUCCESSFUL",
-        mockImuOptions = listOf("NONE", "SUCCESSFUL"),
-        onMockImuSelected = {},
-        onClickCareLog = {},
-        onClickRecordingFlow = {},
+        lastEvent = "WALK: recording_completed (id:1a2b3c4d)",
+        onClickConfigureAndRecord = {},
+        onClickWalkRecording = {},
+        onClickTug = {},
         onClickPermissionInApp = {},
         onClickPermissionBackground = {},
-        onClickLogout = {},
+        onClickMeasurementSummary = {},
+        onClickCareLog = {},
+        onClickSettings = {},
     )
 }

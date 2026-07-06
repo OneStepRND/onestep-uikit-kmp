@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,8 +17,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,25 +39,37 @@ import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfi
 import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
 import co.onestep.kmp.uikit.testapp.ui.ConfigureFlowScreen
 import co.onestep.kmp.uikit.testapp.ui.HomeScreen
-import co.onestep.kmp.uikit.testapp.ui.LoginScreen
+import co.onestep.kmp.uikit.testapp.ui.MeasurementPickerScreen
+import co.onestep.kmp.uikit.testapp.ui.SettingsScreen
 import co.onestep.kmp.uikit.testapp.ui.SummaryLoadingScreen
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     private val testApplication get() = application as TestApplication
+    private lateinit var prefs: SettingsPrefs
 
+    @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        prefs = SettingsPrefs(applicationContext)
         val sdk = testApplication.oneStepSdk
 
         setContent {
             MaterialTheme {
-                if (sdk == null) {
-                    InitFailedScreen()
-                } else {
-                    MainContent(sdk)
+                // Expose Compose `testTag`s as resource-ids so adb/UIAutomator (and Appium) can
+                // find them by id — the Android analogue of iOS `accessibilityIdentifier`.
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .semantics { testTagsAsResourceId = true },
+                ) {
+                    if (sdk == null) {
+                        InitFailedScreen()
+                    } else {
+                        MainContent(sdk)
+                    }
                 }
             }
         }
@@ -67,31 +81,30 @@ class MainActivity : ComponentActivity() {
         var isConnecting by remember { mutableStateOf(false) }
         var loginError by remember { mutableStateOf<String?>(null) }
 
-        Scaffold { paddingValues ->
-            Box(Modifier.padding(paddingValues)) {
-                when (val state = sdkState) {
-                    is OSTIdentificationState.Identified -> AuthenticatedContent(
-                        sdk = sdk,
-                        userId = state.patientId.value,
-                    )
+        Box(Modifier.fillMaxSize()) {
+            when (val state = sdkState) {
+                is OSTIdentificationState.Identified -> AuthenticatedContent(
+                    sdk = sdk,
+                    userId = state.patientId.value,
+                )
 
-                    else -> LoginScreen(
-                        isConnecting = isConnecting,
-                        errorMessage = loginError,
-                        onConnect = { userId ->
-                            isConnecting = true
-                            loginError = null
-                            connect(
-                                sdk = sdk,
-                                userId = userId,
-                                onDone = { error ->
-                                    isConnecting = false
-                                    loginError = error
-                                },
-                            )
-                        },
-                    )
-                }
+                else -> SettingsScreen(
+                    initialEnvironment = prefs.environment,
+                    initialCustomUrl = prefs.customUrl,
+                    initialOrgName = prefs.orgName,
+                    initialDistinctId = prefs.distinctId,
+                    isConnecting = isConnecting,
+                    errorMessage = loginError,
+                    onIdentify = { org, distinctId, environment, customUrl ->
+                        persist(org, distinctId, environment, customUrl)
+                        isConnecting = true
+                        loginError = null
+                        connect(sdk, org, distinctId) { error ->
+                            isConnecting = false
+                            loginError = error
+                        }
+                    },
+                )
             }
         }
     }
@@ -102,28 +115,70 @@ class MainActivity : ComponentActivity() {
         userId: String,
     ) {
         var screen by remember { mutableStateOf<TestAppScreen>(TestAppScreen.Home) }
-        var mockImu by remember { mutableStateOf(OSTMockIMU.SUCCESSFUL) }
+        var lastEvent by remember { mutableStateOf<String?>(null) }
+        var isConnecting by remember { mutableStateOf(false) }
+        var settingsError by remember { mutableStateOf<String?>(null) }
 
-        // MotionLab is created per patient context, so the mock IMU flag must be
-        // (re-)applied after identification, not at SDK init.
+        // MotionLab is created per patient context, so the baseline mock must be (re-)applied after
+        // identification. SUCCESSFUL keeps quick-start Walk/TUG and Care Log recordings completing
+        // on an emulator; the Configure Flow "Mock recording" picker overrides it per run.
         LaunchedEffect(Unit) {
-            testApplication.setMockIMU(mockImu)
+            testApplication.setMockIMU(OSTMockIMU.SUCCESSFUL)
         }
 
         when (val current = screen) {
             is TestAppScreen.Home -> HomeScreen(
                 userId = userId,
-                mockImuName = mockImu.name,
-                mockImuOptions = remember { OSTMockIMU.entries.map { it.name } },
-                onMockImuSelected = { name ->
-                    mockImu = OSTMockIMU.valueOf(name)
-                    testApplication.setMockIMU(mockImu)
+                lastEvent = lastEvent,
+                onClickConfigureAndRecord = { screen = TestAppScreen.ConfigureFlow },
+                onClickWalkRecording = {
+                    screen = TestAppScreen.Recording(OSTRecordingConfiguration.defaultWalk())
                 },
-                onClickCareLog = { screen = TestAppScreen.CareLog },
-                onClickRecordingFlow = { screen = TestAppScreen.ConfigureFlow },
+                onClickTug = {
+                    screen = TestAppScreen.Recording(OSTRecordingConfiguration.tug())
+                },
                 onClickPermissionInApp = { screen = TestAppScreen.PermissionInApp },
                 onClickPermissionBackground = { screen = TestAppScreen.PermissionBackground },
-                onClickLogout = { sdk.clearPatient() },
+                onClickMeasurementSummary = { screen = TestAppScreen.MeasurementPicker },
+                onClickCareLog = { screen = TestAppScreen.CareLog },
+                onClickSettings = {
+                    settingsError = null
+                    screen = TestAppScreen.Settings
+                },
+            )
+
+            is TestAppScreen.Settings -> SettingsScreen(
+                initialEnvironment = prefs.environment,
+                initialCustomUrl = prefs.customUrl,
+                initialOrgName = prefs.orgName,
+                initialDistinctId = prefs.distinctId,
+                isConnecting = isConnecting,
+                errorMessage = settingsError,
+                onIdentify = { org, distinctId, environment, customUrl ->
+                    persist(org, distinctId, environment, customUrl)
+                    isConnecting = true
+                    settingsError = null
+                    connect(sdk, org, distinctId) { error ->
+                        isConnecting = false
+                        settingsError = error
+                        if (error == null) screen = TestAppScreen.Home
+                    }
+                },
+                onLogout = { sdk.clearPatient() },
+                onClose = { screen = TestAppScreen.Home },
+            )
+
+            is TestAppScreen.ConfigureFlow -> ConfigureFlowScreen(
+                onStartFlow = { config, mock ->
+                    testApplication.setMockIMU(mock)
+                    screen = TestAppScreen.Recording(config)
+                },
+                onBack = { screen = TestAppScreen.Home },
+            )
+
+            is TestAppScreen.MeasurementPicker -> MeasurementPickerScreen(
+                onSelect = { measurement -> screen = TestAppScreen.Summary(measurement) },
+                onBack = { screen = TestAppScreen.Home },
             )
 
             is TestAppScreen.CareLog -> OSTCareLog(
@@ -139,14 +194,17 @@ class MainActivity : ComponentActivity() {
                 onNavigateToPermissions = { screen = TestAppScreen.PermissionInApp },
             )
 
-            is TestAppScreen.ConfigureFlow -> ConfigureFlowScreen(
-                onStartFlow = { config -> screen = TestAppScreen.Recording(config) },
-                onBack = { screen = TestAppScreen.Home },
-            )
-
             is TestAppScreen.Recording -> OSTRecordingFlow(
                 config = current.config,
-                onResult = { screen = TestAppScreen.CareLog },
+                onResult = { event ->
+                    // PHI-free label only: activity type + event name + a truncated measurement id
+                    // (matches iOS ConfigureFlowView). `measurement_id` is present only on a real
+                    // analyzed result. (HIPAA)
+                    val measurementId = event.properties["measurement_id"]
+                    val idSuffix = measurementId?.let { " (id:${it.take(8)})" }.orEmpty()
+                    lastEvent = "${current.config.activityType.name}: ${event.name}$idSuffix"
+                    screen = TestAppScreen.CareLog
+                },
                 onDismiss = { screen = TestAppScreen.Home },
             )
 
@@ -190,21 +248,34 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun persist(
+        org: Organization,
+        distinctId: String,
+        environment: String,
+        customUrl: String,
+    ) {
+        prefs.environment = environment
+        prefs.customUrl = customUrl
+        prefs.orgName = org.name
+        prefs.distinctId = distinctId
+    }
+
     private fun connect(
         sdk: OneStep,
+        org: Organization,
         userId: String,
         onDone: (error: String?) -> Unit,
     ) {
         lifecycleScope.launch {
             sdk.setPatient(
-                apiKey = TestCredentials.CLIENT_TOKEN,
+                apiKey = org.apiKey,
                 customerPatientId = userId,
-                identityVerification = TestCredentials.signIdentity(userId),
+                identityVerification = org.signIdentity(userId),
             ) {
                 withFirstName("UIKit")
                 withLastName("Tester")
             }.onSuccess {
-                Log.i(TAG, "Connected as $userId")
+                Log.i(TAG, "Connected as $userId (${org.name})")
                 onDone(null)
             }.onError { error ->
                 Log.e(TAG, "Connect failed: ${error.cause}")
