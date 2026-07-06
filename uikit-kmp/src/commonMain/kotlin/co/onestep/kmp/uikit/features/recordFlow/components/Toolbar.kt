@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import co.onestep.kmp.uikit.ui.theme.osClickIndication
+import co.onestep.kmp.uikit.ui.theme.OSTLiquidGlassCircle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -78,27 +79,22 @@ fun Toolbar(
             .then(modifier),
     ) {
         toolbarData.startIcon?.let {
-            Icon(
-                painter = painterResource(it.icon),
-                contentDescription = null,
-                tint = toolBarColor?.contentColor ?: LocalOSColors.current.neutral_p3,
+            OSTLiquidGlassCircle(
+                onClick = { it.action?.invoke() },
                 modifier =
                     Modifier
                         .align(Alignment.CenterStart)
                         .padding(start = 8.dp)
-                        .clip(CircleShape)
-                        .clickable(
-                            interactionSource =
-                                remember {
-                                    MutableInteractionSource()
-                                },
-                            indication = osClickIndication(bounded = false),
-                        ) {
-                            it.action?.invoke()
-                        }.size(36.dp)
-                        .rtlMirror()
+                        .size(40.dp)
                         .test(TOOLBAR_START_ICON),
-            )
+            ) {
+                Icon(
+                    painter = painterResource(it.icon),
+                    contentDescription = null,
+                    tint = toolBarColor?.contentColor ?: LocalOSColors.current.neutral_p3,
+                    modifier = Modifier.size(22.dp).rtlMirror(),
+                )
+            }
         }
         AnimatedVisibility(
             modifier =
@@ -134,25 +130,21 @@ fun Toolbar(
                         .padding(end = 0.dp),
             ) {
                 it.forEachIndexed { index, iconData ->
-                    Icon(
-                        painter = painterResource(iconData.icon),
-                        contentDescription = null,
-                        tint = toolBarColor?.contentColor ?: LocalOSColors.current.neutral_p3,
+                    OSTLiquidGlassCircle(
+                        onClick = { iconData.action?.invoke() },
                         modifier =
                             Modifier
-                                .clip(CircleShape)
-                                .clickable(
-                                    interactionSource =
-                                        remember {
-                                            MutableInteractionSource()
-                                        },
-                                    indication = osClickIndication(bounded = false),
-                                ) {
-                                    iconData.action?.invoke()
-                                }.padding(10.dp)
-                                .size(36.dp)
+                                .padding(horizontal = 8.dp)
+                                .size(40.dp)
                                 .test("$TOOLBAR_END_ICON: $index"),
-                    )
+                    ) {
+                        Icon(
+                            painter = painterResource(iconData.icon),
+                            contentDescription = null,
+                            tint = toolBarColor?.contentColor ?: LocalOSColors.current.neutral_p3,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
                 }
             }
         }

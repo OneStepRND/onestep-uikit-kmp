@@ -25,6 +25,7 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import co.onestep.kmp.uikit.ui.theme.osClickIndication
+import co.onestep.kmp.uikit.ui.theme.OSTLiquidGlassCircle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -306,20 +307,19 @@ internal fun ShortHallwayLengthDialog(
                 .fillMaxWidth()
                 .padding(Variables.GapL),
         ) {
-            Icon(
+            OSTLiquidGlassCircle(
+                onClick = onDismissClicked,
                 modifier =
                     Modifier
                         .align(Alignment.TopEnd)
-                        .size(24.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = osClickIndication(bounded = false),
-                        ) {
-                            onDismissClicked()
-                        },
-                painter = painterResource(Res.drawable.ic_close),
-                contentDescription = "",
-            )
+                        .size(36.dp),
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_close),
+                    contentDescription = "",
+                    modifier = Modifier.size(22.dp),
+                )
+            }
         }
 
         OSText(
