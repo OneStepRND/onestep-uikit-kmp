@@ -1,0 +1,35 @@
+name: README versions in sync
+
+# Fails if the README version table drifts from the source of truth
+# (uikit-kmp/build.gradle.kts + gradle/libs.versions.toml). Regenerate with
+# ./scripts/update-readme-versions.sh and commit the result.
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'uikit-kmp/build.gradle.kts'
+      - 'gradle/libs.versions.toml'
+      - 'scripts/update-readme-versions.sh'
+      - '.github/workflows/readme-versions.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'README.md'
+      - 'uikit-kmp/build.gradle.kts'
+      - 'gradle/libs.versions.toml'
+      - 'scripts/update-readme-versions.sh'
+      - '.github/workflows/readme-versions.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify README version table is in sync
+        run: ./scripts/update-readme-versions.sh --check
