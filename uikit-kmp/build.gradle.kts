@@ -87,17 +87,7 @@ kotlin {
 
         androidMain.dependencies {
             implementation(compose.uiTooling)
-            // Core module dependency (resolved from Maven Central / GitHub Packages / mavenLocal).
-            // -PcoreVersion=X overrides verbatim; otherwise the catalog version is used,
-            // with -SNAPSHOT appended for githubSnapshot builds.
-            val coreVersion = (findProperty("coreVersion") as String?)
-                ?: if (githubSnapshot) {
-                    "${libs.versions.coreVersion.get()}-SNAPSHOT"
-                } else {
-                    libs.versions.coreVersion.get()
-                }
-            implementation("co.onestep.android:core:$coreVersion")
-
+            implementation("co.onestep.android:core:${libs.versions.coreVersion.get()}")
             implementation(libs.androidx.activity.compose)
             implementation(libs.coil)
             implementation(libs.coil.gif)
