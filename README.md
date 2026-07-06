@@ -22,7 +22,7 @@ Current pinned versions (generated from `uikit-kmp/build.gradle.kts` and
 <!-- versions:start -->
 ![uikit-kmp](https://img.shields.io/badge/uikit--kmp-0.2.0-blue)
 ![core](https://img.shields.io/badge/core-2.0.3--SB7--SNAPSHOT-orange)
-![design-system](https://img.shields.io/badge/design--system-1.1.0-green)
+![design-system](https://img.shields.io/badge/design--system-1.3.0-green)
 <!-- versions:end -->
 
 ## Consuming
@@ -82,14 +82,14 @@ Requirements: `gpr.user` / `gpr.key` (a PAT with `read:packages`/`write:packages
 
 **Required repo secret**: `GH_PACKAGES_TOKEN` — a PAT with `read:packages` on the OneStepRND org.
 Needed because the build resolves `co.onestep.android:core` (from `onestep-sdk-android` packages)
-and `co.onestep:design-system` (from `PatientApp` packages), and the default `github.token`
+and `co.onestep:design-system-kmp` (from `design-system-kmp` packages), and the default `github.token`
 cannot read another repo's packages.
 
 ## Dependencies of note
 
 - `co.onestep.android:core` — Android-only (androidMain). Snapshot builds use
   `<coreVersion>-SNAPSHOT` from GitHub Packages; release builds use Maven Central.
-- `co.onestep:design-system` — KMP design system, from GitHub Packages.
+- `co.onestep:design-system-kmp` — KMP design system, from GitHub Packages.
 - iOS Swift bridge depends on `onestep-sdk-ios` (exact version pinned in `Package.swift`).
 
 ## Development
