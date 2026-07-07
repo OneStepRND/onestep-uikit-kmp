@@ -14,10 +14,25 @@ struct ContentView: View {
     @State private var showSettings = false
     @State private var showMeasurementPicker = false
     @State private var lastEvent: String?
+    // Mirrors the library's global theme mode; the flows presented below read it when opened.
+    @State private var themeMode: ThemeMode = OneStepUiKit.shared.themeMode
 
     var body: some View {
         NavigationStack {
             List {
+                Section("Theme") {
+                    Picker("Theme", selection: $themeMode) {
+                        Text("Light").tag(ThemeMode.light)
+                        Text("Dark").tag(ThemeMode.dark)
+                        Text("System").tag(ThemeMode.system)
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("home.theme")
+                    .onChange(of: themeMode) { newValue in
+                        OneStepUiKit.shared.setThemeMode(mode: newValue)
+                    }
+                }
+
                 Section("Recording Flows") {
                     Button {
                         showConfigureFlow = true

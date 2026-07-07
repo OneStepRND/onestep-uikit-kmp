@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.onestep.designsystem.components.OSText
+import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
-import androidx.compose.ui.graphics.Color
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.not_available
 import co.onestep.kmp.uikit_kmp.generated.resources.score_unavailable
@@ -55,6 +55,9 @@ internal fun EmptyScoreCircle(
     val dashLength =
         lerpFloat(NO_SCORE_DASH_LENGTH_COLLAPSED, NO_SCORE_DASH_LENGTH_EXPANDED, progress)
 
+    // #E7E6E6 in the light theme; reading the role adapts the ring for dark. (no light change)
+    val ringColor = LocalOSColors.current.neutral_m2
+
     Box(
         contentAlignment = Center,
         modifier = modifier,
@@ -68,7 +71,7 @@ internal fun EmptyScoreCircle(
             val innerRadius = (size.minDimension - strokeWidth) / 2
 
             drawCircle(
-                color = Color(0xFFE7E6E6),
+                color = ringColor,
                 radius = innerRadius,
                 style =
                     Stroke(

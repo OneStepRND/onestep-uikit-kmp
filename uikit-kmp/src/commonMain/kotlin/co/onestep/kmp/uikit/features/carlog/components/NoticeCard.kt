@@ -43,7 +43,7 @@ internal fun NoticeCard(
         colors =
             CardDefaults.cardColors(
                 containerColor = LocalOSColors.current.primary_m3,
-                contentColor = LocalOSColors.current.primary_p3_main,
+                contentColor = LocalOSColors.current.brand_text,
             ),
         shape = RoundedCornerShape(8.dp),
         border =

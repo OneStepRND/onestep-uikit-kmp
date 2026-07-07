@@ -38,6 +38,8 @@ import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.components.SecondaryButton
 import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.designsystem.theme.LocalOSColors
+import co.onestep.kmp.uikit.ui.theme.LocalUiKitDarkTheme
+import co.onestep.kmp.uikit.ui.theme.adaptBakedNeutral
 import co.onestep.designsystem.theme.Variables
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_edit
@@ -316,7 +318,7 @@ internal fun MinimalAnalysisBanner(
                     text = textData.text,
                     fontSize = textData.textSize,
                     fontWeight = textData.fontWeight,
-                    color = textData.color ?: colors.neutral_p3,
+                    color = textData.color?.adaptBakedNeutral(colors, LocalUiKitDarkTheme.current) ?: colors.neutral_p3,
                 )
             }
 
@@ -324,7 +326,7 @@ internal fun MinimalAnalysisBanner(
                 text = data.subtitle.text,
                 fontSize = data.subtitle.textSize,
                 fontWeight = data.subtitle.fontWeight,
-                color = data.subtitle.color ?: colors.neutral_p3,
+                color = data.subtitle.color?.adaptBakedNeutral(colors, LocalUiKitDarkTheme.current) ?: colors.neutral_p3,
             )
         }
 

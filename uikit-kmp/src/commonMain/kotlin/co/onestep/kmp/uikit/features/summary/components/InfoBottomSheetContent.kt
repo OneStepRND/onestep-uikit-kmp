@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.recordFlow.screensData.InfoBottomSheetData
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.theme.LocalOSColors
+import co.onestep.kmp.uikit.ui.theme.LocalUiKitDarkTheme
+import co.onestep.kmp.uikit.ui.theme.adaptBakedNeutral
 import co.onestep.designsystem.theme.Variables
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_close
@@ -51,7 +53,7 @@ internal fun InfoBottomSheetContent(
             text = data.title.text,
             fontSize = data.title.textSize,
             fontWeight = data.title.fontWeight,
-            color = data.title.color ?: colors.neutral_p3,
+            color = data.title.color?.adaptBakedNeutral(colors, LocalUiKitDarkTheme.current) ?: colors.neutral_p3,
             lineHeight = 32.sp
         )
 
@@ -61,7 +63,7 @@ internal fun InfoBottomSheetContent(
             text = data.body.text,
             fontSize = data.body.textSize,
             fontWeight = data.body.fontWeight,
-            color = data.body.color ?: colors.neutral_p3,
+            color = data.body.color?.adaptBakedNeutral(colors, LocalUiKitDarkTheme.current) ?: colors.neutral_p3,
         )
 
         Spacer(Modifier.height(24.dp))

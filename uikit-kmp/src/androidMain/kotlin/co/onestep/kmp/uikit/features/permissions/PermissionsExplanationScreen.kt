@@ -66,7 +66,7 @@ fun PermissionsExplanationScreen(
                             textAlign = TextAlign.Center,
                             textSize = 28.sp,
                             fontWeight = FontWeight.Bold,
-                            color = LocalOSColors.current.primary_p3_main,
+                            color = LocalOSColors.current.brand_text,
                         ),
                     subtitle =
                         TextData(

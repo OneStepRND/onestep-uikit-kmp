@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -17,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -24,6 +27,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import co.onestep.kmp.uikit.ui.theme.OneStepUiKit
+import co.onestep.kmp.uikit.ui.theme.ThemeMode
 
 /**
  * Home screen — the Android mirror of `iosTestApp`'s `ContentView`. Same sections and options:
@@ -69,6 +74,9 @@ fun HomeScreen(
                 color = Color.Gray,
             )
 
+            SectionHeader("Theme")
+            ThemeModeSelector()
+
             SectionHeader("Recording Flows")
             NavRow("Configure & Record", "home.configureAndRecord", onClickConfigureAndRecord)
             NavRow("Walk Recording", "home.walkRecording", onClickWalkRecording)
@@ -93,6 +101,34 @@ fun HomeScreen(
             }
 
             Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+/**
+ * Live Light / Dark / System selector. Calls the library's global
+ * [OneStepUiKit.setThemeMode]; every `OneStepUiKitTheme`-wrapped flow (Recording,
+ * Summary, Care Log, Permissions) recomposes to the chosen mode.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThemeModeSelector() {
+    // OneStepUiKit.themeMode is backed by Compose state, so reading it here makes the
+    // chips recompose (and re-highlight) the moment setThemeMode is called.
+    val current = OneStepUiKit.themeMode
+    Row(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ThemeMode.entries.forEach { mode ->
+            FilterChip(
+                selected = current == mode,
+                onClick = { OneStepUiKit.setThemeMode(mode) },
+                label = { Text(mode.name) },
+                modifier = Modifier
+                    .padding(end = 8.dp)
+                    .testTag("home.theme.${mode.name}"),
+            )
         }
     }
 }

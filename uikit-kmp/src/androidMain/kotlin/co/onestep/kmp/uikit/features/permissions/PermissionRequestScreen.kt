@@ -119,7 +119,7 @@ internal fun PermissionRequestScreen(
                             .padding(horizontal = 14.dp),
                     textAlign = TextAlign.Center,
                     text = it.text,
-                    color = it.color ?: LocalOSColors.current.primary_p3_main,
+                    color = it.color ?: LocalOSColors.current.brand_text,
                     lineHeight = 42.sp,
                     fontSize = it.textSize,
                     fontWeight = it.fontWeight,

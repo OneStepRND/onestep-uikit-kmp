@@ -11,6 +11,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import co.onestep.designsystem.theme.LocalOSColors
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -153,11 +154,11 @@ internal actual fun PlatformPermissionFlow(
         context.startActivity(intent)
     }
 
-    // UI - white background extends behind system bars to avoid dark gaps
+    // UI - themed surface extends behind system bars to avoid gaps (white in light, dark in dark)
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(androidx.compose.ui.graphics.Color.White)
+            .background(LocalOSColors.current.neutral_m5)
             .systemBarsPadding(),
     ) {
         PermissionsFlowScreen(

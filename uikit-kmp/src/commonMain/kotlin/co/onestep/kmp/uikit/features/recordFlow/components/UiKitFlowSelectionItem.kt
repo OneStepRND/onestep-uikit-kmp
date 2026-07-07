@@ -72,7 +72,7 @@ fun UiKitFlowSelectionItem(
         selectionItemData.icon?.let {
             Icon(
                 painter = painterResource(it.icon),
-                tint = colors.primary_p3_main,
+                tint = colors.brand_text,
                 contentDescription = null,
                 modifier =
                     Modifier

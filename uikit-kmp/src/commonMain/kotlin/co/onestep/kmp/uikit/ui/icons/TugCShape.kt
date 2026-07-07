@@ -10,10 +10,11 @@ import androidx.compose.ui.graphics.vector.ImageVector.Builder
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
-fun tugCShape(): ImageVector {
-    if (_vector != null) {
-        return _vector!!
-    }
+// Default fill is the light `neutral_m2` (#E7E6E6). Callers pass the theme role so the
+// track shape adapts to dark; the cache is keyed by color so light/dark don't collide.
+fun tugCShape(fillColor: Color = Color(0xFFE7E6E6)): ImageVector {
+    _vector?.let { if (_vectorColor == fillColor) return it }
+    _vectorColor = fillColor
     _vector =
         Builder(
             name = "Vector",
@@ -23,7 +24,7 @@ fun tugCShape(): ImageVector {
             viewportHeight = 156.0f,
         ).apply {
             path(
-                fill = SolidColor(Color(0xFFE7E6E6)),
+                fill = SolidColor(fillColor),
                 stroke = null,
                 strokeLineWidth = 0.0f,
                 strokeLineCap = Butt,
@@ -55,3 +56,4 @@ fun tugCShape(): ImageVector {
 }
 
 private var _vector: ImageVector? = null
+private var _vectorColor: Color? = null
