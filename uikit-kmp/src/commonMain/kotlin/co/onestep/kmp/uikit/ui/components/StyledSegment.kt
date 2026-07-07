@@ -24,7 +24,10 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.onestep.designsystem.theme.LocalOSColors
+import co.onestep.designsystem.theme.OSColors
+import co.onestep.kmp.uikit.ui.theme.LocalUiKitDarkTheme
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
+import co.onestep.kmp.uikit.ui.theme.adaptBakedNeutral
 import co.onestep.designsystem.theme.Variables
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -66,12 +69,20 @@ private fun splitLines(tokens: List<StyledToken>): List<List<StyledSegment>> {
 private fun buildAnnotatedStringFromSegments(
     segments: List<StyledSegment>,
     defaultStyle: TextStyle,
+    colors: OSColors,
+    isDark: Boolean,
 ): AnnotatedString =
     buildAnnotatedString {
         segments.forEach { segment ->
             val style =
                 SpanStyle(
-                    color = if (segment.color.isSpecified) segment.color else defaultStyle.color,
+                    color =
+                        if (segment.color.isSpecified) {
+                            // Factories bake light neutral literals; adapt them for dark. (no-op in light)
+                            segment.color.adaptBakedNeutral(colors, isDark)
+                        } else {
+                            defaultStyle.color
+                        },
                     fontSize = if (segment.fontSize != TextUnit.Unspecified) segment.fontSize else defaultStyle.fontSize,
                     fontWeight = segment.fontWeight ?: defaultStyle.fontWeight,
                 )
@@ -92,6 +103,8 @@ fun InstructionParagraph(
     defaultStyle: TextStyle = MaterialTheme.typography.bodyMedium,
 ) {
     val lines = splitLines(tokens)
+    val colors = LocalOSColors.current
+    val isDark = LocalUiKitDarkTheme.current
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -99,7 +112,7 @@ fun InstructionParagraph(
         lines.forEach { line ->
             if (line.isNotEmpty()) {
                 Text(
-                    text = buildAnnotatedStringFromSegments(line, defaultStyle),
+                    text = buildAnnotatedStringFromSegments(line, defaultStyle, colors, isDark),
                     style =
                         defaultStyle.copy(
                             color = Color.Unspecified,

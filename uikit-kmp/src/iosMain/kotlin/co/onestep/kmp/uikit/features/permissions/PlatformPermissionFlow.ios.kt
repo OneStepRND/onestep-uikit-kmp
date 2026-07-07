@@ -7,6 +7,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import co.onestep.designsystem.theme.LocalOSColors
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -111,7 +112,7 @@ private fun NativePermissionFlowHost(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(LocalOSColors.current.neutral_m5),
     )
 }
 
@@ -188,7 +189,7 @@ private fun ComposePermissionFlow(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(LocalOSColors.current.neutral_m5),
     ) {
         AnimatedContent(
             targetState = screen,

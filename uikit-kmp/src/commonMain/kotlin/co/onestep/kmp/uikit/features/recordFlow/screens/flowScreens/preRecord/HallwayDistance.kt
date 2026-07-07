@@ -194,7 +194,7 @@ private fun NumericInputField(
                                 color = LocalOSColors.current.neutral_p3,
                                 fontFamily = NoirFontFamily(),
                             ),
-                        cursorBrush = SolidColor(LocalOSColors.current.primary_p3_main),
+                        cursorBrush = SolidColor(LocalOSColors.current.brand_text),
                         singleLine = true,
                         keyboardOptions =
                             KeyboardOptions(

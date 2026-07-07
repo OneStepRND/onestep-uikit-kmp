@@ -355,7 +355,7 @@ internal fun RecordFlowNavGraph(
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Color.White)) {
+    Box(Modifier.fillMaxSize().background(LocalOSColors.current.neutral_m5)) {
         // The toolbar overlays a fixed top inset instead of sitting in a Column above the
         // NavDisplay (mirrors the original uikit MainFlowScreen). The NavDisplay is always
         // fillMaxSize() with a constant per-route top inset, so hiding the toolbar — e.g. on the

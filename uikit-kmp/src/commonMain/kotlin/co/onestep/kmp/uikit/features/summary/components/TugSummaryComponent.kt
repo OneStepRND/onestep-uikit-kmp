@@ -272,7 +272,7 @@ fun TugC(
                     .align(CenterEnd),
         ) {
             Image(
-                imageVector = tugCShape(),
+                imageVector = tugCShape(fillColor = LocalOSColors.current.neutral_m2),
                 contentDescription = "",
             )
             Ring(

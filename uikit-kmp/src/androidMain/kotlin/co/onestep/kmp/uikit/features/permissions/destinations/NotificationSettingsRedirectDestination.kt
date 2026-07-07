@@ -56,7 +56,7 @@ internal fun EntryProviderScope<NavKey>.notificationSettingsRedirect(
         PermissionRequestScreen(
             screenData =
                 screenData.copy(
-                    title = screenData.title?.copy(color = LocalOSColors.current.primary_p3_main),
+                    title = screenData.title?.copy(color = LocalOSColors.current.brand_text),
                 ),
             onBackPress = {
                 viewModel.trackCloseButtonClick()

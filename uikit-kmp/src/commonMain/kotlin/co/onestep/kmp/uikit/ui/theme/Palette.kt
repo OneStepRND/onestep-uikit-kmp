@@ -137,4 +137,31 @@ val DefaultLightPalette = Palette(
     ),
 )
 
+/**
+ * Dark counterpart to [DefaultLightPalette].
+ *
+ * Brand, error/warning/success/info and health hues are kept identical to light
+ * (they are brand constants; the design-system `Themes.osDarkTheme()` drives the
+ * actual per-component surface/foreground colors via `LocalOSColors`). Only the
+ * neutral ramp is redefined for a dark surface scale: the "p" end stays the
+ * strong/legible tone (now near-white for text on dark) and the "m" end moves
+ * toward the darkest background.
+ *
+ * Note: like [DefaultLightPalette], this is provided via [LocalPalette] but is
+ * not currently consumed inside the kit; it exists so the provided palette is
+ * coherent in dark mode for any consumer that reads it.
+ */
+val DefaultDarkPalette = DefaultLightPalette.copy(
+    neutral = ColorGroup(
+        p3 = Color(0xFFFBFBFB),   // strongest text on dark
+        p2 = Color(0xFFE7E6E6),
+        p1 = Color(0xFFD2D0CF),
+        zero = Color(0xFFB3B0AD),
+        m1 = Color(0xFF716D69),
+        m2 = Color(0xFF3E3D3B),
+        m3 = Color(0xFF262625),   // dark surface
+        m4 = Color(0xFF1A1A19),   // darkest background
+    ),
+)
+
 val LocalPalette = staticCompositionLocalOf { DefaultLightPalette }

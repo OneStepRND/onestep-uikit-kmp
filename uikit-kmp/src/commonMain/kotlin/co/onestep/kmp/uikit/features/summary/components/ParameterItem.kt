@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.summary.models.SummaryScreenItem
 import co.onestep.designsystem.components.OSText
 import androidx.compose.ui.graphics.Color
+import co.onestep.designsystem.theme.LocalOSColors
+import co.onestep.kmp.uikit.ui.theme.LocalUiKitDarkTheme
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.designsystem.theme.Variables
 import co.onestep.kmp.uikit.utils.getNormColor
@@ -77,7 +79,14 @@ internal fun ParameterItem(
                     text = parameterItem.units,
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
-                    color = Color(0xFFDCDFE3),
+                    // De-emphasized units label. Keep the exact light tint; in dark use a
+                    // muted neutral so it stays subdued instead of reading as near-white.
+                    color =
+                        if (LocalUiKitDarkTheme.current) {
+                            LocalOSColors.current.neutral_p1
+                        } else {
+                            Color(0xFFDCDFE3)
+                        },
                     fontWeight = FontWeight.W400,
                 )
             }
