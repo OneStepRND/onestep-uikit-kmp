@@ -147,7 +147,8 @@ extension OSTRecordingConfiguration {
             postTaggingData: postTaggingData,
             showPreRecordingAssistiveDeviceSelection: showPreRecordingAssistiveDeviceSelection,
             showPreRecordingFootwearSelection: showPreRecordingFootwearSelection,
-            balance: balance
+            balance: balance,
+            hallwayLengthMeters: hallwayLengthMeters
         )
     }
 }

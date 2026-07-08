@@ -43,4 +43,14 @@ class AndroidSDKBridge(private val oneStep: OneStep) : OSTSDKBridge {
     override fun optInToMonitoring() {
         oneStep.getMonitoring().getOr(null)?.optIn()
     }
+
+    // Custom metadata (the identified user's `custom_metadata` store). Reads come from the
+    // SDK-managed cache/backend via getUserAttributes(); writes go through the merge endpoint,
+    // which returns the full merged map. Both degrade to empty/unchanged on failure — the
+    // OSTSDKBridge contract forbids throwing.
+    override suspend fun getCustomMetadata(): Map<String, Any> =
+        oneStep.getUserAttributes().getOr(null)?.customAttributes ?: emptyMap()
+
+    override suspend fun updateCustomMetadata(metadata: Map<String, Any>): Map<String, Any> =
+        oneStep.updateCustomMetadata(metadata).getOr(metadata)
 }

@@ -25,6 +25,20 @@ interface IosSDKDelegate {
     fun sendEvent(event: OSTEvent, completion: () -> Unit)
     fun getDailySummaries(completion: (List<OSTDailyBackgroundMeasurement>) -> Unit)
     fun optInToMonitoring()
+
+    /**
+     * Reads the identified user's SDK-managed custom metadata. The Swift side calls the native
+     * `getUserAttributes()` and returns `customAttributes` (OSTMixedType values flattened to
+     * Kotlin numbers/strings). Returns an empty map on failure — never fails the completion.
+     */
+    fun getCustomMetadata(completion: (Map<String, Any>) -> Unit)
+
+    /**
+     * Merges [metadata] into the identified user's SDK-managed custom metadata via the native
+     * `updateCustomMetadata(_:)` merge endpoint, returning the full merged map (or [metadata]
+     * unchanged on failure).
+     */
+    fun updateCustomMetadata(metadata: Map<String, Any>, completion: (Map<String, Any>) -> Unit)
 }
 
 /**
@@ -85,4 +99,14 @@ class SwiftSDKBridgeAdapter(private val delegate: IosSDKDelegate) : OSTSDKBridge
     override fun optInToMonitoring() {
         delegate.optInToMonitoring()
     }
+
+    override suspend fun getCustomMetadata(): Map<String, Any> =
+        suspendCancellableCoroutine { continuation ->
+            delegate.getCustomMetadata { metadata -> continuation.resume(metadata) }
+        }
+
+    override suspend fun updateCustomMetadata(metadata: Map<String, Any>): Map<String, Any> =
+        suspendCancellableCoroutine { continuation ->
+            delegate.updateCustomMetadata(metadata) { merged -> continuation.resume(merged) }
+        }
 }

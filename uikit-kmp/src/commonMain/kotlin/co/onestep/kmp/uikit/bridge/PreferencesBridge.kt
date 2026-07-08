@@ -11,8 +11,9 @@ interface PreferencesBridge {
     val updates: Flow<String>
 
     var measurementsSystem: String?
-    var sixMinHallwayLengthM: Float?
-    var twoMinHallwayLengthM: Float?
+    // The last-entered hallway length now lives in the SDK-managed custom-metadata store (see
+    // HallwayDistanceManager), so it follows the user across devices — it is no longer a
+    // device-local preference here.
     var suppressShortHallwayWarning6Min: Boolean
     var suppressShortHallwayWarning2Min: Boolean
     var permissionExplanationScreenShown: Boolean

@@ -240,6 +240,7 @@ internal fun RecordFlowNavGraph(
             ttsPlayer = PlatformTTSPlayerAdapter(UIKitServiceLocator.ttsPlayer),
             preferenceManager = UIKitServiceLocator.preferencesBridge,
             resourceProvider = resourceProvider,
+            sdkBridge = UIKitServiceLocator.sdkBridge,
         ).apply {
             setConfiguration(config)
             // Inject the tracker so the VM can fire the recording-phase measurement events

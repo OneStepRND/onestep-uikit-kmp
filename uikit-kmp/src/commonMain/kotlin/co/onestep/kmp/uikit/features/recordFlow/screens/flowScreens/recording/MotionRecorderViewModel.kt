@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.onestep.kmp.uikit.bridge.OSTSDKBridge
 import co.onestep.kmp.uikit.bridge.PreferencesBridge
 import co.onestep.kmp.uikit.bridge.RecorderBridge
 import co.onestep.kmp.uikit.data.WalkDuration
@@ -79,6 +80,7 @@ internal class MotionRecorderViewModel(
     private val ttsPlayer: TTSPlayer,
     private val preferenceManager: PreferencesBridge,
     private val recorderBridge: RecorderBridge,
+    private val sdkBridge: OSTSDKBridge,
 ) : ViewModel() {
     var configuration =
         mutableStateOf(OSTRecordingConfiguration.defaultWalk())
@@ -95,7 +97,10 @@ internal class MotionRecorderViewModel(
     private val hallwayManager = HallwayDistanceManager(
         resourceProvider = resourceProvider,
         preferenceManager = preferenceManager,
+        sdkBridge = sdkBridge,
+        coroutineScope = viewModelScope,
         activityTypeProvider = { configuration.value.activityType },
+        hostHallwayLengthMetersProvider = { configuration.value.hallwayLengthMeters },
     )
     private val toolbar = ToolbarStateHolder(resourceProvider)
     private val balanceManager = BalanceSessionManager()
@@ -524,8 +529,8 @@ internal class MotionRecorderViewModel(
                 else -> timeout * 1000L // Or set the duration
             }
 
-        // save it to preferences
-        saveHallwayDistanceToPreferences()
+        // persist the entered length to the SDK-managed custom-metadata store
+        saveHallwayLengthToMetadata()
 
         recordingJob =
             viewModelScope.launch {
@@ -852,7 +857,7 @@ internal class MotionRecorderViewModel(
 
     // --- Hallway distance — delegated to HallwayDistanceManager --------------------------
 
-    fun saveHallwayDistanceToPreferences() = hallwayManager.saveHallwayDistanceToPreferences()
+    fun saveHallwayLengthToMetadata() = hallwayManager.saveHallwayLengthToMetadata()
 
     fun onHallwayInputChanged(rawValue: String) = hallwayManager.onHallwayInputChanged(rawValue)
 

@@ -21,4 +21,23 @@ interface OSTSDKBridge {
     val isMonitoringActive: Boolean
     suspend fun getDailySummaries(): List<OSTDailyBackgroundMeasurement>
     fun optInToMonitoring()
+
+    /**
+     * Reads the identified user's SDK-managed custom metadata — the `custom_metadata` store the
+     * SDK rehydrates from the backend on identify. Returns an empty map when the SDK is not
+     * initialized / no user is identified, or on any failure; never throws.
+     *
+     * UIKit uses this as a lightweight per-user key-value store (for example the last-entered
+     * hallway length), so a stored value follows the user across devices and survives logout.
+     * Keys prefixed with `ost.` are reserved for SDK/UIKit use.
+     */
+    suspend fun getCustomMetadata(): Map<String, Any>
+
+    /**
+     * Merges [metadata] into the identified user's SDK-managed custom metadata via the dedicated
+     * metadata endpoint. The backend merges by key, so keys absent from [metadata] are preserved.
+     * Returns the full merged map on success, or [metadata] unchanged on failure; never throws.
+     * The endpoint only accepts non-null values.
+     */
+    suspend fun updateCustomMetadata(metadata: Map<String, Any>): Map<String, Any>
 }

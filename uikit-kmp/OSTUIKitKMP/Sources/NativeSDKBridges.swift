@@ -400,6 +400,64 @@ final class NativeSDKDelegate: NSObject, IosSDKDelegate {
     func optInToMonitoring() {
         // shortcut: monitoring opt-in not part of the walk E2E; no-op.
     }
+
+    // MARK: Custom metadata (per-user key-value store)
+
+    /// Reads the identified user's `custom_metadata` via the native `getUserAttributes()`.
+    /// OSTMixedType values are flattened to Kotlin-friendly `Any` (String / Double). Any failure
+    /// (uninitialized SDK, no user, network) resolves to an empty map — never fails the completion.
+    func getCustomMetadata(completion: @escaping ([String: Any]) -> Void) {
+        guard case .success(let onestep) = OneStep.shared() else { completion([:]); return }
+        Task {
+            switch await onestep.getUserAttributes() {
+            case .success(let attributes):
+                var out: [String: Any] = [:]
+                for (key, value) in attributes.customAttributes { out[key] = Self.fromMixedType(value) }
+                completion(out)
+            case .failure:
+                completion([:])
+            }
+        }
+    }
+
+    /// Merges `metadata` into the identified user's custom metadata via the native
+    /// `updateCustomMetadata(_:)` (server merges by key). Numeric values are written as `.double`
+    /// so the stored JSON type matches Android (which writes a Float). Returns the merged map on
+    /// success, or the input unchanged on failure.
+    func updateCustomMetadata(metadata: [String: Any], completion: @escaping ([String: Any]) -> Void) {
+        guard case .success(let onestep) = OneStep.shared() else { completion(metadata); return }
+        var native: [String: OSTMixedType] = [:]
+        for (key, value) in metadata { native[key] = Self.toMixedType(value) }
+        Task {
+            switch await onestep.updateCustomMetadata(native) {
+            case .success(let merged):
+                var out: [String: Any] = [:]
+                for (key, value) in merged { out[key] = Self.fromMixedType(value) }
+                completion(out)
+            case .failure:
+                completion(metadata)
+            }
+        }
+    }
+
+    /// OSTMixedType -> Kotlin-friendly `Any`. Numbers become `Double` (Kotlin reads them via the
+    /// asFloatFlag `toString()` fallback); strings pass through.
+    private static func fromMixedType(_ value: OSTMixedType) -> Any {
+        switch value {
+        case .string(let s): return s
+        case .int(let i): return Double(i)
+        case .double(let d): return d
+        @unknown default: return ""
+        }
+    }
+
+    /// Kotlin `Any` -> OSTMixedType. Kotlin numbers arrive boxed (KotlinFloat/… all bridge to
+    /// NSNumber), so numeric values map to `.double`; everything else falls back to `.string`.
+    private static func toMixedType(_ value: Any) -> OSTMixedType {
+        if let s = value as? String { return .string(s) }
+        if let n = value as? NSNumber { return .double(n.doubleValue) }
+        return .string("\(value)")
+    }
 }
 
 // MARK: - Direct bridges (MotionData / Insights)

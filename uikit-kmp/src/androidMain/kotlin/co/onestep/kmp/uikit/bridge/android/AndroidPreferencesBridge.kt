@@ -25,18 +25,6 @@ class AndroidPreferencesBridge(context: Context) : PreferencesBridge {
         get() = prefs.getString(KEY_MEASUREMENTS_SYSTEM, null)
         set(value) = prefs.edit { putString(KEY_MEASUREMENTS_SYSTEM, value) }
 
-    override var sixMinHallwayLengthM: Float?
-        get() = if (prefs.contains(KEY_6MIN_HALLWAY)) prefs.getFloat(KEY_6MIN_HALLWAY, 0f) else null
-        set(value) = prefs.edit {
-            if (value != null) putFloat(KEY_6MIN_HALLWAY, value) else remove(KEY_6MIN_HALLWAY)
-        }
-
-    override var twoMinHallwayLengthM: Float?
-        get() = if (prefs.contains(KEY_2MIN_HALLWAY)) prefs.getFloat(KEY_2MIN_HALLWAY, 0f) else null
-        set(value) = prefs.edit {
-            if (value != null) putFloat(KEY_2MIN_HALLWAY, value) else remove(KEY_2MIN_HALLWAY)
-        }
-
     override var suppressShortHallwayWarning6Min: Boolean
         get() = prefs.getBoolean(KEY_SUPPRESS_6MIN, false)
         set(value) = prefs.edit { putBoolean(KEY_SUPPRESS_6MIN, value) }
@@ -67,8 +55,6 @@ class AndroidPreferencesBridge(context: Context) : PreferencesBridge {
     companion object {
         private const val PREFS_NAME = "ost_uikit_kmp_prefs"
         private const val KEY_MEASUREMENTS_SYSTEM = "measurements_system"
-        private const val KEY_6MIN_HALLWAY = "six_min_hallway_length_m"
-        private const val KEY_2MIN_HALLWAY = "two_min_hallway_length_m"
         private const val KEY_SUPPRESS_6MIN = "suppress_short_hallway_warning_6min"
         private const val KEY_SUPPRESS_2MIN = "suppress_short_hallway_warning_2min"
         private const val KEY_PERMISSION_EXPLANATION_SHOWN = "permission_explanation_screen_shown"

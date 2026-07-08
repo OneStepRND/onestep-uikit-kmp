@@ -55,6 +55,18 @@ data class OSTRecordingConfiguration(
      * defaults to all options when the host supplies none. Ignored by every other activity.
      */
     val balance: OSTBalance? = null,
+    /**
+     * Host-supplied hallway/walkway length, in meters, for the 6-minute and 2-minute walk flows.
+     * When set, it pre-fills the "Enter the hallway length" screen synchronously and is used as
+     * the starting value; no value is read from SDK custom metadata in that case. Ignored by
+     * every other activity.
+     *
+     * Note: unlike the Android uikit — which suppresses per-user persistence under an active
+     * patient scope — KMP has no patient-scope concept, so the user's edits are still persisted to
+     * the SDK-managed custom-metadata store (single-user model). Leave null to always restore the
+     * last-entered length from custom metadata.
+     */
+    val hallwayLengthMeters: Float? = null,
 ) {
     companion object {
         fun defaultWalk(
