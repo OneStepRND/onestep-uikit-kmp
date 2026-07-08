@@ -1,10 +1,11 @@
 package co.onestep.kmp.uikit.navigation
 
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.navigation3.runtime.NavBackStack
@@ -33,6 +34,10 @@ import co.onestep.kmp.uikit.features.summary.screens.navigation.EditAssistiveDev
 import co.onestep.kmp.uikit.features.summary.screens.navigation.EditFootwearDestination
 import co.onestep.kmp.uikit.features.summary.screens.navigation.EditLevelOfAssistanceDestination
 import co.onestep.kmp.uikit.features.summary.screens.navigation.StsManualReportDestination
+import co.onestep.kmp.uikit.features.demo.PushPopDemoFirstDestination
+import co.onestep.kmp.uikit.features.demo.PushPopDemoSecondDestination
+import co.onestep.kmp.uikit.features.demo.PushPopDemoThirdDestination
+import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.kmp.uikit.features.summary.screens.navigation.SummaryScreenDestination
 import co.onestep.kmp.uikit.features.summary.screens.navigation.TaggingScreenDestination
 import kotlinx.serialization.modules.SerializersModule
@@ -76,6 +81,10 @@ internal val UIktNavSavedStateConfiguration = SavedStateConfiguration {
             subclass(EditFootwearDestination::class)
             subclass(CustomQuestionDestination::class)
             subclass(StsManualReportDestination::class)
+            // Cupertino transition demo (test harnesses)
+            subclass(PushPopDemoFirstDestination::class)
+            subclass(PushPopDemoSecondDestination::class)
+            subclass(PushPopDemoThirdDestination::class)
         }
     }
 }
@@ -107,36 +116,59 @@ internal fun NavBackStack<NavKey>.popUpToInclusive(key: NavKey) {
 }
 
 /**
- * Shared [NavDisplay] wrapper for all uikit flows: horizontal slide transitions matching the
- * previous Navigation 2 NavHost defaults (forward slides in from the end side, back slides in
- * from the start side), mirrored automatically for RTL layouts.
+ * Shared [NavDisplay] wrapper for all uikit flows, styled after UINavigationController push/pop
+ * (see [CupertinoTransition] for the spec and all tuning constants), mirrored automatically for
+ * RTL layouts.
+ *
+ * Back navigation is interactive: on platforms without a system back gesture (iOS) an edge swipe
+ * ([cupertinoEdgeSwipeBack]) feeds predictive-back events into the same transition NavDisplay
+ * plays programmatically; on Android the system (predictive) back gesture drives it instead.
+ *
+ * @param interactiveBackGesture opt-in/out override for the Compose edge-swipe gesture. Defaults
+ *   to on only where the platform provides no back gesture of its own.
+ * @param screenBackground opaque backdrop painted behind every screen. uikit screens are mostly
+ *   transparent and rely on a backdrop painted by the flow *outside* the NavDisplay — fine when
+ *   both screens moved in lockstep, but the Cupertino parallax shows the underlying screen
+ *   through anything transparent, so each entry must be opaque on its own. Defaults to the
+ *   design-system screen backdrop (what the flows already paint); pass [Color.Unspecified] to
+ *   opt out for fully-opaque screens.
  */
 @Composable
 internal fun UIktNavDisplay(
     backStack: NavBackStack<NavKey>,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    interactiveBackGesture: Boolean = !platformProvidesBackGesture,
+    screenBackground: Color = LocalOSColors.current.neutral_m5,
     entryProvider: (NavKey) -> NavEntry<NavKey>,
 ) {
-    // slideIntoContainer/slideOutOfContainer were layout-direction aware; slideInHorizontally is
-    // not, so mirror the offsets manually for RTL.
+    // slideInHorizontally is not layout-direction aware, so mirror the offsets manually for RTL.
     val dir = if (LocalLayoutDirection.current == LayoutDirection.Ltr) 1 else -1
     NavDisplay(
         backStack = backStack,
-        modifier = modifier,
+        modifier = modifier.cupertinoEdgeSwipeBack(
+            enabled = interactiveBackGesture && backStack.size > 1,
+        ),
         onBack = { onBack() },
-        transitionSpec = {
-            slideInHorizontally(initialOffsetX = { it * dir }) togetherWith
-                slideOutHorizontally(targetOffsetX = { -it * dir })
+        transitionSpec = cupertinoPushSpec(dir),
+        popTransitionSpec = cupertinoPopSpec(dir),
+        predictivePopTransitionSpec = cupertinoPredictivePopSpec(),
+        entryProvider = { key ->
+            val entry = entryProvider(key)
+            // Rewrap so every screen is opaque and carries the Cupertino leading-edge shadow.
+            NavEntry(navEntry = entry) {
+                Box(
+                    Modifier
+                        .cupertinoEdgeShadow()
+                        .then(
+                            if (screenBackground.isSpecified) {
+                                Modifier.background(screenBackground)
+                            } else {
+                                Modifier
+                            },
+                        ),
+                ) { entry.Content() }
+            }
         },
-        popTransitionSpec = {
-            slideInHorizontally(initialOffsetX = { -it * dir }) togetherWith
-                slideOutHorizontally(targetOffsetX = { it * dir })
-        },
-        predictivePopTransitionSpec = {
-            slideInHorizontally(initialOffsetX = { -it * dir }) togetherWith
-                slideOutHorizontally(targetOffsetX = { it * dir })
-        },
-        entryProvider = entryProvider,
     )
 }

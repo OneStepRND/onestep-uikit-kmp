@@ -46,6 +46,7 @@ fun HomeScreen(
     onClickPermissionBackground: () -> Unit,
     onClickMeasurementSummary: () -> Unit,
     onClickCareLog: () -> Unit,
+    onClickPushPopDemo: () -> Unit,
     onClickSettings: () -> Unit,
 ) {
     Scaffold(
@@ -87,6 +88,7 @@ fun HomeScreen(
             NavRow("Permission Flow (Background)", "home.permissionBackground", onClickPermissionBackground)
             NavRow("Measurement Summary", "home.measurementSummary", onClickMeasurementSummary)
             NavRow("Care Log", "home.careLog", onClickCareLog)
+            NavRow("iOS Push/Pop Demo", "home.pushPopDemo", onClickPushPopDemo)
 
             if (lastEvent != null) {
                 SectionHeader("Last Event")
@@ -178,6 +180,7 @@ private fun HomeScreenPreview() {
         onClickPermissionBackground = {},
         onClickMeasurementSummary = {},
         onClickCareLog = {},
+        onClickPushPopDemo = {},
         onClickSettings = {},
     )
 }

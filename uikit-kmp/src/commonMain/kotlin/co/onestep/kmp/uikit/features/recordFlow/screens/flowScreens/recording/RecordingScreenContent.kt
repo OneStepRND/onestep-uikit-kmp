@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -38,7 +37,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,6 +54,7 @@ import co.onestep.kmp.uikit.ui.components.SlideToStopButton
 import co.onestep.kmp.uikit.ui.components.WaterFillWave
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
+import co.onestep.kmp.uikit.navigation.cupertinoPushTransform
 import co.onestep.kmp.uikit.utils.PlatformBackHandler
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.data_is_ready_for_analysis
@@ -79,17 +81,17 @@ internal fun RecordingScreenContent(
 ) {
     PlatformBackHandler { onBackPress() }
 
+    // Stage changes use the same Cupertino push visuals as the nav-level transitions
+    // (RecordingScreenStateless paints an opaque background, so the parallax reads correctly).
+    // contentKey: RecordingScreenData carries action lambdas, so fresh emissions of the same
+    // stage are never equals() — keying the animation on the stage keeps re-emissions (e.g.
+    // initState() right after first composition) from re-running the push onto itself.
+    val dir = if (LocalLayoutDirection.current == LayoutDirection.Ltr) 1 else -1
     AnimatedContent(
         modifier = modifier,
         targetState = screenData,
-        transitionSpec = {
-            slideIntoContainer(
-                AnimatedContentTransitionScope.SlideDirection.End,
-            ) { -it } togetherWith
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Start,
-                ) { it }
-        },
+        contentKey = { it.recordScreenStage },
+        transitionSpec = { cupertinoPushTransform(dir) },
         label = "",
     ) { currentScreenData ->
         RecordingScreenStateless(

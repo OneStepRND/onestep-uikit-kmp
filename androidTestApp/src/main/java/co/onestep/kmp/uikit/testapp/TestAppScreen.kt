@@ -14,4 +14,5 @@ sealed class TestAppScreen {
     data class Summary(val measurement: OSTMotionMeasurement) : TestAppScreen()
     data object PermissionInApp : TestAppScreen()
     data object PermissionBackground : TestAppScreen()
+    data object PushPopDemo : TestAppScreen()
 }

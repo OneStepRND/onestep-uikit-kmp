@@ -142,3 +142,25 @@ public struct OSTCareLogView: UIViewControllerRepresentable {
 
     public func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
 }
+
+// MARK: - Push/Pop Transition Demo (test harnesses only)
+
+/// SwiftUI view demoing the Compose-implemented Cupertino push/pop transition and the
+/// interactive edge-swipe back gesture. Not consumer API.
+///
+/// ```swift
+/// OSTPushPopDemoView(onDismiss: { dismiss() })
+/// ```
+public struct OSTPushPopDemoView: UIViewControllerRepresentable {
+    private let onDismiss: () -> Void
+
+    public init(onDismiss: @escaping () -> Void = {}) {
+        self.onDismiss = onDismiss
+    }
+
+    public func makeUIViewController(context: Context) -> UIViewController {
+        OSTUIKitIos.shared.createPushPopDemoViewController(onDismiss: onDismiss)
+    }
+
+    public func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}

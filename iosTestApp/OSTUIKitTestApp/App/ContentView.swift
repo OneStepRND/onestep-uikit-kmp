@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var showPermissionsInApp = false
     @State private var showPermissionsBackground = false
     @State private var showCareLog = false
+    @State private var showPushPopDemo = false
     @State private var showSettings = false
     @State private var showMeasurementPicker = false
     @State private var lastEvent: String?
@@ -84,6 +85,13 @@ struct ContentView: View {
                         Label("Care Log", systemImage: "list.clipboard")
                     }
                     .accessibilityIdentifier("home.careLog")
+
+                    Button {
+                        showPushPopDemo = true
+                    } label: {
+                        Label("iOS Push/Pop Demo", systemImage: "arrow.left.arrow.right")
+                    }
+                    .accessibilityIdentifier("home.pushPopDemo")
                 }
 
                 if let lastEvent {
@@ -164,6 +172,14 @@ struct ContentView: View {
                 OSTCareLogView(
                     onClose: {
                         showCareLog = false
+                    }
+                )
+                .ignoresSafeArea()
+            }
+            .fullScreenCover(isPresented: $showPushPopDemo) {
+                OSTPushPopDemoView(
+                    onDismiss: {
+                        showPushPopDemo = false
                     }
                 )
                 .ignoresSafeArea()

@@ -12,6 +12,7 @@ import co.onestep.kmp.uikit.bridge.PreferencesBridge
 import co.onestep.kmp.uikit.bridge.RecorderBridge
 import co.onestep.kmp.uikit.di.UIKitServiceLocator
 import co.onestep.kmp.uikit.features.carlog.OSTCareLog
+import co.onestep.kmp.uikit.features.demo.OSTPushPopDemo
 import co.onestep.kmp.uikit.features.permissions.IosNativePermissionFlowRegistry
 import co.onestep.kmp.uikit.features.permissions.IosNativePermissionFlowViewControllerFactory
 import co.onestep.kmp.uikit.features.permissions.OSTPermissionFlow
@@ -226,6 +227,21 @@ object OSTUIKitIos {
         checkConfigured()
         return ComposeUIViewController {
             OSTCareLog(onClose = onClose)
+        }.applyDefaultStyle()
+    }
+
+    /**
+     * Creates a view controller demoing the Cupertino push/pop transition and the interactive
+     * edge-swipe back gesture (test harnesses only — not consumer API).
+     *
+     * @param onDismiss Callback when back is invoked on the demo's root screen.
+     */
+    fun createPushPopDemoViewController(
+        onDismiss: () -> Unit = {},
+    ): UIViewController {
+        // No checkConfigured(): the demo exercises navigation/transitions only, no SDK bridges.
+        return ComposeUIViewController {
+            OSTPushPopDemo(onDismiss = onDismiss)
         }.applyDefaultStyle()
     }
 

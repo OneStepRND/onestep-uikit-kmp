@@ -32,6 +32,7 @@ import co.onestep.android.core.motionLab.OSTMockIMU
 import co.onestep.android.core.onError
 import co.onestep.android.core.onSuccess
 import co.onestep.kmp.uikit.features.carlog.OSTCareLog
+import co.onestep.kmp.uikit.features.demo.OSTPushPopDemo
 import co.onestep.kmp.uikit.features.permissions.OSTPermissionFlow
 import co.onestep.kmp.uikit.features.permissions.OSTPermissionMode
 import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlow
@@ -141,6 +142,7 @@ class MainActivity : ComponentActivity() {
                 onClickPermissionBackground = { screen = TestAppScreen.PermissionBackground },
                 onClickMeasurementSummary = { screen = TestAppScreen.MeasurementPicker },
                 onClickCareLog = { screen = TestAppScreen.CareLog },
+                onClickPushPopDemo = { screen = TestAppScreen.PushPopDemo },
                 onClickSettings = {
                     settingsError = null
                     screen = TestAppScreen.Settings
@@ -227,6 +229,13 @@ class MainActivity : ComponentActivity() {
             is TestAppScreen.PermissionBackground -> OSTPermissionFlow(
                 mode = OSTPermissionMode.BACKGROUND,
                 onComplete = { screen = TestAppScreen.Home },
+            )
+
+            // forceInteractiveBackGesture lets the Compose edge swipe be exercised on Android,
+            // where it is normally off in favor of the system back gesture.
+            is TestAppScreen.PushPopDemo -> OSTPushPopDemo(
+                onDismiss = { screen = TestAppScreen.Home },
+                forceInteractiveBackGesture = true,
             )
         }
     }

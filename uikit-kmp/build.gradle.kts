@@ -14,8 +14,8 @@ plugins {
 group = "co.onestep.kmp"
 
 val versionMajor = 0
-val versionMinor = 2
-val versionPatch = 1
+val versionMinor = 3
+val versionPatch = 0
 
 val baseVersionName = "$versionMajor.$versionMinor.$versionPatch"
 val githubSnapshot = (findProperty("githubSnapshot") as String?)?.toBoolean() == true
