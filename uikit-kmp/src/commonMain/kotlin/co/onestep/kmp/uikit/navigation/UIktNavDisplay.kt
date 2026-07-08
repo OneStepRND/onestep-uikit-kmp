@@ -1,17 +1,11 @@
 package co.onestep.kmp.uikit.navigation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.isSpecified
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import co.onestep.kmp.uikit.features.recordFlow.destinations.CustomTagsDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.HallwayDistanceDestination
@@ -116,22 +110,12 @@ internal fun NavBackStack<NavKey>.popUpToInclusive(key: NavKey) {
 }
 
 /**
- * Shared [NavDisplay] wrapper for all uikit flows, styled after UINavigationController push/pop
- * (see [CupertinoTransition] for the spec and all tuning constants), mirrored automatically for
- * RTL layouts.
- *
- * Back navigation is interactive: on platforms without a system back gesture (iOS) an edge swipe
- * ([cupertinoEdgeSwipeBack]) feeds predictive-back events into the same transition NavDisplay
- * plays programmatically; on Android the system (predictive) back gesture drives it instead.
- *
- * @param interactiveBackGesture opt-in/out override for the Compose edge-swipe gesture. Defaults
- *   to on only where the platform provides no back gesture of its own.
- * @param screenBackground opaque backdrop painted behind every screen. uikit screens are mostly
- *   transparent and rely on a backdrop painted by the flow *outside* the NavDisplay — fine when
- *   both screens moved in lockstep, but the Cupertino parallax shows the underlying screen
- *   through anything transparent, so each entry must be opaque on its own. Defaults to the
- *   design-system screen backdrop (what the flows already paint); pass [Color.Unspecified] to
- *   opt out for fully-opaque screens.
+ * Shared [CupertinoNavDisplay] wrapper for all uikit flows. Only adds the uikit default backdrop:
+ * uikit screens are mostly transparent and rely on a backdrop painted by the flow *outside* the
+ * NavDisplay — fine when both screens moved in lockstep, but the Cupertino parallax shows the
+ * underlying screen through anything transparent, so each entry must be opaque on its own.
+ * Defaults to the design-system screen backdrop (what the flows already paint); pass
+ * [Color.Unspecified] to opt out for fully-opaque screens.
  */
 @Composable
 internal fun UIktNavDisplay(
@@ -142,33 +126,12 @@ internal fun UIktNavDisplay(
     screenBackground: Color = LocalOSColors.current.neutral_m5,
     entryProvider: (NavKey) -> NavEntry<NavKey>,
 ) {
-    // slideInHorizontally is not layout-direction aware, so mirror the offsets manually for RTL.
-    val dir = if (LocalLayoutDirection.current == LayoutDirection.Ltr) 1 else -1
-    NavDisplay(
+    CupertinoNavDisplay(
         backStack = backStack,
-        modifier = modifier.cupertinoEdgeSwipeBack(
-            enabled = interactiveBackGesture && backStack.size > 1,
-        ),
-        onBack = { onBack() },
-        transitionSpec = cupertinoPushSpec(dir),
-        popTransitionSpec = cupertinoPopSpec(dir),
-        predictivePopTransitionSpec = cupertinoPredictivePopSpec(),
-        entryProvider = { key ->
-            val entry = entryProvider(key)
-            // Rewrap so every screen is opaque and carries the Cupertino leading-edge shadow.
-            NavEntry(navEntry = entry) {
-                Box(
-                    Modifier
-                        .cupertinoEdgeShadow()
-                        .then(
-                            if (screenBackground.isSpecified) {
-                                Modifier.background(screenBackground)
-                            } else {
-                                Modifier
-                            },
-                        ),
-                ) { entry.Content() }
-            }
-        },
+        onBack = onBack,
+        modifier = modifier,
+        interactiveBackGesture = interactiveBackGesture,
+        screenBackground = screenBackground,
+        entryProvider = entryProvider,
     )
 }
