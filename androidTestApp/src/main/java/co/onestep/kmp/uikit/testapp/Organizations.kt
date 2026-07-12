@@ -65,6 +65,14 @@ object Organizations {
 
 object AppConstants {
     const val RELEASE_BASE_URL = "https://app.onestep.co/api/"
+
+    /**
+     * Clinician web app host — a DIFFERENT subdomain from the SDK API host ([RELEASE_BASE_URL] /
+     * `app.onestep.co`). The hosted login page lives here (`clinic.onestep.co/login?m=2`) and it
+     * also proxies the clinician API (`clinic.onestep.co/api/clinician/...`), so it is the single
+     * base for both the web sign-in and the OTP exchange.
+     */
+    const val CLINICIAN_WEB_BASE_URL = "https://clinic.onestep.co/"
     const val AVATAR_AANG_DISTINCT_ID = "018fb9ec-d44b-7232-927b-a9e3612321a3"
 
     /** Convenience default so the Distinct ID field is never empty on a fresh install. */

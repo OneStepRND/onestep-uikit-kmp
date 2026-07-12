@@ -56,5 +56,10 @@ enum Organizations {
 
 enum AppConstants {
     static let releaseBaseURL = "https://app.onestep.co/api/"
+    /// Clinician web app host — a DIFFERENT subdomain from the SDK API host (`app.onestep.co`).
+    /// The hosted login page lives here (`clinic.onestep.co/login?m=2`) and it also proxies the
+    /// clinician API (`clinic.onestep.co/api/clinician/...`), so it is the single base for both
+    /// the web sign-in and the OTP exchange.
+    static let clinicianWebBaseURL = "https://clinic.onestep.co/"
     static let avatarAangDistinctId = "018fb9ec-d44b-7232-927b-a9e3612321a3"
 }

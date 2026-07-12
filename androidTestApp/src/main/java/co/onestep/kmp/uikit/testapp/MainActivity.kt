@@ -1,5 +1,6 @@
 package co.onestep.kmp.uikit.testapp
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -38,6 +39,7 @@ import co.onestep.kmp.uikit.features.permissions.OSTPermissionMode
 import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlow
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
+import co.onestep.kmp.uikit.testapp.ui.ClinicianLoginResultScreen
 import co.onestep.kmp.uikit.testapp.ui.ConfigureFlowScreen
 import co.onestep.kmp.uikit.testapp.ui.HomeScreen
 import co.onestep.kmp.uikit.testapp.ui.MeasurementPickerScreen
@@ -50,11 +52,21 @@ class MainActivity : ComponentActivity() {
     private val testApplication get() = application as TestApplication
     private lateinit var prefs: SettingsPrefs
 
+    // Clinician web-login flow state (independent of SDK identification). Snapshot state so the
+    // deep-link callback below can drive recomposition from outside the composition.
+    private val clinicianLoginState = mutableStateOf<ClinicianLoginUiState>(ClinicianLoginUiState.Idle)
+
+    // Set once the user enters the app via clinician web login. Acts as an app-level "signed in"
+    // override so the main screen shows while the SDK identification stays UNIDENTIFIED (clinician
+    // mode — see docs/patient-scope-clinician-mode-design.md).
+    private val clinicianSession = mutableStateOf<ClinicianSession?>(null)
+
     @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         prefs = SettingsPrefs(applicationContext)
+        handleClinicianRedirect(intent)
         val sdk = testApplication.oneStepSdk
 
         setContent {
@@ -76,17 +88,75 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleClinicianRedirect(intent)
+    }
+
+    /**
+     * Handle the clinician web-login deep-link callback (`<scheme>://open/otp?uuid=&otp=`). No-op
+     * for any other intent (e.g. the LAUNCHER intent), so it is safe to call from onCreate.
+     */
+    private fun handleClinicianRedirect(intent: Intent?) {
+        val (uuid, otp) = ClinicianWebLogin.parseRedirect(intent?.data) ?: return
+        clinicianLoginState.value = ClinicianLoginUiState.Exchanging
+        lifecycleScope.launch {
+            clinicianLoginState.value = ClinicianWebLogin.exchangeOtp(
+                environment = prefs.environment,
+                customUrl = prefs.customUrl,
+                uuid = uuid,
+                otp = otp,
+            ).fold(
+                onSuccess = { ClinicianLoginUiState.Success(it) },
+                onFailure = { ClinicianLoginUiState.Error(it.message ?: "Unknown error") },
+            )
+        }
+    }
+
+    private fun startClinicianWebLogin(environment: String, customUrl: String) {
+        prefs.environment = environment
+        prefs.customUrl = customUrl
+        clinicianLoginState.value = ClinicianLoginUiState.InProgress
+        ClinicianWebLogin.launch(this, environment, customUrl)
+    }
+
     @Composable
     private fun MainContent(sdk: OneStep) {
+        val clinicianState = clinicianLoginState.value
+        val clinician = clinicianSession.value
+
+        // Show the login-result screen while a clinician web login is in flight or just finished
+        // (and the user hasn't yet chosen to enter the app).
+        if (clinicianState != ClinicianLoginUiState.Idle) {
+            ClinicianLoginResultScreen(
+                state = clinicianState,
+                onDone = { clinicianLoginState.value = ClinicianLoginUiState.Idle },
+                onEnterApp = { session ->
+                    // Enter the app in clinician mode. The SDK stays UNIDENTIFIED; per-flow
+                    // patient scoping is threaded via a patientId argument (wired separately).
+                    clinicianSession.value = session
+                    clinicianLoginState.value = ClinicianLoginUiState.Idle
+                },
+            )
+            return
+        }
+
         val sdkState by sdk.identificationState.collectAsState()
         var isConnecting by remember { mutableStateOf(false) }
         var loginError by remember { mutableStateOf<String?>(null) }
 
         Box(Modifier.fillMaxSize()) {
-            when (val state = sdkState) {
-                is OSTIdentificationState.Identified -> AuthenticatedContent(
+            val identified = sdkState as? OSTIdentificationState.Identified
+            when {
+                identified != null -> AuthenticatedContent(
                     sdk = sdk,
-                    userId = state.patientId.value,
+                    userId = identified.patientId.value,
+                )
+
+                clinician != null -> AuthenticatedContent(
+                    sdk = sdk,
+                    userId = "clinician",
                 )
 
                 else -> SettingsScreen(
@@ -105,6 +175,7 @@ class MainActivity : ComponentActivity() {
                             loginError = error
                         }
                     },
+                    onClinicianWebLogin = ::startClinicianWebLogin,
                 )
             }
         }
@@ -166,7 +237,10 @@ class MainActivity : ComponentActivity() {
                         if (error == null) screen = TestAppScreen.Home
                     }
                 },
-                onLogout = { sdk.clearPatient() },
+                onLogout = {
+                    sdk.clearPatient()
+                    clinicianSession.value = null
+                },
                 onClose = { screen = TestAppScreen.Home },
             )
 

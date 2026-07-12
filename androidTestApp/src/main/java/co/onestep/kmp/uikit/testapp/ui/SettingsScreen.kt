@@ -58,6 +58,9 @@ fun SettingsScreen(
     onIdentify: (org: Organization, distinctId: String, environment: String, customUrl: String) -> Unit,
     onLogout: (() -> Unit)? = null,
     onClose: (() -> Unit)? = null,
+    // Clinician web-login (Google + OTP on the hosted page). Shown only when provided, i.e. on the
+    // pre-identification login screen — not in the post-login settings sheet.
+    onClinicianWebLogin: ((environment: String, customUrl: String) -> Unit)? = null,
 ) {
     var environment by remember { mutableStateOf(SDKEnvironment.fromRaw(initialEnvironment)) }
     var customUrl by remember { mutableStateOf(initialCustomUrl) }
@@ -195,6 +198,27 @@ fun SettingsScreen(
                 onClick = { identify(AppConstants.AVATAR_AANG_DISTINCT_ID) },
             ) {
                 Text("CONNECT AS AVATAR", fontSize = 16.sp)
+            }
+
+            if (onClinicianWebLogin != null) {
+                Spacer(Modifier.height(24.dp))
+                SectionHeader("Clinician Web Login")
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = "Sign in via the hosted clinician page (Google + OTP). Returns a JWT.",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                )
+                OutlinedButton(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .testTag("settings.clinicianWebLogin"),
+                    enabled = !isConnecting,
+                    onClick = { onClinicianWebLogin(environment.rawValue, customUrl) },
+                ) {
+                    Text("SIGN IN WITH CLINICIAN WEB LOGIN")
+                }
             }
 
             if (onLogout != null) {
