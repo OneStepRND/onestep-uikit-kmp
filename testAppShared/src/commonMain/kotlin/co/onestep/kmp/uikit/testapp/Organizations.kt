@@ -1,11 +1,8 @@
 package co.onestep.kmp.uikit.testapp
 
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-
 /**
- * Test-only organizations, mirroring `iosTestApp`'s `Constants.swift` so the Android and iOS test
- * apps expose the same Organization picker in the Settings/Login screen.
+ * Test-only organizations, shared by the Android and iOS test apps so both expose the same
+ * Organization picker in the Settings/Login screen.
  *
  * These are the same shared test-org credentials the core SDK repo's demo apps use — not new
  * secrets, and never tied to a real patient (no PII/PHI).
@@ -21,14 +18,11 @@ data class Organization(
     val identityVerificationSecret: String,
 ) {
     /** HMAC-SHA256 sign [distinctId] with this org's secret (raw UTF-8 bytes), returning a hex string. */
-    fun signIdentity(distinctId: String): String {
-        val algorithm = "HmacSHA256"
-        val secretKey = SecretKeySpec(identityVerificationSecret.toByteArray(Charsets.UTF_8), algorithm)
-        val mac = Mac.getInstance(algorithm)
-        mac.init(secretKey)
-        val hmacBytes = mac.doFinal(distinctId.toByteArray(Charsets.UTF_8))
-        return hmacBytes.joinToString("") { "%02x".format(it) }
-    }
+    fun signIdentity(distinctId: String): String =
+        hmacSha256(
+            secret = identityVerificationSecret.encodeToByteArray(),
+            message = distinctId.encodeToByteArray(),
+        ).toHexString()
 }
 
 object Organizations {
@@ -76,5 +70,5 @@ object AppConstants {
     const val AVATAR_AANG_DISTINCT_ID = "018fb9ec-d44b-7232-927b-a9e3612321a3"
 
     /** Convenience default so the Distinct ID field is never empty on a fresh install. */
-    const val DEFAULT_DISTINCT_ID = "uikit-kmp-android-test-user"
+    const val DEFAULT_DISTINCT_ID = "uikit-kmp-test-user"
 }

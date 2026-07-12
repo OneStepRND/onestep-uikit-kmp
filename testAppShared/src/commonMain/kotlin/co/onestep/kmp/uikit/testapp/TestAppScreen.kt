@@ -9,7 +9,14 @@ sealed class TestAppScreen {
     data object CareLog : TestAppScreen()
     data object ConfigureFlow : TestAppScreen()
     data object MeasurementPicker : TestAppScreen()
-    data class Recording(val config: OSTRecordingConfiguration) : TestAppScreen()
+    /**
+     * @param returnToCareLog where to land after the recording result: CareLog when launched from
+     *   the Care Log, else Home (so the Home "Last Event" label reflects the outcome).
+     */
+    data class Recording(
+        val config: OSTRecordingConfiguration,
+        val returnToCareLog: Boolean = false,
+    ) : TestAppScreen()
     data class SummaryLoading(val measurementId: String) : TestAppScreen()
     data class Summary(val measurement: OSTMotionMeasurement) : TestAppScreen()
     data object PermissionInApp : TestAppScreen()

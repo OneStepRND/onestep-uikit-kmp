@@ -4,7 +4,9 @@ Kotlin Multiplatform UI kit for the OneStep SDK (Compose Multiplatform, `uikit-k
 Targets: `androidTarget`, `iosArm64`, `iosSimulatorArm64` — **no iosX64** (CMP stopped
 publishing x64 iOS artifacts after 1.11.0-alpha01; do not re-add it).
 Published as an Android library (Maven) and an iOS `OSTUIKit.xcframework` wrapped by the
-root `Package.swift` (SPM). Test harnesses: `androidTestApp/` and `iosTestApp/`.
+root `Package.swift` (SPM). Test harness: `testAppShared/` (shared Compose UI + `TestAppShell`
+native-SDK abstraction, unpublished) with thin platform shells in `androidTestApp/` and
+`iosTestApp/`. New harness features go in `testAppShared/` commonMain, not the shells.
 This is a **library**: every dependency and public API is inherited by every consuming app.
 
 ## Library discipline (scope ladder — stop at the first rung that holds)

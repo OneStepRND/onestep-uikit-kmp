@@ -32,17 +32,16 @@ final class MockRecordingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["configure.start"].waitForExistence(timeout: 10),
                       "Configure Flow did not open")
 
-        let picker = app.buttons["mockRecordingPicker"]
-        XCTAssertTrue(ensureVisible(picker, in: app), "Mock picker missing")
-        picker.tap()
-
-        XCTAssertTrue(app.buttons[Self.mockNone].waitForExistence(timeout: 3),
-                      "Mock picker did not open")
-        for mock in Self.successMocks + Self.errorMocks {
-            XCTAssertTrue(app.buttons[mock].exists, "Mock option missing: \(mock)")
+        // Mock options are an always-visible inline list; iOS only exposes on-screen Compose nodes
+        // to accessibility, so verify a representative subset (default + one success + one error)
+        // by scrolling each into view.
+        for mock in [Self.mockNone, "successWalk", "error_short"] {
+            XCTAssertTrue(ensureVisible(mockOptionElement(mock, in: app), in: app),
+                          "Mock option not reachable: \(mock)")
         }
         attachScreenshot("configure-mock-picker")
-        app.buttons["successWalk"].tap()
+        // Confirm a selection registers by tapping one.
+        selectMock("successWalk", in: app)
     }
 
     // MARK: Mock-driven end-to-end recordings

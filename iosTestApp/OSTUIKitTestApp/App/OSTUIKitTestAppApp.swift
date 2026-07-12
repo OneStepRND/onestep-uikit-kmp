@@ -1,138 +1,188 @@
 import SwiftUI
+import UIKit
+import AuthenticationServices
+import OSTUIKit
 import OSTUIKitKMP
 import OneStepSDK
 
+/// Thin iOS shell around the shared KMP test app (`TestAppRoot` in :testAppShared). All UI and
+/// flow logic is shared with Android; this file only wires the native OneStepSDK, the
+/// ASWebAuthenticationSession clinician login, and the Compose root view controller.
 @main
 struct OSTUIKitTestAppApp: App {
-    @StateObject private var appState = AppState()
+    private let shell: IosTestAppShell
+    private let delegate: NativeShellDelegate
+
+    init() {
+        NetworkLogger.startLogging()
+        let delegate = NativeShellDelegate()
+        // App.init runs on the main thread; OneStep.initialize is @MainActor-isolated.
+        MainActor.assumeIsolated {
+            delegate.initializeSDK()
+        }
+        let shell = IosTestAppShell(delegate: delegate)
+        self.delegate = delegate
+        self.shell = shell
+        delegate.autoLogin(into: shell)
+    }
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if appState.isSDKReady {
-                    ContentView()
-                        .environmentObject(appState)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                Button {
-                                    appState.logout()
-                                } label: {
-                                    Image(systemName: "gearshape")
-                                }
-                            }
-                        }
-                } else if appState.isInitializing {
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .scaleEffect(1.5)
-                        Text("Initializing SDK...")
-                            .font(.headline)
-                        if let error = appState.initError {
-                            Text(error)
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                        }
-                    }
-                } else {
-                    SettingsView(appState: appState)
-                }
-            }
+            TestAppRootView(shell: shell)
+                .ignoresSafeArea()
         }
     }
 }
 
-// MARK: - App State
+/// Hosts the shared Compose UI.
+private struct TestAppRootView: UIViewControllerRepresentable {
+    let shell: IosTestAppShell
 
-class AppState: ObservableObject {
-    @Published var isSDKReady = false
-    @Published var isInitializing = false
-    @Published var initError: String?
-    /// The clinician web-login session (JWT), if the user entered via clinician mode.
-    /// Independent of SDK patient identification; JWT is never logged (HIPAA).
-    @Published private(set) var clinicianSession: ClinicianWebLogin.Session?
-
-    var hasCredentials: Bool {
-        let orgName = UserDefaults.standard.string(forKey: "sdk_orgName") ?? ""
-        let distinctId = UserDefaults.standard.string(forKey: "sdk_distinctId") ?? ""
-        return !orgName.isEmpty && !distinctId.isEmpty && Organizations.find(byName: orgName) != nil
+    func makeUIViewController(context: Context) -> UIViewController {
+        TestAppViewControllerKt.TestAppViewController(shell: shell)
     }
 
-    init() {
-        NetworkLogger.startLogging()
-        if hasCredentials {
-            initializeSDK()
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}
+
+// MARK: - Mock recording (unchanged mechanism)
+
+/// Drives the SDK's mock-recording path. When `MockRecordingName` is set in `UserDefaults` and a
+/// recording finishes, the SDK substitutes the mock payload at S3 upload time, so the backend
+/// analyzes the mock and returns a real, deterministic measurement — even on a stationary device.
+private enum MockRecording {
+    static let userDefaultsKey = "MockRecordingName"
+    static let none = "None"
+
+    /// "None" first: unlike Android's emulator-oriented harness, a real recording is the default
+    /// on an iPhone and mocks are opt-in via the Configure Flow picker.
+    static let options = [
+        none,
+        "successWalk", "stsSuccess", "tugSuccess", "dualTaskSuccess", "romSuccess",
+        "error_curvy", "error_no_cycle", "error_position", "error_other", "error_short", "error_static",
+    ]
+
+    static func apply(_ selection: String) {
+        if selection == none {
+            UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        } else {
+            UserDefaults.standard.set(selection, forKey: userDefaultsKey)
         }
     }
 
+    static func clear() {
+        UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+    }
+}
+
+// MARK: - Native shell delegate
+
+/// Implements the KMP `IosTestAppShellDelegate` against the native OneStepSDK.
+private final class NativeShellDelegate: NSObject, IosTestAppShellDelegate {
+
+    private(set) var initialized = false
+    private var webLoginSession: ASWebAuthenticationSession?
+
+    var sdkAvailable: Bool { initialized }
+
+    var mockOptions: [String] { MockRecording.options }
+
+    /// Initialize the native SDK and wire the uikit-kmp bridges. Safe to call once at launch:
+    /// the bridges resolve `OneStep.shared()` lazily, and patient identification arrives later
+    /// via `setPatient`.
+    @MainActor
     func initializeSDK() {
-        guard !isInitializing else { return }
+        let initResult = OneStep.initialize(onAuthLost: { error in
+            NSLog("[TestApp] OneStep auth lost") // error detail may carry identifiers — not logged (HIPAA)
+        })
+        guard case .success = initResult else {
+            NSLog("[TestApp] OneStep SDK initialization failed")
+            initialized = false
+            return
+        }
+        configureOSTUIKitKMPWithNativeSDK()
+        initialized = true
+        NSLog("[TestApp] Consolidated KMP shell: SDK initialized and bridges configured")
+    }
 
-        let orgName = UserDefaults.standard.string(forKey: "sdk_orgName") ?? ""
-        let distinctId = UserDefaults.standard.string(forKey: "sdk_distinctId") ?? ""
-
-        guard let org = Organizations.find(byName: orgName), !distinctId.isEmpty else { return }
-
-        isInitializing = true
-        initError = nil
-
-        Task { @MainActor [weak self] in
-            let initResult = OneStep.initialize(onAuthLost: { error in
-                print("[TestApp] OneStep auth lost: \(error)")
-            })
-            guard case .success = initResult, case .success(let onestep) = OneStep.shared() else {
-                self?.initError = "SDK initialization failed"
-                self?.isInitializing = false
-                return
+    /// Re-identify from stored credentials so a relaunch lands on the authenticated home screen
+    /// (parity with the previous AppState behavior and with Android's persisted identification).
+    func autoLogin(into shell: IosTestAppShell) {
+        let defaults = UserDefaults.standard
+        let orgName = defaults.string(forKey: "sdk_orgName") ?? ""
+        let distinctId = defaults.string(forKey: "sdk_distinctId") ?? ""
+        guard !distinctId.isEmpty, let org = Organizations.shared.find(byName: orgName) else { return }
+        setPatient(org: org, distinctId: distinctId) { error in
+            if error == nil {
+                shell.setIdentifiedPatient(patientId: distinctId)
             }
+        }
+    }
 
-            let patientResult = await onestep.setPatient(
+    func setPatient(org: Organization, distinctId: String, completion: @escaping (String?) -> Void) {
+        guard initialized, case .success(let onestep) = OneStep.shared() else {
+            completion("OneStep SDK not initialized")
+            return
+        }
+        Task { @MainActor in
+            let result = await onestep.setPatient(
                 apiKey: org.apiKey,
                 customerPatientId: distinctId,
                 identityVerification: org.signIdentity(distinctId: distinctId)
             )
-
-            guard let self else { return }
-            switch patientResult {
+            switch result {
             case .success:
-                // Wire the uikit-kmp framework to the native SDK + register the native permission flow.
-                configureOSTUIKitKMPWithNativeSDK()
-                self.isSDKReady = true
-                self.isInitializing = false
-                print("[TestApp] SDK initialized and patient identified")
+                NSLog("[TestApp] SDK patient identified")
+                completion(nil)
             case .failure(let error):
-                self.initError = "setPatient failed: \(error)"
-                self.isInitializing = false
-                print("[TestApp] setPatient failed: \(error)")
+                NSLog("[TestApp] setPatient failed: \(error)")
+                completion("setPatient failed: \(error)")
             }
         }
     }
 
-    /// Enter the app via a clinician web-login session. Unlike `initializeSDK()`, this does NOT
-    /// call `setPatient` — clinician mode keeps the SDK identification `.unidentified` (see
-    /// docs/patient-scope-clinician-mode-design.md). We still `initialize()` the SDK and wire the
-    /// KMP framework so `OneStep.shared()`-backed bridges on the main screen resolve; per-flow
-    /// patient scoping is threaded via a `patientId` argument (that wiring lands separately).
-    func completeClinicianLogin(_ session: ClinicianWebLogin.Session) {
-        clinicianSession = session
-        // Clinician mode operates on the avatar patient: identify the SDK as the avatar so a real,
-        // authenticated MotionLab backs the flows. (The web-login JWT is not an SDK session, and
-        // OneStep.withPatient needs a clinician session we don't have in this harness.) Reuse the
-        // standard identify path (setPatient) by pointing the stored distinct id at the avatar.
-        UserDefaults.standard.set(AppConstants.avatarAangDistinctId, forKey: "sdk_distinctId")
-        if (UserDefaults.standard.string(forKey: "sdk_orgName") ?? "").isEmpty {
-            UserDefaults.standard.set(Organizations.default.name, forKey: "sdk_orgName")
-        }
-        // No PII/PHI: the JWT and clinician identity are never logged (HIPAA).
-        NSLog("[TestApp] Clinician session established; entering app as avatar patient")
-        initializeSDK()
+    func clearPatient() {
+        // The native SDK keeps its own session; the shared UI treats the shell state as logged out.
+        MockRecording.clear()
     }
 
-    func logout() {
-        isSDKReady = false
-        isInitializing = false
-        initError = nil
-        clinicianSession = nil
+    func setMock(name: String) {
+        NSLog("[TestApp][mock] setMock(\(name))")
+        MockRecording.apply(name)
+        NSLog("[TestApp][mock] after apply, MockRecordingName=\(UserDefaults.standard.string(forKey: MockRecording.userDefaultsKey) ?? "nil")")
+    }
+
+    func applyBaselineMock() {
+        // On-device real recordings are the iOS baseline; mocks stay opt-in per run.
+        NSLog("[TestApp][mock] applyBaselineMock -> clear")
+        MockRecording.clear()
+    }
+
+    func openWebLogin(url: String, callbackScheme: String) {
+        guard let loginUrl = URL(string: url) else { return }
+        let session = ASWebAuthenticationSession(
+            url: loginUrl,
+            callbackURLScheme: callbackScheme
+        ) { [weak self] callbackURL, error in
+            self?.webLoginSession = nil
+            if let callbackURL {
+                // Push the `<scheme>://open/otp?...` callback into the shared UI (parsed there).
+                TestAppDeepLinks.shared.onUrl(url: callbackURL.absoluteString)
+            } else if let error {
+                NSLog("[TestApp] Clinician web login cancelled/failed: \(error.localizedDescription)")
+            }
+        }
+        session.presentationContextProvider = self
+        session.prefersEphemeralWebBrowserSession = false
+        webLoginSession = session
+        session.start()
+    }
+}
+
+extension NativeShellDelegate: ASWebAuthenticationPresentationContextProviding {
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.keyWindow }
+            .first ?? ASPresentationAnchor()
     }
 }

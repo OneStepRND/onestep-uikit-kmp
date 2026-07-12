@@ -21,9 +21,12 @@ final class SummaryUITests: XCTestCase {
         attachScreenshot("00-home")
         summaryButton.tap()
 
-        // Picker sheet: fetchRecentKmpMeasurements loads recent measurements (needs identified SDK).
-        let picker = app.navigationBars["Select Measurement"]
-        XCTAssertTrue(picker.waitForExistence(timeout: 30), "Measurement picker never appeared")
+        // Picker screen (shared Compose UI — its TopAppBar title surfaces as a static text, not a
+        // native navigation bar). Its cancel control carries the summary.cancel identifier.
+        let pickerTitle = app.staticTexts["Select Measurement"].firstMatch
+        let pickerCancel = app.buttons["summary.cancel"].firstMatch
+        let pickerAppeared = pickerTitle.waitForExistence(timeout: 30) || pickerCancel.waitForExistence(timeout: 5)
+        XCTAssertTrue(pickerAppeared, "Measurement picker never appeared")
 
         // Wait for the fetch to populate rows (or the empty state).
         let firstRow = app.buttons["summary.row"].firstMatch

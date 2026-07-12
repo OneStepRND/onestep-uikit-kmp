@@ -3,8 +3,15 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-echo "=== Building debug XCFramework ==="
-./gradlew :uikit-kmp:assembleOSTUIKitDebugXCFramework
+echo "=== Building debug XCFramework (testAppShared: shared test-app UI + uikit-kmp) ==="
+./gradlew :testAppShared:assembleOSTUIKitDebugXCFramework
+
+# The OSTUIKitKMP Swift package's binary target points at uikit-kmp/build/XCFrameworks/debug.
+# For the test harness we substitute the testAppShared-built framework (same module name
+# "OSTUIKit", same uikit-kmp API surface re-exported, plus the shared test-app entry points).
+rm -rf uikit-kmp/build/XCFrameworks/debug/OSTUIKit.xcframework
+mkdir -p uikit-kmp/build/XCFrameworks/debug
+cp -R testAppShared/build/XCFrameworks/debug/OSTUIKit.xcframework uikit-kmp/build/XCFrameworks/debug/
 
 echo ""
 echo "=== Copying compose resources ==="

@@ -49,6 +49,7 @@ kotlin {
 
 dependencies {
     implementation(project(":uikit-kmp"))
+    implementation(project(":testAppShared"))
 
     // Core SDK — same resolution logic as uikit-kmp's androidMain dependency:
     // -PcoreVersion=X overrides verbatim; -PgithubSnapshot=true appends -SNAPSHOT.

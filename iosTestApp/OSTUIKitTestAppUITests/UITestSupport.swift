@@ -122,16 +122,18 @@ extension XCTestCase {
 }
 
 extension XCTestCase {
-    /// Ensures an element is present in the tree, swiping up within a scrollable form/list to reveal
-    /// it if it starts below the fold. Returns whether it ended up existing.
+    /// Ensures an element is present AND hittable, swiping up within a scrollable form/list to
+    /// reveal it if it starts below the fold. Compose (unlike SwiftUI) reports off-screen nodes as
+    /// existing, so mere existence is not enough — the hittability check is what triggers the
+    /// swipe-to-reveal for the shared KMP screens.
     @discardableResult
     func ensureVisible(_ element: XCUIElement, in app: XCUIApplication, maxSwipes: Int = 6) -> Bool {
-        if element.waitForExistence(timeout: 2) { return true }
+        if element.waitForExistence(timeout: 2), element.isHittable { return true }
         for _ in 0..<maxSwipes {
             app.swipeUp()
-            if element.exists { return true }
+            if element.exists && element.isHittable { return true }
         }
-        return element.exists
+        return element.exists && element.isHittable
     }
 }
 
@@ -180,25 +182,40 @@ extension XCTestCase {
         if isOn != on { toggle.tap() }
     }
 
-    /// Selects a mock in the Configure Flow menu picker. Opens `mockRecordingPicker`, then taps the
-    /// option by its label (SwiftUI menu items surface as buttons, matching the SDK Example app).
+    /// Selects a mock in the Configure Flow dropdown (shared Compose UI). Opens
+    /// `mockRecordingPicker`, then taps the option, which carries a `mockOption.<name>` testTag
+    /// (surfaced to iOS as an accessibility identifier), falling back to a label match.
     func selectMock(_ name: String, in app: XCUIApplication) {
-        let picker = app.buttons["mockRecordingPicker"]
-        guard ensureVisible(picker, in: app) else {
-            XCTFail("mockRecordingPicker not found")
-            return
+        // Mock options are an always-visible inline single-select list that sits below the fold in
+        // a Compose scroll container. A tap issued immediately after a swipe can be swallowed by the
+        // scroll settle, so tap, let it settle, then CONFIRM the picker header reflects the choice
+        // (`Mock recording: <name>`), retrying a few times. The header is the source of truth for
+        // what `selectedMock` will pass to `onStartFlow`.
+        let header = app.staticTexts["mockRecordingPicker"]
+        for _ in 0..<8 {
+            if header.exists && header.label.contains(name) { return }
+            let option = mockOptionElement(name, in: app)
+            if option.exists && option.isHittable {
+                option.tap()
+                usleep(600_000)
+                if header.exists && header.label.contains(name) { return }
+            } else {
+                app.swipeUp()
+                usleep(400_000)
+            }
         }
-        picker.tap()
-        let option = app.buttons[name].firstMatch
-        if option.waitForExistence(timeout: 3) {
-            option.tap()
-        } else {
-            // Fallback: some menu items surface as other element types.
-            let alt = app.descendants(matching: .any).matching(
-                NSPredicate(format: "label == %@", name)
-            ).firstMatch
-            if alt.waitForExistence(timeout: 2) { alt.tap() }
-        }
+        // Best effort: one final tap if reachable. Downstream assertions verify the real outcome
+        // (header may have scrolled off for options deep in the list).
+        let option = mockOptionElement(name, in: app)
+        if option.exists && option.isHittable { option.tap() }
+    }
+
+    /// A mock dropdown option, queried by its `mockOption.<name>` testTag across button/other/
+    /// staticText element types (Compose surfaces the DropdownMenuItem inconsistently by type).
+    func mockOptionElement(_ name: String, in app: XCUIApplication) -> XCUIElement {
+        let id = "mockOption.\(name)"
+        let byId = app.descendants(matching: .any).matching(identifier: id).firstMatch
+        return byId
     }
 
     /// Performs the slide-to-stop gesture on the Compose recording screen (a Skia canvas with no

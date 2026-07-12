@@ -149,8 +149,10 @@ Build checks:
 
 ## iOS test app
 
-`iosTestApp/` hosts **OSTUIKitTestApp**, a small SwiftUI harness that consumes the local
-`uikit-kmp/OSTUIKitKMP` package (XcodeGen project — the xcodeproj is generated, not committed):
+`iosTestApp/` hosts **OSTUIKitTestApp**, a thin Swift shell around the shared KMP test app
+(`testAppShared/` — the same Compose UI the Android harness uses). It consumes the local
+`uikit-kmp/OSTUIKitKMP` package, whose binary framework is built from `:testAppShared` by
+`rebuild.sh` (XcodeGen project — the xcodeproj is generated, not committed):
 
 ```bash
 ./iosTestApp/rebuild.sh   # builds the debug XCFramework, refreshes compose resources,
