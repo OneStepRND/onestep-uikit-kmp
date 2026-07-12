@@ -18,7 +18,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,6 +34,7 @@ import co.onestep.kmp.uikit.testapp.ui.HomeScreen
 import co.onestep.kmp.uikit.testapp.ui.MeasurementPickerScreen
 import co.onestep.kmp.uikit.testapp.ui.SettingsScreen
 import co.onestep.kmp.uikit.testapp.ui.SummaryLoadingScreen
+import co.onestep.kmp.uikit.testapp.ui.TestAppTheme
 import kotlinx.coroutines.launch
 
 /**
@@ -47,10 +47,10 @@ fun TestAppRoot(
     shell: TestAppShell,
     prefs: SettingsPrefs,
 ) {
-    MaterialTheme {
+    TestAppTheme {
         if (!shell.sdkAvailable) {
             InitFailedScreen()
-            return@MaterialTheme
+            return@TestAppTheme
         }
 
         val scope = rememberCoroutineScope()
@@ -100,7 +100,7 @@ fun TestAppRoot(
                     }
                 },
             )
-            return@MaterialTheme
+            return@TestAppTheme
         }
 
         val identifiedPatientId by shell.identifiedPatientId.collectAsState()
@@ -322,7 +322,7 @@ private fun InitFailedScreen() {
     ) {
         Text(
             text = "OneStep SDK failed to initialize.\nCheck the platform logs for details.",
-            color = Color.Red,
+            color = MaterialTheme.colorScheme.error,
             fontSize = 18.sp,
             textAlign = TextAlign.Center,
         )

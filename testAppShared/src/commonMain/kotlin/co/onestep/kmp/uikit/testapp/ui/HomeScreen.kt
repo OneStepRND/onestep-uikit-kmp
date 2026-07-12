@@ -21,7 +21,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -72,7 +71,7 @@ fun HomeScreen(
                 modifier = Modifier.padding(start = 16.dp, top = 12.dp),
                 text = "user: $userId",
                 fontSize = 12.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             SectionHeader("Theme")
@@ -98,7 +97,7 @@ fun HomeScreen(
                         .testTag("home.lastEvent"),
                     text = lastEvent,
                     fontSize = 13.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 

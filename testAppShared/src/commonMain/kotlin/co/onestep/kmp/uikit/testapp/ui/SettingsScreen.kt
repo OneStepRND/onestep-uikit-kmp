@@ -139,7 +139,7 @@ fun SettingsScreen(
                 Text(
                     text = selectedOrg.appId,
                     fontSize = 12.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     modifier = Modifier.padding(start = 16.dp),
                 )
@@ -163,7 +163,7 @@ fun SettingsScreen(
                 Text(
                     modifier = Modifier.padding(top = 12.dp),
                     text = errorMessage,
-                    color = Color.Red,
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
 
@@ -185,7 +185,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 text = "or",
                 fontSize = 14.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
             Button(
@@ -207,7 +207,7 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     text = "Sign in via the hosted clinician page (Google + OTP). Returns a JWT.",
                     fontSize = 12.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 OutlinedButton(
                     modifier = Modifier

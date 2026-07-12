@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -62,7 +63,7 @@ fun ClinicianLoginResultScreen(
             is ClinicianLoginUiState.Error -> Text(
                 modifier = Modifier.testTag("clinicianLogin.error"),
                 text = "Login failed: ${state.message}",
-                color = Color.Red,
+                color = MaterialTheme.colorScheme.error,
             )
 
             ClinicianLoginUiState.Idle -> Unit
@@ -104,7 +105,13 @@ private fun Progress(message: String) {
 
 @Composable
 private fun SuccessBody(session: ClinicianSession) {
-    Text(text = "Signed in ✓", color = Color(0xFF2E7D32), fontSize = 18.sp)
+    // Material has no "success" role; pick a green legible against the current background.
+    val success = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) {
+        Color(0xFF81C784)
+    } else {
+        Color(0xFF2E7D32)
+    }
+    Text(text = "Signed in ✓", color = success, fontSize = 18.sp)
 
     Text(text = "JWT", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
     Text(
