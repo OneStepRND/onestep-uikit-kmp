@@ -127,7 +127,10 @@ private func toKmp(_ m: OneStepSDK.OSTMotionMeasurement) -> KMPMotionMeasurement
 /// Drives the native OneStep recorder for the KMP flow, exactly like `WalkRecordingStore`. Owns the
 /// Combine subscriptions to `recorderState` / `analyzerState` / `stepsCount` and pushes updates into
 /// the KMP `SwiftRecorderBridgeAdapter` (set via `attach(adapter:)` after construction).
-final class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
+///
+/// Non-final so the patient-scoped clinician-mode variant (`PatientScopedRecorderDelegate`) can
+/// subclass it and pin recording to a patient-bound MotionLab.
+class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
 
     private let recorder: (any OSTRecorderProtocol)?
     private let motionLab: (any MotionLab)?
@@ -144,17 +147,23 @@ final class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
     /// default (60s); updated on each start.
     private var recordingLimitMs: Int64 = 60_000
 
-    override init() {
+    /// Designated init. Injecting the `MotionLab` lets a patient-scoped subclass supply a
+    /// patient-bound lab resolved inside `OneStep.withPatient` instead of the auth-bound singleton.
+    init(motionLab: (any MotionLab)?) {
+        self.motionLab = motionLab
+        self.recorder = motionLab?.recorder
+        super.init()
+    }
+
+    /// Current-user convenience init: resolve the auth-bound MotionLab from the shared SDK.
+    convenience override init() {
         if case .success(let onestep) = OneStep.shared(),
            case .success(let lab) = onestep.motionLab() {
-            self.motionLab = lab
-            self.recorder = lab.recorder
+            self.init(motionLab: lab)
         } else {
             print("OSTUIKitKMP: OneStep SDK not initialized — recorder bridge is inert")
-            self.motionLab = nil
-            self.recorder = nil
+            self.init(motionLab: nil)
         }
-        super.init()
     }
 
     /// Wire the adapter back-reference and begin observing recorder/analyzer/steps publishers.
@@ -359,6 +368,47 @@ final class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
     }
 }
 
+// MARK: - Patient-scoped recorder delegate (clinician mode)
+
+/// Clinician-mode recorder delegate: bound to a specific patient's MotionLab, resolved inside
+/// `OneStep.withPatient(patientId)`. Mirrors OneStepUIKit's `PatientScopedSDK.withPatientBinding`.
+///
+/// The native recorder captures its owner *ambiently* at `start` (there is no per-call owner
+/// parameter), so `start` is pinned inside a `withPatient` block to attribute the recording to the
+/// right patient. The SDK's global identification state is never changed.
+final class PatientScopedRecorderDelegate: NativeRecorderDelegate {
+    private let patientId: OSTPatientId
+
+    init(patientId: OSTPatientId) {
+        self.patientId = patientId
+        // Resolve the patient-bound MotionLab inside the scope; the product is cached for the
+        // scope's lifetime and stays valid after the block returns.
+        let lab = OneStep.withPatient(patientId) { $0.getMotionLab() }
+        super.init(motionLab: lab)
+    }
+
+    override func start(
+        activityType: String,
+        durationMs: Int64,
+        sensorEnhancedMode: Bool,
+        userInputMetadata: KMPUserInputMetaData?,
+        customMetadata: [String: String]?,
+        completion: @escaping () -> Void
+    ) {
+        // Pin the recording's owner to this patient for the duration of the start call.
+        OneStep.withPatient(patientId) { _ in
+            super.start(
+                activityType: activityType,
+                durationMs: durationMs,
+                sensorEnhancedMode: sensorEnhancedMode,
+                userInputMetadata: userInputMetadata,
+                customMetadata: customMetadata,
+                completion: completion
+            )
+        }
+    }
+}
+
 // MARK: - SDK delegate
 
 /// Bridges the KMP `OSTSDKBridge` to the native `OneStep` SDK. Pushes SDK state / events into the
@@ -474,19 +524,27 @@ final class NativeSDKDelegate: NSObject, IosSDKDelegate {
 final class MotionDataServiceProvider: @unchecked Sendable {
     private let lock = NSLock()
     private var cached: (any OSTMotionDataService)?
+    private let patientId: OSTPatientId?
+
+    /// `patientId == nil` → auth-bound (current-user) resolution. Non-nil → the data service is
+    /// resolved inside `OneStep.withPatient(patientId)`, so insights/norms are patient-scoped
+    /// (clinician mode).
+    init(patientId: OSTPatientId? = nil) {
+        self.patientId = patientId
+    }
 
     /// Kick off service resolution early (at configure time) so the summary rarely has to block.
     func warmUp() {
         Task.detached { [weak self] in
-            let service = await MotionDataServiceProvider.fetch()
-            self?.store(service)
+            guard let self else { return }
+            self.store(await self.fetch())
         }
     }
 
     /// Non-blocking accessor for the async `InsightsBridge`.
     func serviceAsync() async -> (any OSTMotionDataService)? {
         if let cached = current() { return cached }
-        let service = await MotionDataServiceProvider.fetch()
+        let service = await fetch()
         store(service)
         return service
     }
@@ -498,7 +556,7 @@ final class MotionDataServiceProvider: @unchecked Sendable {
         if let cached = current() { return cached }
         let semaphore = DispatchSemaphore(value: 0)
         Task.detached { [self] in
-            store(await MotionDataServiceProvider.fetch())
+            store(await self.fetch())
             semaphore.signal()
         }
         _ = semaphore.wait(timeout: .now() + 8)
@@ -516,7 +574,13 @@ final class MotionDataServiceProvider: @unchecked Sendable {
         cached = service
     }
 
-    private static func fetch() async -> (any OSTMotionDataService)? {
+    private func fetch() async -> (any OSTMotionDataService)? {
+        if let patientId {
+            // Clinician mode: resolve the patient-scoped Insights synchronously inside the scope,
+            // then await its data service outside the (non-async) withPatient block.
+            let insights = OneStep.withPatient(patientId) { $0.getInsights() }
+            return await insights.getMotionDataService()
+        }
         guard case .success(let onestep) = OneStep.shared(),
               case .success(let insights) = onestep.insights() else { return nil }
         return await insights.getMotionDataService()
@@ -802,6 +866,35 @@ final class NativeInsightsBridge: NSObject, InsightsBridge {
     }
 }
 
+// MARK: - Patient-scoped bridges factory (clinician mode)
+
+/// Builds a patient-bound `PatientScopedBridges` bundle for an explicit patient id, so a clinician
+/// host can launch `OSTRecordingFlowView(config:patientId:)` for any patient. Registered
+/// automatically by `configureOSTUIKitKMPWithNativeSDK()`, so hosts get clinician mode with no extra
+/// setup beyond passing `patientId` to the view.
+///
+/// Each `create` builds fresh delegates bound to `withPatient(patientId)`; the SDK's global
+/// identification state is untouched. The `patientId` never appears in analytics (HIPAA).
+final class NativePatientScopedBridgesFactory: NSObject, PatientScopedBridgesFactory {
+    func create(patientId: String) -> PatientScopedBridges {
+        let id = OSTPatientId(rawValue: patientId)
+
+        let recorderDelegate = PatientScopedRecorderDelegate(patientId: id)
+        let recorderAdapter = SwiftRecorderBridgeAdapter(delegate: recorderDelegate)
+        recorderDelegate.attach(adapter: recorderAdapter)
+
+        // Patient-scoped data service provider shared by both direct bridges.
+        let motionDataProvider = MotionDataServiceProvider(patientId: id)
+        motionDataProvider.warmUp()
+
+        return PatientScopedBridges(
+            recorderBridge: recorderAdapter,
+            insightsBridge: NativeInsightsBridge(provider: motionDataProvider),
+            motionDataBridge: NativeMotionDataBridge(provider: motionDataProvider)
+        )
+    }
+}
+
 // MARK: - One-call configuration
 
 /// Wire all KMP bridges to the native OneStep SDK and register the native permission flow. Call once
@@ -830,7 +923,8 @@ public func configureOSTUIKitKMPWithNativeSDK() {
         ttsPlayer: PlatformTTSPlayer(),
         permissionsManager: PlatformPermissionsManager(),
         resourceProvider: ResourceProvider(),
-        analyticsHandler: nil
+        analyticsHandler: nil,
+        patientScopedBridgesFactory: NativePatientScopedBridgesFactory()
     )
 
     OSTUIKitKMPNativePermissions.register()

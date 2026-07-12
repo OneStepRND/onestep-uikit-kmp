@@ -34,6 +34,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import co.onestep.kmp.uikit.bridge.Permission
 import co.onestep.kmp.uikit.bridge.PermissionStatus
+import co.onestep.kmp.uikit.bridge.resolveSessionBridges
 import co.onestep.kmp.uikit.di.UIKitServiceLocator
 import co.onestep.kmp.uikit.features.audio.PlatformAudioPlayerAdapter
 import co.onestep.kmp.uikit.features.audio.PlatformTTSPlayerAdapter
@@ -142,12 +143,25 @@ internal data object EmptyAnalysisDestination : UIktDestination
 @Composable
 internal fun RecordFlowNavGraph(
     config: OSTRecordingConfiguration,
+    patientId: String? = null,
     onResult: (OSTEvent) -> Unit,
     onDismiss: () -> Unit,
     shouldShowSoundInstructions: () -> Boolean = { false },
     onAskMicrophonePermission: () -> Unit = {},
     onGoToSettings: () -> Unit = {},
 ) {
+    // Resolve the patient-bound bridge bundle once per launch. null patientId = current-user mode
+    // (today's auth-bound singletons). Non-null = clinician mode: build a patient-scoped bundle via
+    // the registered factory, failing fast if none was configured — silently falling back to the
+    // singleton would attribute a patient's recording to the wrong identity.
+    val bridges = remember(patientId) {
+        resolveSessionBridges(
+            patientId = patientId,
+            currentUserBridges = { UIKitServiceLocator.currentUserBridges() },
+            patientScopedBridgesFactory = UIKitServiceLocator.patientScopedBridgesFactory,
+        )
+    }
+
     val resourceProvider = UIKitServiceLocator.resourceProvider
     val featureFlags = UIKitServiceLocator.featureFlagsBridge
     val permissionsManager = UIKitServiceLocator.permissionsManager
@@ -233,14 +247,18 @@ internal fun RecordFlowNavGraph(
         backStack.add(next)
     }
 
-    val viewModel = remember {
+    val viewModel = remember(patientId) {
         MotionRecorderViewModel(
-            recorderBridge = UIKitServiceLocator.recorderBridge,
+            // Patient-scoped in clinician mode; the auth-bound singleton in current-user mode.
+            recorderBridge = bridges.recorderBridge,
             audioPlayer = PlatformAudioPlayerAdapter(UIKitServiceLocator.audioPlayer),
             ttsPlayer = PlatformTTSPlayerAdapter(UIKitServiceLocator.ttsPlayer),
             preferenceManager = UIKitServiceLocator.preferencesBridge,
             resourceProvider = resourceProvider,
+            // sdkBridge stays the singleton: sdkState/events are not patient-scoped, and the only
+            // patient-touching use (hallway-length metadata) is suppressed via isPatientSession.
             sdkBridge = UIKitServiceLocator.sdkBridge,
+            isPatientSession = patientId != null,
         ).apply {
             setConfiguration(config)
             // Inject the tracker so the VM can fire the recording-phase measurement events
@@ -866,7 +884,9 @@ internal fun RecordFlowNavGraph(
                 // it), which would route back to the same error screen — so bypass the state
                 // check and surface the refreshed measurement directly to the summary.
                 scope.launch {
-                    val refreshed = UIKitServiceLocator.recorderBridge.readSingleMotionMeasurement(uuid)
+                    // Re-read through the same (patient-scoped in clinician mode) recorder the flow
+                    // recorded with, not the singleton, so the refreshed measurement resolves in scope.
+                    val refreshed = bridges.recorderBridge.readSingleMotionMeasurement(uuid)
                     if (refreshed != null) {
                         resultMeasurement = refreshed
                         backStack.popUpToInclusive(ErrorResultDestination)

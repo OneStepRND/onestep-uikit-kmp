@@ -5,6 +5,7 @@ import co.onestep.kmp.uikit.bridge.FeatureFlagsBridge
 import co.onestep.kmp.uikit.bridge.InsightsBridge
 import co.onestep.kmp.uikit.bridge.MotionDataBridge
 import co.onestep.kmp.uikit.bridge.OSTSDKBridge
+import co.onestep.kmp.uikit.bridge.PatientScopedBridgesFactory
 import co.onestep.kmp.uikit.bridge.PlatformAudioPlayer
 import co.onestep.kmp.uikit.bridge.PlatformPermissionsManager
 import co.onestep.kmp.uikit.bridge.PlatformTTSPlayer
@@ -83,6 +84,7 @@ object OSTUIKitIos {
         permissionsManager: PlatformPermissionsManager = PlatformPermissionsManager(),
         resourceProvider: ResourceProvider = ResourceProvider(),
         analyticsHandler: OSTUIKitAnalyticsHandler? = null,
+        patientScopedBridgesFactory: PatientScopedBridgesFactory? = null,
     ) {
         UIKitServiceLocator.configure(
             sdkBridge = sdkBridge,
@@ -96,6 +98,7 @@ object OSTUIKitIos {
             permissionsManager = permissionsManager,
             resourceProvider = resourceProvider,
             analyticsHandler = analyticsHandler,
+            patientScopedBridgesFactory = patientScopedBridgesFactory,
         )
     }
 
@@ -132,11 +135,12 @@ object OSTUIKitIos {
      */
     fun createRecordingFlowViewController(
         config: OSTRecordingConfiguration,
+        patientId: String? = null,
         onResult: (OSTEvent) -> Unit,
     ): UIViewController {
         checkConfigured()
         return ComposeUIViewController {
-            OSTRecordingFlow(config = config, onResult = onResult)
+            OSTRecordingFlow(config = config, patientId = patientId, onResult = onResult)
         }.applyDefaultStyle()
     }
 
@@ -149,12 +153,13 @@ object OSTUIKitIos {
      */
     fun createRecordingFlowViewController(
         config: OSTRecordingConfiguration,
+        patientId: String? = null,
         onResult: (OSTEvent) -> Unit,
         onDismiss: () -> Unit,
     ): UIViewController {
         checkConfigured()
         return ComposeUIViewController {
-            OSTRecordingFlow(config = config, onResult = onResult, onDismiss = onDismiss)
+            OSTRecordingFlow(config = config, patientId = patientId, onResult = onResult, onDismiss = onDismiss)
         }.applyDefaultStyle()
     }
 

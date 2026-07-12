@@ -46,10 +46,16 @@ import org.jetbrains.compose.resources.StringResource
  * [co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration.hallwayLengthMeters])
  * that value pre-fills the screen synchronously and no metadata read is issued.
  *
- * Note: unlike the Android uikit — which reads a synchronous local cache and gates persistence on
- * an active patient scope — KMP has no patient-scope concept, so the SDK metadata is always the
- * single-user store. The short-hallway *suppression* preference remains device-local on
- * [PreferencesBridge]; only the hallway *length* moved to SDK metadata.
+ * Note: in current-user (patient-app) mode the SDK metadata is the single-user store, so the
+ * last-entered length follows the user across devices. In **clinician mode** ([isPatientSession] =
+ * true) both the metadata read and write are suppressed: the hallway length is a property of the
+ * clinic hallway, not the patient, so per-patient persistence would scatter the same physical value
+ * across patient stores, and writing it to the clinician's own store would leak session state
+ * across patients. The clinician host instead pre-fills the value via
+ * [co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration.hallwayLengthMeters]
+ * (still honored through [hostHallwayLengthMetersProvider]). This matches the legacy Android-uikit
+ * behavior, which gated persistence on an active patient scope. The short-hallway *suppression*
+ * preference remains device-local on [PreferencesBridge] in both modes.
  *
  * [activityTypeProvider] returns the current activity type; it drives the six-vs-two-minute
  * key/preference selection and the recommended length, so it always reflects the ViewModel's
@@ -62,6 +68,12 @@ internal class HallwayDistanceManager(
     private val coroutineScope: CoroutineScope,
     private val activityTypeProvider: () -> OSTActivityType,
     private val hostHallwayLengthMetersProvider: () -> Float? = { null },
+    /**
+     * True for clinician-mode (patient-scoped) flows. When true, the SDK custom-metadata read in
+     * [loadSavedLength] and the write in [saveHallwayLengthToMetadata] are both suppressed; the
+     * host still pre-fills via [hostHallwayLengthMetersProvider].
+     */
+    private val isPatientSession: Boolean = false,
 ) {
     private val isSixMin: Boolean get() = activityTypeProvider() == OSTActivityType.SIX_MINUTE_WALK
 
@@ -121,6 +133,10 @@ internal class HallwayDistanceManager(
             applySavedMeters(hostMeters)
             return
         }
+
+        // Clinician mode: no metadata read — the length is not persisted per patient. The host
+        // pre-fill above is the only source; absent that the clinician enters it each session.
+        if (isPatientSession) return
 
         val key = hallwayLengthKey
         cachedMetersByKey[key]?.let {
@@ -220,6 +236,10 @@ internal class HallwayDistanceManager(
      * merge PATCH; a failure just means the next successful identify rehydrates from the backend.
      */
     fun saveHallwayLengthToMetadata() {
+        // Clinician mode: never write the length to a per-user metadata store (would leak the
+        // clinic hallway value into the clinician's or a patient's store). The committed length is
+        // still attached to the measurement's walkCourseLength — that is not suppressed here.
+        if (isPatientSession) return
         val displayValue = hallwayLengthForCurrentTest ?: return
         val valueInMeters: Float = if (isImperialSystem()) {
             displayValue / METERS_TO_FEET_RATIO

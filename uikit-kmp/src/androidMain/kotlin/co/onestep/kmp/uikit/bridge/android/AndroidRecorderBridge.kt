@@ -23,9 +23,28 @@ import co.onestep.kmp.uikit.models.OSTWalkCourseLength
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 
-class AndroidRecorderBridge(private val oneStep: OneStep) : RecorderBridge {
+class AndroidRecorderBridge private constructor(
+    private val motionLabProvider: () -> CoreMotionLab,
+) : RecorderBridge {
 
-    private val motionLab get() = oneStep.getMotionLab().getOrThrow { IllegalStateException("MotionLab unavailable: ${it.message}") }
+    /**
+     * Current-user (patient-app) path: resolve the auth-bound MotionLab lazily from the [OneStep]
+     * singleton on each access, exactly as before.
+     */
+    constructor(oneStep: OneStep) : this(
+        motionLabProvider = {
+            oneStep.getMotionLab().getOrThrow { IllegalStateException("MotionLab unavailable: ${it.message}") }
+        },
+    )
+
+    /**
+     * Clinician-mode path: bound to a patient-scoped MotionLab already resolved inside a
+     * `OneStep.withPatient(patientId) { … }` block (see `AndroidPatientScopedBridgesFactory`). The
+     * recorder is therefore owner-bound to that patient.
+     */
+    constructor(motionLab: CoreMotionLab) : this(motionLabProvider = { motionLab })
+
+    private val motionLab get() = motionLabProvider()
 
     override val recorderState: StateFlow<OSTRecorderState>
         get() = object : StateFlow<OSTRecorderState> {

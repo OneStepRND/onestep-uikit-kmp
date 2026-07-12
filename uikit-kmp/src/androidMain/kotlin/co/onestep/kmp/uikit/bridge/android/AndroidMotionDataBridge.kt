@@ -12,16 +12,33 @@ import co.onestep.kmp.uikit.models.OSTParamName
 import co.onestep.kmp.uikit.models.OSTParameterMetadata
 import kotlinx.coroutines.runBlocking
 
-class AndroidMotionDataBridge(private val oneStep: OneStep) : MotionDataBridge {
+class AndroidMotionDataBridge private constructor(
+    private val serviceProvider: () -> OSTMotionDataService,
+) : MotionDataBridge {
 
-    private val service: OSTMotionDataService by lazy {
-        runBlocking {
-            oneStep.getInsights()
-                .getOrThrow { IllegalStateException("Insights unavailable: ${it.message}") }
-                .getMotionDataService()
-                .getOrThrow { IllegalStateException("MotionDataService unavailable: ${it.message}") }
-        }
-    }
+    /**
+     * Current-user path: resolve the auth-bound [OSTMotionDataService] lazily from the [OneStep]
+     * singleton on first use (the resolution is `suspend`, so it is bridged with `runBlocking` off
+     * the caller thread, exactly as before).
+     */
+    constructor(oneStep: OneStep) : this(
+        serviceProvider = {
+            runBlocking {
+                oneStep.getInsights()
+                    .getOrThrow { IllegalStateException("Insights unavailable: ${it.message}") }
+                    .getMotionDataService()
+                    .getOrThrow { IllegalStateException("MotionDataService unavailable: ${it.message}") }
+            }
+        },
+    )
+
+    /**
+     * Clinician-mode path: bound to a patient-scoped [OSTMotionDataService] already resolved inside
+     * a `OneStep.withPatient(patientId) { … }` block.
+     */
+    constructor(service: OSTMotionDataService) : this(serviceProvider = { service })
+
+    private val service: OSTMotionDataService by lazy { serviceProvider() }
 
     override fun mainParam(motionMeasurement: OSTMotionMeasurement): Pair<OSTParamName, Float>? {
         val entry = service.mainParam(motionMeasurement.toCore()) ?: return null

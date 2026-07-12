@@ -7,6 +7,8 @@ import co.onestep.kmp.uikit.bridge.FeatureFlagsBridge
 import co.onestep.kmp.uikit.bridge.InsightsBridge
 import co.onestep.kmp.uikit.bridge.MotionDataBridge
 import co.onestep.kmp.uikit.bridge.OSTSDKBridge
+import co.onestep.kmp.uikit.bridge.PatientScopedBridges
+import co.onestep.kmp.uikit.bridge.PatientScopedBridgesFactory
 import co.onestep.kmp.uikit.bridge.PlatformAudioPlayer
 import co.onestep.kmp.uikit.bridge.PlatformPermissionsManager
 import co.onestep.kmp.uikit.bridge.PlatformTTSPlayer
@@ -32,6 +34,10 @@ object UIKitServiceLocator {
     private var _resourceProvider: ResourceProvider? = null
     private var _analyticsHandler: OSTUIKitAnalyticsHandler? = null
 
+    // App-lifetime clinician-mode config: the *factory*, not a scope. Null in single-patient hosts.
+    // The per-launch patient scope is never stored here — it lives on the flow's composition only.
+    private var _patientScopedBridgesFactory: PatientScopedBridgesFactory? = null
+
     val sdkBridge: OSTSDKBridge
         get() = _sdkBridge ?: error("UIKitServiceLocator not configured: sdkBridge is null")
     val recorderBridge: RecorderBridge
@@ -54,6 +60,14 @@ object UIKitServiceLocator {
         get() = _resourceProvider ?: error("UIKitServiceLocator not configured: resourceProvider is null")
     val analyticsHandler: OSTUIKitAnalyticsHandler?
         get() = _analyticsHandler
+
+    /**
+     * Clinician-mode bridge factory, or null when the host configured single-patient (current-user)
+     * mode only. When a flow is launched with a non-null `patientId` but this is null, the flow
+     * fails fast rather than silently attributing the recording to the auth-bound singleton.
+     */
+    val patientScopedBridgesFactory: PatientScopedBridgesFactory?
+        get() = _patientScopedBridgesFactory
 
     // Analytics trackers are rebuilt whenever the handler changes (configure/reset). They
     // are null when no handler was provided, so screens/VMs no-op instead of crashing.
@@ -92,6 +106,7 @@ object UIKitServiceLocator {
         permissionsManager: PlatformPermissionsManager,
         resourceProvider: ResourceProvider? = null,
         analyticsHandler: OSTUIKitAnalyticsHandler? = null,
+        patientScopedBridgesFactory: PatientScopedBridgesFactory? = null,
     ) {
         _sdkBridge = sdkBridge
         _recorderBridge = recorderBridge
@@ -106,7 +121,20 @@ object UIKitServiceLocator {
         _analyticsHandler = analyticsHandler
         _recordFlowAnalyticsTracker = analyticsHandler?.let { RecordFlowAnalyticsTracker(it) }
         _summaryAnalyticsTracker = analyticsHandler?.let { SummaryAnalyticsTracker(it) }
+        _patientScopedBridgesFactory = patientScopedBridgesFactory
     }
+
+    /**
+     * The auth-bound (current-user) bridge bundle used by patient-app mode. Reads the singletons
+     * configured at startup — the same instances the flow resolved directly before clinician mode
+     * existed, so single-patient hosts are unaffected.
+     */
+    fun currentUserBridges(): PatientScopedBridges =
+        PatientScopedBridges(
+            recorderBridge = recorderBridge,
+            insightsBridge = insightsBridge,
+            motionDataBridge = motionDataBridge,
+        )
 
     /**
      * Reset all dependencies. Useful for testing.
@@ -125,5 +153,6 @@ object UIKitServiceLocator {
         _analyticsHandler = null
         _recordFlowAnalyticsTracker = null
         _summaryAnalyticsTracker = null
+        _patientScopedBridgesFactory = null
     }
 }

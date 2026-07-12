@@ -81,6 +81,10 @@ internal class MotionRecorderViewModel(
     private val preferenceManager: PreferencesBridge,
     private val recorderBridge: RecorderBridge,
     private val sdkBridge: OSTSDKBridge,
+    // True for clinician-mode (patient-scoped) launches. Threaded into HallwayDistanceManager so
+    // hallway-length metadata read/write are suppressed for patient sessions. Defaults to false so
+    // current-user (patient-app) launches are unchanged.
+    private val isPatientSession: Boolean = false,
 ) : ViewModel() {
     var configuration =
         mutableStateOf(OSTRecordingConfiguration.defaultWalk())
@@ -101,6 +105,7 @@ internal class MotionRecorderViewModel(
         coroutineScope = viewModelScope,
         activityTypeProvider = { configuration.value.activityType },
         hostHallwayLengthMetersProvider = { configuration.value.hallwayLengthMeters },
+        isPatientSession = isPatientSession,
     )
     private val toolbar = ToolbarStateHolder(resourceProvider)
     private val balanceManager = BalanceSessionManager()

@@ -59,6 +59,44 @@ https://github.com/OneStepRND/onestep-uikit-kmp
 
 Then `import OSTUIKitKMP`.
 
+## Clinician mode (patient scope) — planned
+
+> **Status: designed, not yet implemented.** Full design + file-by-file implementation plan:
+> [`docs/patient-scope-clinician-mode-design.md`](docs/patient-scope-clinician-mode-design.md).
+
+By default every flow operates on the SDK's auth-bound patient (**patient-app / current-user
+mode**). Clinician hosts that operate on behalf of many patients will pass a `patientId` to
+the flow entry points; the flow then runs patient-scoped (SDK `withPatient`), and the SDK's
+own identification state may stay unidentified.
+
+```kotlin
+// Kotlin / Compose Multiplatform
+OSTRecordingFlow(config = config, onResult = ::handle)                 // current-user mode
+OSTRecordingFlow(config = config, patientId = patient.uuid, onResult = ::handle)  // clinician mode
+```
+
+```swift
+// iOS
+OSTRecordingFlowView(config: config, patientId: patient.uuid) { event in handle(event) }
+```
+
+Semantics when a `patientId` is supplied:
+
+- Recording, analysis, measurement CRUD, insights and norms resolve **patient-scoped**
+  product instances instead of the singleton's.
+- Hallway length is **not** persisted to/read from custom metadata (it is a property of the
+  clinic, not the patient); supply `OSTRecordingConfiguration.hallwayLengthMeters` to
+  pre-fill it.
+- Monitoring and daily summaries are unavailable in scope.
+- `patientId` must **never** appear in analytics, logs, or screen names (HIPAA).
+
+This is a **uikit-only** change — no `onestep-sdk-android` / `onestep-sdk-ios` change is
+required (both already expose `withPatient` and public `OSTPatientId` construction). Hosts
+must register a `PatientScopedBridgesFactory` via `UIKitServiceLocator.configure(...)`
+(Android) — iOS wires it automatically in `configureOSTUIKitKMPWithNativeSDK()`. Passing a
+`patientId` with no factory configured fails fast rather than silently recording as the
+wrong identity.
+
 ## Publishing
 
 ### Local scripts

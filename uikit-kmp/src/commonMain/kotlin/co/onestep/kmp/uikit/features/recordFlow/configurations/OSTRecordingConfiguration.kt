@@ -61,10 +61,11 @@ data class OSTRecordingConfiguration(
      * the starting value; no value is read from SDK custom metadata in that case. Ignored by
      * every other activity.
      *
-     * Note: unlike the Android uikit — which suppresses per-user persistence under an active
-     * patient scope — KMP has no patient-scope concept, so the user's edits are still persisted to
-     * the SDK-managed custom-metadata store (single-user model). Leave null to always restore the
-     * last-entered length from custom metadata.
+     * In current-user (patient-app) mode, leaving this null restores the last-entered length from
+     * the SDK-managed custom-metadata store and the user's edits are persisted back there (it
+     * follows the user across devices). In clinician mode (a non-null `patientId` on the entry
+     * composable) that per-user read/write is suppressed — the hallway length belongs to the clinic,
+     * not the patient — so a clinician host should pre-fill this value; edits are not persisted.
      */
     val hallwayLengthMeters: Float? = null,
 ) {

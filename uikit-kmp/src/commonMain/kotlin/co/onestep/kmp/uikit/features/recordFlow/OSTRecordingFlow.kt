@@ -24,6 +24,12 @@ private enum class FlowPhase { PERMISSION_FLOW, RECORDING_FLOW }
  * If not, shows the permission flow first; denied → calls onDismiss.
  *
  * @param config The recording configuration for this flow.
+ * @param patientId Clinician-mode selector. `null` (default) = current-user mode: every SDK
+ *        touchpoint resolves the auth-bound patient exactly as before (single-patient hosts are
+ *        source-compatible). Non-null = clinician mode: the flow's recorder/measurement/insights
+ *        run patient-scoped for this id, requiring a `PatientScopedBridgesFactory` to have been
+ *        registered at `configure` time (the flow fails fast otherwise). The id is never attached
+ *        to analytics, logs, or screen names (HIPAA).
  * @param onResult Callback invoked when the recording flow produces an event (completion, error, etc.).
  * @param onDismiss Callback invoked when the user dismisses the flow.
  * @param shouldShowSoundInstructions Platform callback: returns true if device volume is low/silent.
@@ -33,6 +39,7 @@ private enum class FlowPhase { PERMISSION_FLOW, RECORDING_FLOW }
 @Composable
 fun OSTRecordingFlow(
     config: OSTRecordingConfiguration,
+    patientId: String? = null,
     onResult: (OSTEvent) -> Unit,
     onDismiss: () -> Unit = {},
     shouldShowSoundInstructions: () -> Boolean = { false },
@@ -70,6 +77,7 @@ fun OSTRecordingFlow(
             FlowPhase.RECORDING_FLOW -> {
                 RecordFlowNavGraph(
                     config = config,
+                    patientId = patientId,
                     onResult = onResult,
                     onDismiss = onDismiss,
                     shouldShowSoundInstructions = shouldShowSoundInstructions,

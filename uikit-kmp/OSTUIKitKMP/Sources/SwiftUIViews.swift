@@ -16,15 +16,21 @@ import OSTUIKit
 /// ```
 public struct OSTRecordingFlowView: UIViewControllerRepresentable {
     private let config: OSTRecordingConfiguration
+    private let patientId: String?
     private let onResult: (OSTEvent) -> Void
     private let onDismiss: (() -> Void)?
 
+    /// - Parameter patientId: Clinician-mode selector. `nil` (default) records for the current
+    ///   authenticated user. A non-nil OneStep patient UUID records patient-scoped for that patient
+    ///   (requires the native SDK wiring from `configureOSTUIKitKMPWithNativeSDK()`). Never logged.
     public init(
         config: OSTRecordingConfiguration,
+        patientId: String? = nil,
         onResult: @escaping (OSTEvent) -> Void,
         onDismiss: (() -> Void)? = nil
     ) {
         self.config = config
+        self.patientId = patientId
         self.onResult = onResult
         self.onDismiss = onDismiss
     }
@@ -33,12 +39,14 @@ public struct OSTRecordingFlowView: UIViewControllerRepresentable {
         if let onDismiss {
             return OSTUIKitIos.shared.createRecordingFlowViewController(
                 config: config,
+                patientId: patientId,
                 onResult: onResult,
                 onDismiss: onDismiss
             )
         }
         return OSTUIKitIos.shared.createRecordingFlowViewController(
             config: config,
+            patientId: patientId,
             onResult: onResult
         )
     }
