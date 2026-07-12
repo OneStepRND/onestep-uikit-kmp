@@ -6,7 +6,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
@@ -134,6 +137,7 @@ internal fun EntryProviderScope<NavKey>.stsManualReportScreen(
                             CircularProgressIndicator(
                                 modifier = Modifier
                                     .align(Alignment.BottomCenter)
+                                    .windowInsetsPadding(WindowInsets.navigationBars)
                                     .padding(bottom = 34.dp)
                                     .size(24.dp),
                                 color = colors.neutral_m3,

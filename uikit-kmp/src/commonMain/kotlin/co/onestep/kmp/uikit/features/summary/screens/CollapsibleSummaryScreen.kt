@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -341,7 +342,8 @@ private fun BoxScope.BottomActionsSection(
                 modifier =
                     Modifier
                         .align(BottomCenter)
-                        .background(Color.Transparent),
+                        .background(Color.Transparent)
+                        .windowInsetsPadding(WindowInsets.navigationBars),
             ) {
                 secondaryAction?.let {
                     SecondaryButton(
