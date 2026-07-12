@@ -5,9 +5,12 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -133,10 +136,21 @@ class MainActivity : ComponentActivity() {
                 state = clinicianState,
                 onDone = { clinicianLoginState.value = ClinicianLoginUiState.Idle },
                 onEnterApp = { session ->
-                    // Enter the app in clinician mode. The SDK stays UNIDENTIFIED; per-flow
-                    // patient scoping is threaded via a patientId argument (wired separately).
+                    // Clinician mode operates on the avatar patient: identify the SDK as the avatar
+                    // so a real, authenticated MotionLab backs the flows. (The web-login JWT is not
+                    // an SDK session, and OneStep.withPatient needs a clinician session we don't
+                    // have here — so scoping to the avatar is the working path in this harness.)
                     clinicianSession.value = session
                     clinicianLoginState.value = ClinicianLoginUiState.Idle
+                    val org = Organizations.find(prefs.orgName) ?: Organizations.default
+                    connect(sdk, org, AppConstants.AVATAR_AANG_DISTINCT_ID) { error ->
+                        if (error != null) {
+                            // Identify failed: drop back to the result screen with the error.
+                            clinicianSession.value = null
+                            clinicianLoginState.value =
+                                ClinicianLoginUiState.Error("Could not start clinician session: $error")
+                        }
+                    }
                 },
             )
             return
@@ -154,10 +168,10 @@ class MainActivity : ComponentActivity() {
                     userId = identified.patientId.value,
                 )
 
-                clinician != null -> AuthenticatedContent(
-                    sdk = sdk,
-                    userId = "clinician",
-                )
+                // Clinician mode: showing until the avatar identify completes (then the
+                // `identified` branch above renders the full app). Prevents launching a flow
+                // against an unauthenticated MotionLab.
+                clinician != null -> ClinicianConnectingScreen()
 
                 else -> SettingsScreen(
                     initialEnvironment = prefs.environment,
@@ -311,6 +325,27 @@ class MainActivity : ComponentActivity() {
                 onDismiss = { screen = TestAppScreen.Home },
                 forceInteractiveBackGesture = true,
             )
+        }
+    }
+
+    @Composable
+    private fun ClinicianConnectingScreen() {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                CircularProgressIndicator()
+                Text(
+                    text = "Preparing clinician session (avatar)…",
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 

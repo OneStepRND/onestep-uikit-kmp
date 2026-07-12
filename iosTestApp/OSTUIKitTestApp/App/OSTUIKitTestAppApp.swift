@@ -116,32 +116,17 @@ class AppState: ObservableObject {
     /// patient scoping is threaded via a `patientId` argument (that wiring lands separately).
     func completeClinicianLogin(_ session: ClinicianWebLogin.Session) {
         clinicianSession = session
-        NSLog("[TestApp] completeClinicianLogin (isSDKReady=\(isSDKReady), isInitializing=\(isInitializing))")
-        guard !isSDKReady, !isInitializing else {
-            // Already inside the app (e.g. Settings opened over the main screen). Nothing to
-            // initialize — the caller dismisses the login sheets to reveal the main screen.
-            return
+        // Clinician mode operates on the avatar patient: identify the SDK as the avatar so a real,
+        // authenticated MotionLab backs the flows. (The web-login JWT is not an SDK session, and
+        // OneStep.withPatient needs a clinician session we don't have in this harness.) Reuse the
+        // standard identify path (setPatient) by pointing the stored distinct id at the avatar.
+        UserDefaults.standard.set(AppConstants.avatarAangDistinctId, forKey: "sdk_distinctId")
+        if (UserDefaults.standard.string(forKey: "sdk_orgName") ?? "").isEmpty {
+            UserDefaults.standard.set(Organizations.default.name, forKey: "sdk_orgName")
         }
-        isInitializing = true
-        initError = nil
-
-        Task { @MainActor [weak self] in
-            let initResult = OneStep.initialize(onAuthLost: { error in
-                NSLog("[TestApp] OneStep auth lost: \(error)")
-            })
-            guard let self else { return }
-            guard case .success = initResult, case .success = OneStep.shared() else {
-                self.initError = "SDK initialization failed"
-                self.isInitializing = false
-                NSLog("[TestApp] Clinician entry FAILED: SDK initialization failed")
-                return
-            }
-            configureOSTUIKitKMPWithNativeSDK()
-            self.isSDKReady = true
-            self.isInitializing = false
-            // No PII/PHI: the JWT and clinician identity are never logged (HIPAA).
-            NSLog("[TestApp] Clinician session established; entering app (SDK unidentified / clinician mode)")
-        }
+        // No PII/PHI: the JWT and clinician identity are never logged (HIPAA).
+        NSLog("[TestApp] Clinician session established; entering app as avatar patient")
+        initializeSDK()
     }
 
     func logout() {
