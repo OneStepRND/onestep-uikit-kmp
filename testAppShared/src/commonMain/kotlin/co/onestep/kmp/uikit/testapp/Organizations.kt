@@ -4,8 +4,9 @@ package co.onestep.kmp.uikit.testapp
  * Test-only organizations, shared by the Android and iOS test apps so both expose the same
  * Organization picker in the Settings/Login screen.
  *
- * These are the same shared test-org credentials the core SDK repo's demo apps use — not new
- * secrets, and never tied to a real patient (no PII/PHI).
+ * Credentials (API key + identity-verification secret) are never committed: they come from the
+ * gitignored secrets.properties via the generated [TestOrgSecrets] (see
+ * secrets.properties.template at the repo root). Orgs are never tied to a real patient (no PII/PHI).
  *
  * WARNING: identity-verification signing belongs on a backend. It is done client-side here strictly
  * because this is an internal testing app.
@@ -30,24 +31,24 @@ object Organizations {
         name = "sdk_testing",
         displayName = "SDK Testing",
         appId = "3cd1bc3b-51b0-4cda-89e3-d25398c7a52e",
-        apiKey = "***REMOVED***",
-        identityVerificationSecret = "***REMOVED***",
+        apiKey = TestOrgSecrets.SDK_TESTING_API_KEY,
+        identityVerificationSecret = TestOrgSecrets.SDK_TESTING_IDENTITY_SECRET,
     )
 
     val zimmerDev = Organization(
         name = "zimmer_dev",
         displayName = "Zimmer (Dev)",
         appId = "147c6678-4faa-49eb-a4a6-5ab92627b203",
-        apiKey = "***REMOVED***",
-        identityVerificationSecret = "***REMOVED***",
+        apiKey = TestOrgSecrets.ZIMMER_DEV_API_KEY,
+        identityVerificationSecret = TestOrgSecrets.ZIMMER_DEV_IDENTITY_SECRET,
     )
 
     val appClip = Organization(
         name = "app_clip",
         displayName = "OneStep App Clip",
         appId = "4486cfd2-9beb-4d46-8d9f-713ea88e5e87",
-        apiKey = "***REMOVED***",
-        identityVerificationSecret = "***REMOVED***",
+        apiKey = TestOrgSecrets.APP_CLIP_API_KEY,
+        identityVerificationSecret = TestOrgSecrets.APP_CLIP_IDENTITY_SECRET,
     )
 
     val all: List<Organization> = listOf(sdkTesting, zimmerDev, appClip)

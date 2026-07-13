@@ -1,6 +1,9 @@
 *.iml
 .gradle
 local.properties
+
+# Test-org credentials (see secrets.properties.template)
+/secrets.properties
 .idea/
 .DS_Store
 .kotlin/
