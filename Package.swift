@@ -11,13 +11,13 @@ let package = Package(
     dependencies: [
         // Native OneStep iOS SDK. The permission flow is vendored so this package
         // has NO dependency on the native iOS UIKit.
-        .package(url: "https://github.com/OneStepRND/onestep-sdk-ios", exact: "2.0.8-rc1")
+        .package(url: "https://github.com/OneStepRND/onestep-sdk-ios", exact: "2.0.12")
     ],
     targets: [
         .binaryTarget(
             name: "OSTUIKit",
-            url: "https://github.com/OneStepRND/onestep-uikit-kmp/releases/download/uikit-kmp-0.4.0/OSTUIKit.xcframework.zip",
-            checksum: "198acac1a05d48e576b957dd36140fe7740a88b14e7c6b44e91a5b3eca43707f"
+            url: "https://github.com/OneStepRND/onestep-uikit-kmp/releases/download/uikit-kmp-0.4.1-SNAPSHOT/OSTUIKit.xcframework.zip",
+            checksum: "b171f4406a5d9ef8b8757a6a095870cc3a1499f21a8a47422d49bd4116f8608f"
         ),
         .target(
             // Target name == Swift module name: must match the product so `import OSTUIKitKMP` works.

@@ -944,3 +944,21 @@ public func fetchRecentKmpMeasurements(limit: Int = 20) -> [KMPMotionMeasurement
     else { return [] }
     return native.suffix(limit).reversed().map(toKmp)
 }
+
+/// A single patient-scoped measurement mapped to a KMP model, for **clinician-mode** hosts that
+/// present `OSTMeasurementSummaryView` for a past measurement of a specific patient (e.g. a care-log
+/// "view summary" tap). This is the patient-scoped counterpart of `fetchRecentKmpMeasurements`,
+/// which resolves against the auth-bound `OneStep.shared()` store and so cannot see a clinician
+/// host's per-patient data.
+///
+/// The measurement is read inside `OneStep.withPatient(patientId)` so it resolves from the patient's
+/// synced motion store; the SDK's global identification state is untouched. `patientId` is never
+/// logged (HIPAA). Returns nil when the id is malformed or the measurement is not in the local store.
+///
+/// Call from the main thread (native `getMeasurement` is not thread safe).
+public func fetchPatientScopedKmpMeasurement(patientId: String, measurementId: String) -> KMPMotionMeasurement? {
+    guard let uuid = UUID(uuidString: measurementId) else { return nil }
+    let motionLab = OneStep.withPatient(OSTPatientId(rawValue: patientId)) { $0.getMotionLab() }
+    guard let native = try? motionLab.getMeasurement(id: uuid) else { return nil }
+    return toKmp(native)
+}
