@@ -149,6 +149,7 @@ internal fun RecordFlowNavGraph(
     shouldShowSoundInstructions: () -> Boolean = { false },
     onAskMicrophonePermission: () -> Unit = {},
     onGoToSettings: () -> Unit = {},
+    customMetadata: Map<String, Any> = emptyMap(),
 ) {
     // Resolve the patient-bound bridge bundle once per launch. null patientId = current-user mode
     // (today's auth-bound singletons). Non-null = clinician mode: build a patient-scoped bundle via
@@ -261,6 +262,7 @@ internal fun RecordFlowNavGraph(
             isPatientSession = patientId != null,
         ).apply {
             setConfiguration(config)
+            hostCustomMetadata = customMetadata
             // Inject the tracker so the VM can fire the recording-phase measurement events
             // (countdown / analyzing / stop / start-now), matching uikit's VM-side tracking.
             analyticsTracker = recordFlowTracker

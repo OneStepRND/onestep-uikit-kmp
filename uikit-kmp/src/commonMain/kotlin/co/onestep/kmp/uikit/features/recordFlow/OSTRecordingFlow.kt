@@ -35,6 +35,8 @@ private enum class FlowPhase { PERMISSION_FLOW, RECORDING_FLOW }
  * @param shouldShowSoundInstructions Platform callback: returns true if device volume is low/silent.
  * @param onAskMicrophonePermission Platform callback: triggers system microphone permission dialog.
  * @param onGoToSettings Platform callback: opens device settings for microphone permission.
+ * @param customMetadata Host-app metadata attached verbatim to every measurement recorded by
+ *        this flow (e.g. RTM exclusion, medical devices). Flow-internal keys take precedence.
  */
 @Composable
 fun OSTRecordingFlow(
@@ -45,6 +47,7 @@ fun OSTRecordingFlow(
     shouldShowSoundInstructions: () -> Boolean = { false },
     onAskMicrophonePermission: () -> Unit = {},
     onGoToSettings: () -> Unit = {},
+    customMetadata: Map<String, Any> = emptyMap(),
 ) {
     var phase by remember {
         mutableStateOf(
@@ -83,6 +86,7 @@ fun OSTRecordingFlow(
                     shouldShowSoundInstructions = shouldShowSoundInstructions,
                     onAskMicrophonePermission = onAskMicrophonePermission,
                     onGoToSettings = onGoToSettings,
+                    customMetadata = customMetadata,
                 )
             }
         }

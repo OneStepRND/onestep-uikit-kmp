@@ -160,6 +160,13 @@ internal class MotionRecorderViewModel(
 
     private val customMetadata: MutableMap<String, Any> = mutableMapOf()
 
+    /**
+     * Host-app custom metadata attached to every measurement recorded by this flow
+     * (e.g. RTM exclusion, medical devices). Injected by the NavGraph from the
+     * [co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlow] parameter; merged at
+     * recorder start before the flow's own keys so internal keys always win.
+     */
+    var hostCustomMetadata: Map<String, Any> = emptyMap()
 
     // --- Static Balance session (OS-15960) — state owned by BalanceSessionManager ---------
     // One session per flow launch: the ViewModel is scoped to the recording flow, so a
@@ -509,6 +516,7 @@ internal class MotionRecorderViewModel(
     }
 
     private fun startRecording() {
+        customMetadata.putAll(hostCustomMetadata)
         customMetadata["\$ost_uikit_version"] = ""
 
         // Static Balance: attach the session grouping key and the per-condition selections
