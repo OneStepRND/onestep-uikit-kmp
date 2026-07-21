@@ -12,6 +12,9 @@ local.properties
 .externalNativeBuild
 .cxx
 .swiftpm/
+# SwiftPM build output & resolved deps (library — do not track)
+**/.build/
+**/Package.resolved
 nohup.out
 
 # Local Claude Code state

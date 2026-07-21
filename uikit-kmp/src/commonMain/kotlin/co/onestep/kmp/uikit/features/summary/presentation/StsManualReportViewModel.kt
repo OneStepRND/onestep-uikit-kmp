@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import co.onestep.kmp.uikit.bridge.RecorderBridge
 import co.onestep.kmp.uikit.bridge.SelfReportResult
 import co.onestep.kmp.uikit.di.UIKitServiceLocator
-import co.onestep.kmp.uikit.models.currentTimeMillis
+import co.onestep.kmp.sdk.currentTimeMillis
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

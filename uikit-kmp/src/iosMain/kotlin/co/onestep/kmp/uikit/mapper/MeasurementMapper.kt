@@ -1,6 +1,6 @@
 package co.onestep.kmp.uikit.mapper
 
-import co.onestep.kmp.uikit.models.OSTError
+import co.onestep.kmp.sdk.OSTError
 import co.onestep.kmp.uikit.models.OSTMeasurementMetadata
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.models.OSTResultState
@@ -24,6 +24,7 @@ fun createKmpMeasurement(
     status: String,
     error: OSTError?,
     resultState: String?,
+    summaryUrl: String? = null,
 ): OSTMotionMeasurement = OSTMotionMeasurement(
     id = id,
     timestamp = timestamp,
@@ -35,6 +36,7 @@ fun createKmpMeasurement(
     status = status.toKmpMeasurementStatus(),
     error = error,
     resultState = resultState?.toKmpResultState(),
+    summaryUrl = summaryUrl,
 )
 
 fun String.toKmpMeasurementStatus(): OSTMotionMeasurement.MotionMeasurementStatus =

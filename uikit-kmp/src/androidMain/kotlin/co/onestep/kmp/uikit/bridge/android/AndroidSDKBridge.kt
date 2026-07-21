@@ -6,7 +6,7 @@ import co.onestep.android.core.monitoring.OSTMonitoringRuntimeState
 import co.onestep.android.core.monitoring.getMonitoring
 import co.onestep.kmp.uikit.bridge.OSTSDKBridge
 import co.onestep.kmp.uikit.models.OSTDailyBackgroundMeasurement
-import co.onestep.kmp.uikit.models.OSTEvent
+import co.onestep.kmp.sdk.OSTEvent
 import co.onestep.kmp.uikit.models.OSTState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow

@@ -1,7 +1,7 @@
 package co.onestep.kmp.uikit.features.permissions.analytics
 
 import co.onestep.kmp.uikit.OSTUIKitAnalyticsHandler
-import co.onestep.kmp.uikit.models.OSTEvent
+import co.onestep.kmp.sdk.OSTEvent
 
 /**
  * Central analytics tracker for the permissions flow.

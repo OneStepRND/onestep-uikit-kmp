@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:supportsRtl="true" />
+    <application android:supportsRtl="true">
+        <!-- Hosts the OneStep UIKit recording flow and measurement-summary composables. Declared
+             here so it merges into consuming apps; apps no longer declare it themselves. -->
+        <activity
+            android:name="co.onestep.kmp.uikit.sdk.RecordingFlowHostActivity"
+            android:exported="false" />
+    </application>
 </manifest>

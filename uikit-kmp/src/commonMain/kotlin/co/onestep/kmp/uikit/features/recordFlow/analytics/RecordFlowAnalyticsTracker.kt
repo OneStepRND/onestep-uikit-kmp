@@ -7,7 +7,7 @@ import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTBalanceConditi
 import co.onestep.kmp.uikit.features.tagging.models.Footwear
 import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit.models.OSTAssistiveDevice
-import co.onestep.kmp.uikit.models.OSTEvent
+import co.onestep.kmp.sdk.OSTEvent
 
 /**
  * Central analytics tracker for the recording flow, ported from the Android `uikit`

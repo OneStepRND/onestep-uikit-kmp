@@ -36,7 +36,7 @@ import co.onestep.kmp.uikit.models.OSTRecorderState
 import co.onestep.kmp.uikit.models.OSTAssistiveDevice
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData
 import co.onestep.kmp.uikit.models.OSTWalkCourseLength.Companion.getWalkCourseLength
-import co.onestep.kmp.uikit.models.currentTimeMillis
+import co.onestep.kmp.sdk.currentTimeMillis
 import co.onestep.kmp.uikit.utils.Languages
 import co.onestep.kmp.uikit.utils.ResourceProvider
 import co.onestep.kmp.uikit.utils.toDisplayTime

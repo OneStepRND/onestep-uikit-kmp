@@ -387,4 +387,17 @@
     <string name="wheel_picker_blank">---</string>
     <string name="summary_manually_reported">דווח ידנית</string>
     <string name="edit_result_content_description">ערוך תוצאה</string>
+    <!-- Month abbreviations (Jan–Dec). TODO: verify with localization team. -->
+    <string name="month_abbrev_jan">ינו</string>
+    <string name="month_abbrev_feb">פבר</string>
+    <string name="month_abbrev_mar">מרץ</string>
+    <string name="month_abbrev_apr">אפר</string>
+    <string name="month_abbrev_may">מאי</string>
+    <string name="month_abbrev_jun">יונ</string>
+    <string name="month_abbrev_jul">יול</string>
+    <string name="month_abbrev_aug">אוג</string>
+    <string name="month_abbrev_sep">ספט</string>
+    <string name="month_abbrev_oct">אוק</string>
+    <string name="month_abbrev_nov">נוב</string>
+    <string name="month_abbrev_dec">דצמ</string>
 </resources>

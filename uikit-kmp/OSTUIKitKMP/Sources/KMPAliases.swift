@@ -24,6 +24,12 @@ typealias KMPNormPart = OSTNormPart
 typealias KMPDailyBackgroundMeasurement = OSTDailyBackgroundMeasurement
 typealias KMPError = OSTError
 
+// SDK-facade (co.onestep.kmp.sdk) types. `OneStep` / `OSTUserAttributes` collide with the native
+// `OneStepSDK` types once the facade ships in the framework, so files importing both worlds refer
+// to the KMP ones through these aliases and qualify the native ones as `OneStepSDK.…`.
+typealias KMPOneStep = OneStep
+typealias KMPUserAttributes = OSTUserAttributes
+
 // Public aliases for host apps that import both OSTUIKitKMP and the native OneStepUIKit
 // (whose type names overlap, e.g. OSTRecordingConfiguration).
 public typealias KMPRecordingConfiguration = OSTRecordingConfiguration

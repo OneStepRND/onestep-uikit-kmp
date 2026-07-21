@@ -1,4 +1,4 @@
-package co.onestep.kmp.uikit.models
+package co.onestep.kmp.sdk
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

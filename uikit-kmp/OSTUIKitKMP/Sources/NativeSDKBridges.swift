@@ -157,7 +157,7 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
 
     /// Current-user convenience init: resolve the auth-bound MotionLab from the shared SDK.
     convenience override init() {
-        if case .success(let onestep) = OneStep.shared(),
+        if case .success(let onestep) = OneStepSDK.OneStep.shared(),
            case .success(let lab) = onestep.motionLab() {
             self.init(motionLab: lab)
         } else {
@@ -371,19 +371,19 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
 // MARK: - Patient-scoped recorder delegate (clinician mode)
 
 /// Clinician-mode recorder delegate: bound to a specific patient's MotionLab, resolved inside
-/// `OneStep.withPatient(patientId)`. Mirrors OneStepUIKit's `PatientScopedSDK.withPatientBinding`.
+/// `OneStepSDK.OneStep.withPatient(patientId)`. Mirrors OneStepUIKit's `PatientScopedSDK.withPatientBinding`.
 ///
 /// The native recorder captures its owner *ambiently* at `start` (there is no per-call owner
 /// parameter), so `start` is pinned inside a `withPatient` block to attribute the recording to the
 /// right patient. The SDK's global identification state is never changed.
 final class PatientScopedRecorderDelegate: NativeRecorderDelegate {
-    private let patientId: OSTPatientId
+    private let patientId: OneStepSDK.OSTPatientId
 
-    init(patientId: OSTPatientId) {
+    init(patientId: OneStepSDK.OSTPatientId) {
         self.patientId = patientId
         // Resolve the patient-bound MotionLab inside the scope; the product is cached for the
         // scope's lifetime and stays valid after the block returns.
-        let lab = OneStep.withPatient(patientId) { $0.getMotionLab() }
+        let lab = OneStepSDK.OneStep.withPatient(patientId) { $0.getMotionLab() }
         super.init(motionLab: lab)
     }
 
@@ -396,7 +396,7 @@ final class PatientScopedRecorderDelegate: NativeRecorderDelegate {
         completion: @escaping () -> Void
     ) {
         // Pin the recording's owner to this patient for the duration of the start call.
-        OneStep.withPatient(patientId) { _ in
+        OneStepSDK.OneStep.withPatient(patientId) { _ in
             super.start(
                 activityType: activityType,
                 durationMs: durationMs,
@@ -457,7 +457,7 @@ final class NativeSDKDelegate: NSObject, IosSDKDelegate {
     /// OSTMixedType values are flattened to Kotlin-friendly `Any` (String / Double). Any failure
     /// (uninitialized SDK, no user, network) resolves to an empty map — never fails the completion.
     func getCustomMetadata(completion: @escaping ([String: Any]) -> Void) {
-        guard case .success(let onestep) = OneStep.shared() else { completion([:]); return }
+        guard case .success(let onestep) = OneStepSDK.OneStep.shared() else { completion([:]); return }
         Task {
             switch await onestep.getUserAttributes() {
             case .success(let attributes):
@@ -475,7 +475,7 @@ final class NativeSDKDelegate: NSObject, IosSDKDelegate {
     /// so the stored JSON type matches Android (which writes a Float). Returns the merged map on
     /// success, or the input unchanged on failure.
     func updateCustomMetadata(metadata: [String: Any], completion: @escaping ([String: Any]) -> Void) {
-        guard case .success(let onestep) = OneStep.shared() else { completion(metadata); return }
+        guard case .success(let onestep) = OneStepSDK.OneStep.shared() else { completion(metadata); return }
         var native: [String: OSTMixedType] = [:]
         for (key, value) in metadata { native[key] = Self.toMixedType(value) }
         Task {
@@ -524,12 +524,12 @@ final class NativeSDKDelegate: NSObject, IosSDKDelegate {
 final class MotionDataServiceProvider: @unchecked Sendable {
     private let lock = NSLock()
     private var cached: (any OSTMotionDataService)?
-    private let patientId: OSTPatientId?
+    private let patientId: OneStepSDK.OSTPatientId?
 
     /// `patientId == nil` → auth-bound (current-user) resolution. Non-nil → the data service is
-    /// resolved inside `OneStep.withPatient(patientId)`, so insights/norms are patient-scoped
+    /// resolved inside `OneStepSDK.OneStep.withPatient(patientId)`, so insights/norms are patient-scoped
     /// (clinician mode).
-    init(patientId: OSTPatientId? = nil) {
+    init(patientId: OneStepSDK.OSTPatientId? = nil) {
         self.patientId = patientId
     }
 
@@ -578,10 +578,10 @@ final class MotionDataServiceProvider: @unchecked Sendable {
         if let patientId {
             // Clinician mode: resolve the patient-scoped Insights synchronously inside the scope,
             // then await its data service outside the (non-async) withPatient block.
-            let insights = OneStep.withPatient(patientId) { $0.getInsights() }
+            let insights = OneStepSDK.OneStep.withPatient(patientId) { $0.getInsights() }
             return await insights.getMotionDataService()
         }
-        guard case .success(let onestep) = OneStep.shared(),
+        guard case .success(let onestep) = OneStepSDK.OneStep.shared(),
               case .success(let insights) = onestep.insights() else { return nil }
         return await insights.getMotionDataService()
     }
@@ -877,7 +877,7 @@ final class NativeInsightsBridge: NSObject, InsightsBridge {
 /// identification state is untouched. The `patientId` never appears in analytics (HIPAA).
 final class NativePatientScopedBridgesFactory: NSObject, PatientScopedBridgesFactory {
     func create(patientId: String) -> PatientScopedBridges {
-        let id = OSTPatientId(rawValue: patientId)
+        let id = OneStepSDK.OSTPatientId(rawValue: patientId)
 
         let recorderDelegate = PatientScopedRecorderDelegate(patientId: id)
         let recorderAdapter = SwiftRecorderBridgeAdapter(delegate: recorderDelegate)
@@ -895,10 +895,234 @@ final class NativePatientScopedBridgesFactory: NSObject, PatientScopedBridgesFac
     }
 }
 
+// MARK: - OneStep facade delegates (co.onestep.kmp.sdk)
+
+/// `OSTMixedType` -> Kotlin-friendly `Any` for the OneStep-facade delegates (numbers become
+/// `Double`; strings pass through). Mirrors the flattening in `NativeSDKDelegate`.
+private func kmpAny(fromMixed value: OSTMixedType) -> Any {
+    switch value {
+    case .string(let s): return s
+    case .int(let i): return Double(i)
+    case .double(let d): return d
+    @unknown default: return ""
+    }
+}
+
+/// Kotlin `Any` -> `OSTMixedType`. Kotlin numbers arrive boxed as `NSNumber` -> `.double`; everything
+/// else falls back to `.string`.
+private func mixed(fromKmpAny value: Any) -> OSTMixedType {
+    if let s = value as? String { return .string(s) }
+    if let n = value as? NSNumber { return .double(n.doubleValue) }
+    return .string("\(value)")
+}
+
+/// Bridges the KMP `co.onestep.kmp.sdk` OneStep facade (`IosOneStepDelegate`) to the native
+/// `OneStepSDK.OneStep`. Pushes identification state into the `SwiftOneStepAdapter` (set via
+/// `attach(adapter:)`); the async/failable native calls are surfaced through the adapter's
+/// completion-handler contract. `KotlinInt` boxes the error code because it crosses as a lambda
+/// parameter (Kotlin `Int` -> Swift `KotlinInt` there); the adapter's own `on...Changed` methods
+/// take a plain `Int32`.
+final class NativeOneStepDelegate: NSObject, IosOneStepDelegate {
+
+    private weak var adapter: SwiftOneStepAdapter?
+    private var authCancellable: AnyCancellable?
+
+    /// Observe the native auth-state publisher and push the current + subsequent states into the
+    /// adapter's `identificationState` flow.
+    func attach(adapter: SwiftOneStepAdapter) {
+        self.adapter = adapter
+        guard case .success(let onestep) = OneStepSDK.OneStep.shared() else {
+            adapter.onAuthStateChanged(stateName: "unidentified", patientId: nil, errorCode: 0, errorMessage: nil)
+            return
+        }
+        push(onestep.authStateValue)
+        authCancellable = onestep.authStatePublisher
+            .receive(on: RunLoop.main)
+            .sink { [weak self] state in self?.push(state) }
+        // shortcut: the native `events` publisher (OSTEvent) is not forwarded — the native OSTEvent
+        // field shape is not part of the SDK's public reference, so mapping it is deferred. The KMP
+        // `OneStep.events` flow stays empty on iOS until that mapping is added.
+    }
+
+    private func push(_ state: OneStepSDK.OSTIdentificationState) {
+        switch state {
+        case .unidentified:
+            adapter?.onAuthStateChanged(stateName: "unidentified", patientId: nil, errorCode: 0, errorMessage: nil)
+        case .identified(let patientId):
+            adapter?.onAuthStateChanged(stateName: "identified", patientId: patientId.rawValue, errorCode: 0, errorMessage: nil)
+        case .lost(let error):
+            adapter?.onAuthStateChanged(stateName: "lost", patientId: nil, errorCode: 0, errorMessage: "\(error)")
+        @unknown default:
+            break
+        }
+    }
+
+    // MARK: IosOneStepDelegate
+
+    func setPatientWithApiKey(
+        apiKey: String,
+        customerPatientId: String,
+        identityVerification: String?,
+        userAttributes: KMPUserAttributes,
+        completion: @escaping (String?, KotlinInt, String?) -> Void
+    ) {
+        guard case .success(let onestep) = OneStepSDK.OneStep.shared() else {
+            completion(nil, KotlinInt(int: 0), "OneStep SDK not initialized"); return
+        }
+        // shortcut: KMP-side `userAttributes` are not forwarded into the native `setPatient`
+        // `(inout OSTUserAttributes)` builder — the native OSTUserAttributes well-known field names
+        // are not in the SDK's public reference. Upgrade path: map them into the builder here.
+        Task {
+            let result = await onestep.setPatient(
+                apiKey: apiKey,
+                customerPatientId: customerPatientId,
+                identityVerification: identityVerification
+            )
+            switch result {
+            case .success(let patientId): completion(patientId.rawValue, KotlinInt(int: 0), nil)
+            case .failure(let error): completion(nil, KotlinInt(int: 0), "\(error)")
+            }
+        }
+    }
+
+    func setPatientWithAuthUuid(
+        authPatientUuid: String,
+        userAttributes: KMPUserAttributes,
+        completion: @escaping (KotlinInt, String?) -> Void
+    ) {
+        guard case .success(let onestep) = OneStepSDK.OneStep.shared() else {
+            completion(KotlinInt(int: 0), "OneStep SDK not initialized"); return
+        }
+        Task {
+            let result = await onestep.setPatient(authPatientUuid: OneStepSDK.OSTPatientId(rawValue: authPatientUuid))
+            switch result {
+            case .success: completion(KotlinInt(int: 0), nil)
+            case .failure(let error): completion(KotlinInt(int: 0), "\(error)")
+            }
+        }
+    }
+
+    func clearPatient() -> String? {
+        guard case .success(let onestep) = OneStepSDK.OneStep.shared() else { return "OneStep SDK not initialized" }
+        // Native `logout()` is async but the facade `clearPatient()` is synchronous: fire-and-forget
+        // the logout and report success optimistically — the real transition to `.unidentified`
+        // (or a failure) propagates through `authStatePublisher` into `identificationState`.
+        Task { _ = await onestep.logout() }
+        return nil
+    }
+
+    func updatePushToken(token: String) -> String? {
+        guard case .success(let onestep) = OneStepSDK.OneStep.shared() else { return "OneStep SDK not initialized" }
+        onestep.updatePushToken(token)
+        return nil
+    }
+
+    func handleNotification(payload: [String: String]) -> Bool {
+        guard case .success(let onestep) = OneStepSDK.OneStep.shared() else { return false }
+        if case .success(let handled) = onestep.handleNotification(payload: payload as [AnyHashable: Any]) {
+            return handled
+        }
+        return false
+    }
+}
+
+/// Bridges the KMP patient-scoped facade (`IosPatientScopeDelegate`, reached via
+/// `OneStep.withPatient`) to the native `OneStepSDK.OneStep.withPatient(_:)` scope. Each op resolves
+/// the `Sendable` patient scope inside the `withPatient` block and awaits the scope's async call.
+/// `patientId` is never logged (HIPAA).
+final class NativePatientScopeDelegate: NSObject, IosPatientScopeDelegate {
+
+    func sync(patientId: String, completion: @escaping (KotlinInt, String?) -> Void) {
+        let scope = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { $0 }
+        Task {
+            switch await scope.sync() {
+            case .success: completion(KotlinInt(int: 0), nil)
+            case .failure(let error): completion(KotlinInt(int: 0), "\(error)")
+            }
+        }
+    }
+
+    func getUserAttributes(
+        patientId: String,
+        completion: @escaping (KMPUserAttributes?, KotlinInt, String?) -> Void
+    ) {
+        let scope = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { $0 }
+        Task {
+            switch await scope.getUserAttributes() {
+            case .success(let attributes):
+                var custom: [String: Any] = [:]
+                for (key, value) in attributes.customAttributes { custom[key] = kmpAny(fromMixed: value) }
+                completion(OSTOneStepIos.shared.createUserAttributes(customAttributes: custom), KotlinInt(int: 0), nil)
+            case .failure(let error):
+                completion(nil, KotlinInt(int: 0), "\(error)")
+            }
+        }
+    }
+
+    func updateCustomMetadata(
+        patientId: String,
+        metadata: [String: Any],
+        completion: @escaping ([String: Any]?, KotlinInt, String?) -> Void
+    ) {
+        let scope = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { $0 }
+        var native: [String: OSTMixedType] = [:]
+        for (key, value) in metadata { native[key] = mixed(fromKmpAny: value) }
+        Task {
+            switch await scope.updateCustomMetadata(native) {
+            case .success(let merged):
+                var out: [String: Any] = [:]
+                for (key, value) in merged { out[key] = kmpAny(fromMixed: value) }
+                completion(out, KotlinInt(int: 0), nil)
+            case .failure(let error):
+                completion(nil, KotlinInt(int: 0), "\(error)")
+            }
+        }
+    }
+
+    func flush(
+        patientId: String,
+        remoteTroubleshooting: KotlinBoolean?,
+        completion: @escaping (KotlinInt, String?) -> Void
+    ) {
+        // shortcut: the native SDK exposes no event-ingest flush op; report success so
+        // `OneStep.withPatient { flush() }` is a no-op on iOS rather than an error.
+        _ = patientId
+        _ = remoteTroubleshooting
+        completion(KotlinInt(int: 0), nil)
+    }
+}
+
+// MARK: - One-call initialization + configuration
+
+/// Initialize the native OneStep SDK **and** wire all uikit-kmp bridges in one call.
+///
+/// Mirrors the core `OneStepSDK.OneStep.initialize(onAuthLost:configuration:)` as closely as
+/// possible — same `onAuthLost` / `configuration` parameters, same `@MainActor` isolation, and the
+/// same `Result<Void, OSTError>` return — then, on `.success`, runs
+/// `configureOSTUIKitKMPWithNativeSDK()` so Compose-Multiplatform code can resolve
+/// `OneStep.getInstance()` / `OneStep.withPatient(...)` against the native SDK immediately. On
+/// `.failure` the SDK error is returned unchanged and the bridges are left unconfigured.
+///
+/// This is the single native entry point for host apps that would otherwise call
+/// `OneStepSDK.OneStep.initialize(...)` and `configureOSTUIKitKMPWithNativeSDK()` in sequence. Call
+/// once at launch on the main thread.
+@MainActor
+public func initializeOSTUIKitKMPWithNativeSDK(
+    onAuthLost: @escaping @Sendable (OneStepSDK.OSTError) -> Void,
+    configuration: OneStepSDK.OSTConfiguration = OneStepSDK.OSTConfiguration()
+) -> Result<Void, OneStepSDK.OSTError> {
+    let result = OneStepSDK.OneStep.initialize(onAuthLost: onAuthLost, configuration: configuration)
+    if case .success = result {
+        configureOSTUIKitKMPWithNativeSDK()
+    }
+    return result
+}
+
 // MARK: - One-call configuration
 
 /// Wire all KMP bridges to the native OneStep SDK and register the native permission flow. Call once
-/// after `OSTSDKCore`/`OneStep` initialization (see the example app).
+/// after `OSTSDKCore`/`OneStep` initialization (see the example app), or use
+/// `initializeOSTUIKitKMPWithNativeSDK(onAuthLost:configuration:)` to do both in one call.
 public func configureOSTUIKitKMPWithNativeSDK() {
     let recorderDelegate = NativeRecorderDelegate()
     let recorderAdapter = SwiftRecorderBridgeAdapter(delegate: recorderDelegate)
@@ -927,6 +1151,16 @@ public func configureOSTUIKitKMPWithNativeSDK() {
         patientScopedBridgesFactory: NativePatientScopedBridgesFactory()
     )
 
+    // OneStep SDK facade (co.onestep.kmp.sdk): lets Compose-Multiplatform code resolve
+    // OneStep.getInstance() / OneStep.withPatient(...) against the native SDK.
+    let oneStepDelegate = NativeOneStepDelegate()
+    let oneStepAdapter = SwiftOneStepAdapter(delegate: oneStepDelegate)
+    oneStepDelegate.attach(adapter: oneStepAdapter)
+    OSTOneStepIos.shared.register(
+        oneStep: oneStepAdapter,
+        patientScopeDelegate: NativePatientScopeDelegate()
+    )
+
     OSTUIKitKMPNativePermissions.register()
 }
 
@@ -936,7 +1170,7 @@ public func configureOSTUIKitKMPWithNativeSDK() {
 /// `OSTMeasurementSummaryView` outside the recording flow. Requires an initialized, identified SDK.
 /// Call from the main thread (native `getMeasurements` is not thread safe).
 public func fetchRecentKmpMeasurements(limit: Int = 20) -> [KMPMotionMeasurement] {
-    guard case .success(let onestep) = OneStep.shared(),
+    guard case .success(let onestep) = OneStepSDK.OneStep.shared(),
           case .success(let motionLab) = onestep.motionLab(),
           let native = try? motionLab.getMeasurements(
               request: TimeRangedDataRequest(startTime: nil, endTime: nil)
@@ -951,14 +1185,14 @@ public func fetchRecentKmpMeasurements(limit: Int = 20) -> [KMPMotionMeasurement
 /// which resolves against the auth-bound `OneStep.shared()` store and so cannot see a clinician
 /// host's per-patient data.
 ///
-/// The measurement is read inside `OneStep.withPatient(patientId)` so it resolves from the patient's
+/// The measurement is read inside `OneStepSDK.OneStep.withPatient(patientId)` so it resolves from the patient's
 /// synced motion store; the SDK's global identification state is untouched. `patientId` is never
 /// logged (HIPAA). Returns nil when the id is malformed or the measurement is not in the local store.
 ///
 /// Call from the main thread (native `getMeasurement` is not thread safe).
 public func fetchPatientScopedKmpMeasurement(patientId: String, measurementId: String) -> KMPMotionMeasurement? {
     guard let uuid = UUID(uuidString: measurementId) else { return nil }
-    let motionLab = OneStep.withPatient(OSTPatientId(rawValue: patientId)) { $0.getMotionLab() }
+    let motionLab = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { $0.getMotionLab() }
     guard let native = try? motionLab.getMeasurement(id: uuid) else { return nil }
     return toKmp(native)
 }

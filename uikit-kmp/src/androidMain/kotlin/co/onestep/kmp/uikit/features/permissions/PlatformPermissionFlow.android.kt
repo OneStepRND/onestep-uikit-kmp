@@ -30,7 +30,7 @@ import co.onestep.kmp.uikit.OSTUIKitAnalyticsHandler
 import co.onestep.kmp.uikit.bridge.SystemBarEffect
 import co.onestep.kmp.uikit.di.UIKitServiceLocator
 import co.onestep.kmp.uikit.features.permissions.analytics.PermissionAnalyticsTracker
-import co.onestep.kmp.uikit.models.OSTEvent
+import co.onestep.kmp.sdk.OSTEvent
 
 /**
  * Android implementation of the permission flow.

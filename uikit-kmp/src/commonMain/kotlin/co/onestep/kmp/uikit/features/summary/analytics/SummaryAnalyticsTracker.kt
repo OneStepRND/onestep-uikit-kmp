@@ -5,7 +5,7 @@ import co.onestep.kmp.uikit.features.recordFlow.analytics.AnalyticsProps
 import co.onestep.kmp.uikit.features.recordFlow.analytics.analyticsName
 import co.onestep.kmp.uikit.features.summary.analytics.SummaryAnalyticsEvents.ScreenNames
 import co.onestep.kmp.uikit.models.OSTActivityType
-import co.onestep.kmp.uikit.models.OSTEvent
+import co.onestep.kmp.sdk.OSTEvent
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.models.OSTParamName
 import kotlin.math.roundToInt

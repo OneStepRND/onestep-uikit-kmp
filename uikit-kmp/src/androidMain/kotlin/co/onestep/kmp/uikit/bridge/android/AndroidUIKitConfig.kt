@@ -2,6 +2,7 @@ package co.onestep.kmp.uikit.bridge.android
 
 import android.content.Context
 import co.onestep.android.core.OneStep
+import co.onestep.kmp.uikit.bridge.PatientScopedBridgesFactory
 import co.onestep.kmp.uikit.bridge.PlatformAudioPlayer
 import co.onestep.kmp.uikit.bridge.PlatformPermissionsManager
 import co.onestep.kmp.uikit.bridge.PlatformTTSPlayer
@@ -16,8 +17,19 @@ import co.onestep.kmp.uikit.utils.ResourceProvider
  * ```
  * UIKitServiceLocator.configureWithAndroidSDK(applicationContext, oneStep)
  * ```
+ *
+ * @param patientScopedBridgesFactory Resolves patient-scoped SDK products for flows launched with a
+ *        `patientId` (OSTRecordingFlow / OSTMeasurementSummary). Defaults to the stock
+ *        [AndroidPatientScopedBridgesFactory], which is stateless and only ever invoked when a
+ *        `patientId` is supplied — so single-patient (patient-app) hosts, which always launch with
+ *        `patientId == null`, never touch it and are unaffected. Override only to inject a custom
+ *        factory (e.g. test fakes or an alternate scope-resolution strategy).
  */
-fun UIKitServiceLocator.configureWithAndroidSDK(context: Context, oneStep: OneStep) {
+fun UIKitServiceLocator.configureWithAndroidSDK(
+    context: Context,
+    oneStep: OneStep,
+    patientScopedBridgesFactory: PatientScopedBridgesFactory = AndroidPatientScopedBridgesFactory(),
+) {
     val preferencesBridge = AndroidPreferencesBridge(context)
     configure(
         sdkBridge = AndroidSDKBridge(oneStep),
@@ -30,5 +42,6 @@ fun UIKitServiceLocator.configureWithAndroidSDK(context: Context, oneStep: OneSt
         ttsPlayer = PlatformTTSPlayer(context),
         permissionsManager = PlatformPermissionsManager(context, preferencesBridge),
         resourceProvider = ResourceProvider(context),
+        patientScopedBridgesFactory = patientScopedBridgesFactory,
     )
 }

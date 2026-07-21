@@ -370,4 +370,17 @@
     <string name="wheel_picker_blank">---</string>
     <string name="summary_manually_reported">Введено вручную</string>
     <string name="edit_result_content_description">Изменить результат</string>
+    <!-- Month abbreviations (Jan–Dec). This locale is populated with Russian text. TODO: verify with localization team. -->
+    <string name="month_abbrev_jan">янв</string>
+    <string name="month_abbrev_feb">фев</string>
+    <string name="month_abbrev_mar">мар</string>
+    <string name="month_abbrev_apr">апр</string>
+    <string name="month_abbrev_may">май</string>
+    <string name="month_abbrev_jun">июн</string>
+    <string name="month_abbrev_jul">июл</string>
+    <string name="month_abbrev_aug">авг</string>
+    <string name="month_abbrev_sep">сен</string>
+    <string name="month_abbrev_oct">окт</string>
+    <string name="month_abbrev_nov">ноя</string>
+    <string name="month_abbrev_dec">дек</string>
 </resources>

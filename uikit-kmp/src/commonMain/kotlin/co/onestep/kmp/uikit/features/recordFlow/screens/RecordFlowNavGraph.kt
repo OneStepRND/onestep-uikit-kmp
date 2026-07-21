@@ -95,9 +95,9 @@ import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
 import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOrigin
 import co.onestep.kmp.uikit.models.FeatureFlag
 import co.onestep.kmp.uikit.models.OSTActivityType
-import co.onestep.kmp.uikit.models.OSTEvent
+import co.onestep.kmp.sdk.OSTEvent
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
-import co.onestep.kmp.uikit.models.currentTimeMillis
+import co.onestep.kmp.sdk.currentTimeMillis
 import co.onestep.kmp.uikit.models.displayNameRes
 import co.onestep.kmp.uikit.utils.UIktDestination
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
@@ -698,6 +698,7 @@ internal fun RecordFlowNavGraph(
             if (measurement != null) {
                 OSTMeasurementSummary(
                     measurement = measurement,
+                    patientId = patientId,
                     options = OSTSummaryOptions.Full,
                     origin = OSTSummaryOrigin.Recording,
                     configuration = config,

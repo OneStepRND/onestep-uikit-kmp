@@ -94,13 +94,13 @@ import org.jetbrains.compose.resources.stringResource
 internal fun SummaryMainFlow(
     modifier: Modifier = Modifier,
     summaryViewModel: SummaryViewModel,
+    recorderBridge: co.onestep.kmp.uikit.bridge.RecorderBridge,
     motionMeasurementId: String,
     configuration: OSTRecordingConfiguration? = null,
     origin: OSTSummaryOrigin,
     backAction: () -> Unit,
 ) {
     val resourceProvider = UIKitServiceLocator.resourceProvider
-    val recorderBridge = UIKitServiceLocator.recorderBridge
     // Analytics tracker (null when the host provided no analytics handler → all calls no-op).
     val summaryTracker = UIKitServiceLocator.summaryAnalyticsTracker
     // app_section: the recording flow lands here from the host "Activities" area; the care

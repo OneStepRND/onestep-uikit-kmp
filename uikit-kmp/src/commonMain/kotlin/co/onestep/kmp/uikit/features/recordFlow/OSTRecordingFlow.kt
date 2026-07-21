@@ -10,7 +10,7 @@ import co.onestep.kmp.uikit.features.permissions.PlatformPermissionFlow
 import co.onestep.kmp.uikit.features.permissions.hasRequiredInAppPermissions
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.recordFlow.screens.RecordFlowNavGraph
-import co.onestep.kmp.uikit.models.OSTEvent
+import co.onestep.kmp.sdk.OSTEvent
 import co.onestep.kmp.uikit.ui.theme.OneStepUiKitTheme
 
 private enum class FlowPhase { PERMISSION_FLOW, RECORDING_FLOW }

@@ -92,7 +92,7 @@ private final class NativeShellDelegate: NSObject, IosTestAppShellDelegate {
     /// via `setPatient`.
     @MainActor
     func initializeSDK() {
-        let initResult = OneStep.initialize(onAuthLost: { error in
+        let initResult = initializeOSTUIKitKMPWithNativeSDK(onAuthLost: { error in
             NSLog("[TestApp] OneStep auth lost") // error detail may carry identifiers — not logged (HIPAA)
         })
         guard case .success = initResult else {
@@ -100,7 +100,6 @@ private final class NativeShellDelegate: NSObject, IosTestAppShellDelegate {
             initialized = false
             return
         }
-        configureOSTUIKitKMPWithNativeSDK()
         initialized = true
         NSLog("[TestApp] Consolidated KMP shell: SDK initialized and bridges configured")
     }

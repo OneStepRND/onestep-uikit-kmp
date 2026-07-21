@@ -1,6 +1,6 @@
 package co.onestep.kmp.uikit.mapper
 
-import co.onestep.kmp.uikit.models.OSTError as KmpError
+import co.onestep.kmp.sdk.OSTError as KmpError
 import co.onestep.kmp.uikit.models.OSTMeasurementMetadata as KmpMetadata
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement as KmpMeasurement
 import co.onestep.kmp.uikit.models.OSTResultState as KmpResultState

@@ -24,7 +24,7 @@ import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlow
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
 import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
-import co.onestep.kmp.uikit.models.OSTEvent
+import co.onestep.kmp.sdk.OSTEvent
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.utils.ResourceProvider
 import platform.UIKit.UIColor

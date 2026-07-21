@@ -28,16 +28,14 @@ import co.onestep.kmp.uikit.models.OSTMotionMeasurement.MotionMeasurementStatus 
 import co.onestep.kmp.uikit.models.OSTActivityType as KmpActivityType
 import co.onestep.kmp.uikit.models.OSTAnalyserError as KmpAnalyserError
 import co.onestep.kmp.uikit.models.OSTAnalyserState as KmpAnalyserState
-import co.onestep.kmp.uikit.models.OSTAssistiveDevice as KmpAssistiveDevice
 import co.onestep.kmp.uikit.models.OSTDailyBackgroundMeasurement as KmpDailyMeasurement
 import co.onestep.kmp.uikit.models.OSTDiscreteColor as KmpDiscreteColor
-import co.onestep.kmp.uikit.models.OSTError as KmpError
-import co.onestep.kmp.uikit.models.OSTEvent as KmpEvent
+import co.onestep.kmp.sdk.OSTError as KmpError
+import co.onestep.kmp.sdk.OSTEvent as KmpEvent
 import co.onestep.kmp.uikit.models.OSTInsight as KmpInsight
 import co.onestep.kmp.uikit.models.OSTInsightType as KmpInsightType
 import co.onestep.kmp.uikit.models.OSTInsights as KmpInsights
 import co.onestep.kmp.uikit.models.OSTIntent as KmpIntent
-import co.onestep.kmp.uikit.models.OSTLevelOfAssistance as KmpLevelOfAssistance
 import co.onestep.kmp.uikit.models.OSTMeasurementMetadata as KmpMetadata
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement as KmpMeasurement
 import co.onestep.kmp.uikit.models.OSTNorm as KmpNorm
@@ -192,6 +190,7 @@ fun CoreMeasurement.toKmp(): KmpMeasurement = KmpMeasurement(
     },
     error = error?.toKmp(),
     resultState = resultState?.toKmp(),
+    summaryUrl = summaryUrl,
 )
 
 fun KmpMeasurement.toCore(): CoreMeasurement {

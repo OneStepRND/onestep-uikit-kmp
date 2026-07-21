@@ -383,4 +383,17 @@
     <string name="wheel_picker_blank">---</string>
     <string name="summary_manually_reported">Manually reported</string>
     <string name="edit_result_content_description">Edit result</string>
+    <!-- Month abbreviations (Jan–Dec), used by kotlinx-datetime date formatters -->
+    <string name="month_abbrev_jan">Jan</string>
+    <string name="month_abbrev_feb">Feb</string>
+    <string name="month_abbrev_mar">Mar</string>
+    <string name="month_abbrev_apr">Apr</string>
+    <string name="month_abbrev_may">May</string>
+    <string name="month_abbrev_jun">Jun</string>
+    <string name="month_abbrev_jul">Jul</string>
+    <string name="month_abbrev_aug">Aug</string>
+    <string name="month_abbrev_sep">Sep</string>
+    <string name="month_abbrev_oct">Oct</string>
+    <string name="month_abbrev_nov">Nov</string>
+    <string name="month_abbrev_dec">Dec</string>
 </resources>

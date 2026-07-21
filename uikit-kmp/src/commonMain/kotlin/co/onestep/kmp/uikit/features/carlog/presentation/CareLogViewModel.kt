@@ -34,7 +34,7 @@ import co.onestep.kmp.uikit.models.OSTState
 import co.onestep.kmp.uikit.models.OSTTimeRangeFilter
 import co.onestep.kmp.uikit.models.OSTTimeRangedDataRequest
 import co.onestep.kmp.uikit.models.OSTTimeRangeSlicer
-import co.onestep.kmp.uikit.models.currentTimeMillis
+import co.onestep.kmp.sdk.currentTimeMillis
 import co.onestep.kmp.uikit.utils.ResourceProvider
 import co.onestep.kmp.uikit.utils.toColor
 import co.onestep.kmp.uikit.utils.toColorDescription

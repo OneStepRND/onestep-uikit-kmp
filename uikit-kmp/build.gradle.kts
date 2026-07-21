@@ -14,8 +14,8 @@ plugins {
 group = "co.onestep.kmp"
 
 val versionMajor = 0
-val versionMinor = 4
-val versionPatch = 1
+val versionMinor = 5
+val versionPatch = 6
 
 val baseVersionName = "$versionMajor.$versionMinor.$versionPatch"
 val githubSnapshot = (findProperty("githubSnapshot") as String?)?.toBoolean() == true
@@ -79,6 +79,7 @@ kotlin {
             implementation(libs.lifecycle.viewmodel.navigation3)
             // Design System
             api(libs.onestep.design.system)
+            implementation(libs.kotlinx.datetime)
         }
 
         commonTest.dependencies {

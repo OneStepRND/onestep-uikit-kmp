@@ -1,6 +1,6 @@
 package co.onestep.kmp.uikit
 
-import co.onestep.kmp.uikit.models.OSTEvent
+import co.onestep.kmp.sdk.OSTEvent
 
 /**
  * Interface for handling UIKit analytics events.
