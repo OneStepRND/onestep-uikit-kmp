@@ -66,6 +66,10 @@ kotlin {
             baseName = "OSTUIKit"
             isStatic = true
             xcf.add(this)
+            // Load-bearing: downstream apps (e.g. clinician-app-kmp) consume design-system
+            // transitively through this framework and declare no direct dependency on it.
+            // This export is the ONLY way Swift sees design-system symbols — do not drop it or
+            // demote the matching commonMain api() to implementation without updating consumers.
             export(libs.onestep.design.system)
         }
     }
@@ -87,7 +91,10 @@ kotlin {
             // KMP Navigation 3
             implementation(libs.navigation3.ui)
             implementation(libs.lifecycle.viewmodel.navigation3)
-            // Design System
+            // Design System — api (not implementation) is load-bearing: downstream apps
+            // (e.g. clinician-app-kmp) rely on this transitive edge and declare no direct
+            // design-system dependency. uikit-kmp is the single source of truth for its version.
+            // See the matching export() in the iOS framework block for the Swift side.
             api(libs.onestep.design.system)
             implementation(libs.kotlinx.datetime)
         }
