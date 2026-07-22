@@ -118,7 +118,10 @@ private func toKmp(_ m: OneStepSDK.OSTMotionMeasurement) -> KMPMotionMeasurement
         parameterArrays: kmpParamArrays,
         status: statusString,
         error: kmpError,
-        resultState: resultStateString
+        resultState: resultStateString,
+        // Static Balance (and other) web-summary URL — carried through so the KMP facade's
+        // readSingleMotionMeasurement().summaryUrl resolves on iOS (OS-15970).
+        summaryUrl: m.summary_url
     )
 }
 
