@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.android.kmp.library)
     alias(libs.plugins.maven.publish)
     alias(libs.plugins.signing)
     alias(libs.plugins.nmcp)
@@ -15,7 +15,7 @@ group = "co.onestep.kmp"
 
 val versionMajor = 0
 val versionMinor = 5
-val versionPatch = 6
+val versionPatch = 8
 
 val baseVersionName = "$versionMajor.$versionMinor.$versionPatch"
 val githubSnapshot = (findProperty("githubSnapshot") as String?)?.toBoolean() == true
@@ -38,11 +38,21 @@ kotlin {
         }
     }
 
-    androidTarget {
-        publishLibraryVariants("release")
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+    androidLibrary {
+        namespace = "co.onestep.kmp.uikit"
+        compileSdk = 37
+        minSdk = 26
+
+        // Ship consumer ProGuard rules to downstream apps (was consumerProguardFiles in the
+        // old com.android.library DSL).
+        optimization {
+            consumerKeepRules.publish = true
+            consumerKeepRules.file("consumer-rules.pro")
         }
+
+        // Package Compose Multiplatform resources (Res.string / Res.drawable) into the Android
+        // artifact; without it the strings/images silently fail to resolve at runtime.
+        experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
     }
 
     val xcf = XCFramework("OSTUIKit")
@@ -99,33 +109,6 @@ kotlin {
         }
 
         iosMain.dependencies {
-        }
-    }
-}
-
-android {
-    namespace = "co.onestep.kmp.uikit"
-    compileSdk = 36
-
-    defaultConfig {
-        minSdk = 26
-        consumerProguardFiles("consumer-rules.pro")
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    buildFeatures {
-        compose = true
-    }
-
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            pickFirsts += "META-INF/LICENSE.md"
-            pickFirsts += "META-INF/LICENSE-notice.md"
         }
     }
 }

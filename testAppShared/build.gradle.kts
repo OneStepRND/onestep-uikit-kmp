@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.android.kmp.library)
 }
 
 // Test-org credentials (API keys + identity-verification secrets) are NOT committed.
@@ -62,10 +62,11 @@ kotlin {
         }
     }
 
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
-        }
+    androidLibrary {
+        namespace = "co.onestep.kmp.uikit.testapp.shared"
+        compileSdk = 37
+        minSdk = 28
+        experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
     }
 
     // The test-app framework keeps the library's module name (OSTUIKit) and re-exports
@@ -116,20 +117,3 @@ kotlin {
     }
 }
 
-android {
-    namespace = "co.onestep.kmp.uikit.testapp.shared"
-    compileSdk = 36
-
-    defaultConfig {
-        minSdk = 28
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    buildFeatures {
-        compose = true
-    }
-}

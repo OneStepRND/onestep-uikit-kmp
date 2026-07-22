@@ -1,18 +1,17 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.compose.compiler)
 }
 
 android {
     namespace = "co.onestep.kmp.uikit.testapp"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "co.onestep.kmp.uikit.testapp"
         minSdk = 28
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
     }
@@ -38,12 +37,6 @@ android {
             pickFirsts += "META-INF/LICENSE.md"
             pickFirsts += "META-INF/LICENSE-notice.md"
         }
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
     }
 }
 
