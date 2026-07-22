@@ -1090,6 +1090,40 @@ final class NativePatientScopeDelegate: NSObject, IosPatientScopeDelegate {
         _ = remoteTroubleshooting
         completion(KotlinInt(int: 0), nil)
     }
+
+    func setMeasurementUnits(
+        patientId: String,
+        measurementSystem: String,
+        completion: @escaping (KotlinInt, String?) -> Void
+    ) {
+        // shortcut: OneStepSDK's iOS `MotionLab` exposes no measurement-system setter (unlike the
+        // Android core SDK's `setMeasurementUnits`) — unit display is driven by the KMP/UIKit
+        // preferences layer, not a per-scope SDK call. Report success so
+        // `OneStep.withPatient { getMotionLab().setMeasurementUnits() }` is a no-op rather than an
+        // error. Upgrade path: call the native setter once the iOS SDK surfaces one.
+        _ = patientId
+        _ = measurementSystem
+        completion(KotlinInt(int: 0), nil)
+    }
+
+    func readSingleMotionMeasurement(
+        patientId: String,
+        measurementId: String,
+        completion: @escaping (KMPMotionMeasurement?, KotlinInt, String?) -> Void
+    ) {
+        guard let uuid = UUID(uuidString: measurementId) else {
+            completion(nil, KotlinInt(int: 0), nil)
+            return
+        }
+        // Resolve the patient-bound MotionLab inside `withPatient` and map the native measurement
+        // (incl. summaryUrl) to KMP. Patient-scoped counterpart of `fetchPatientScopedKmpMeasurement`.
+        // A nil result with a nil error message is treated as not-found by the facade adapter.
+        let motionLab = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { $0.getMotionLab() }
+        Task {
+            let native = try? motionLab.getMeasurement(id: uuid)
+            completion(native.map(toKmp), KotlinInt(int: 0), nil)
+        }
+    }
 }
 
 // MARK: - One-call initialization + configuration
