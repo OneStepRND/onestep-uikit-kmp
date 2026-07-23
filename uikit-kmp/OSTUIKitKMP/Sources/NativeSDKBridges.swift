@@ -410,6 +410,19 @@ final class PatientScopedRecorderDelegate: NativeRecorderDelegate {
             )
         }
     }
+
+    /// Analysis uploads the recording and polls its result through `SDKNetworkService`, which
+    /// resolves the target patient from the `ScopedPatientContext.patientId` @TaskLocal set by
+    /// `withPatient`. `super.analyze` spawns `Task { await recorder.analyze() }`; task-locals are
+    /// captured by a Task at creation, so we must create that Task INSIDE the `withPatient` binding —
+    /// exactly like `start`. Without this the analyze/upload runs with no patient bound in clinician
+    /// mode, the patient-scoped analyzer result never arrives, and the flow hits its UI timeout
+    /// (recording itself still works because `start` is already pinned).
+    override func analyze(uuid: String?, timeoutMs: Int64, completion: @escaping (KMPMotionMeasurement?) -> Void) {
+        OneStepSDK.OneStep.withPatient(patientId) { _ in
+            super.analyze(uuid: uuid, timeoutMs: timeoutMs, completion: completion)
+        }
+    }
 }
 
 // MARK: - SDK delegate
