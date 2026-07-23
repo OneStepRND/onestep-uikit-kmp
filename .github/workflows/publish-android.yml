@@ -1,7 +1,7 @@
 name: Publish Android (Maven Snapshot)
 
 permissions:
-  contents: read
+  contents: write  # create + push the uikit-kmp-<version> git tag on publish
   packages: write  # publish to this repo's GitHub Packages maven repo
 
 on:
@@ -73,6 +73,31 @@ jobs:
         run: |
           ./gradlew uikit-kmp:publishAllPublicationsToGitHubPackagesRepository \
             ${{ steps.props.outputs.gradle_props }} --no-parallel --max-workers=2
+
+      # Tag the published commit so main stays consistent with published versions.
+      # Matches the iOS convention (uikit-kmp-<version>, see publish-xcframework.sh).
+      # Uses the checkout-persisted GITHUB_TOKEN (not the PAT) so the tag never
+      # re-triggers workflows. Snapshots move a mutable tag; releases never clobber.
+      - name: Tag published version on the commit
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.gav.outputs.version }}"
+          TAG="uikit-kmp-${VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [[ "$VERSION" == *-SNAPSHOT ]]; then
+            echo "Snapshot: moving mutable tag $TAG to $(git rev-parse --short HEAD)"
+            git tag -f "$TAG"
+            git push -f origin "refs/tags/$TAG"
+          else
+            if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+              echo "Release tag $TAG already exists - leaving it untouched."
+            else
+              git tag "$TAG"
+              git push origin "refs/tags/$TAG"
+            fi
+          fi
+          echo "Tagged $TAG at $(git rev-parse HEAD)"
 
       - name: Publication summary
         run: |
