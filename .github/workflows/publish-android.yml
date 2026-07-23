@@ -56,8 +56,9 @@ jobs:
           fi
           echo "gradle_props=$PROPS" >> "$GITHUB_OUTPUT"
 
-      - name: Assemble release
-        run: ./gradlew uikit-kmp:assembleRelease ${{ steps.props.outputs.gradle_props }}
+      # Note: no separate "assemble" smoke step — since the Gradle 9 move,
+      # `uikit-kmp:assembleRelease` is an ambiguous task-name abbreviation (only the XCFramework
+      # fat-framework tasks match), and the publish step below assembles the publications itself.
 
       - name: Resolve version
         id: gav
