@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -150,11 +151,20 @@ internal fun Summary(
     val scope = rememberCoroutineScope()
     val tabSwitchScope = rememberCoroutineScope()
     val currentDensity = LocalDensity.current
+    // Bottom navigation-bar inset. The content region is edge-to-edge (see Scaffold's zeroed
+    // contentWindowInsets below); the sticky Continue bar applies this inset itself, and the
+    // scroll content reserves it so the last item can clear the floating bar + system nav bar.
+    val navigationBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     // Track collapse progress for the small circle in toolbar (0 = expanded, 1 = collapsed)
     var collapseProgress by remember { mutableFloatStateOf(0f) }
 
     Scaffold(
+        // Edge-to-edge: the content draws behind the system nav bar (the fading sticky bar hides
+        // it) so the nav-bar inset is applied exactly once — on the Continue bar — instead of
+        // being reserved here as well, which previously pushed the button a nav-bar height too
+        // high. The top inset still comes from the measured topBar.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             CompositionLocalProvider(LocalDensity provides currentDensity) {
                 Crossfade(
@@ -253,7 +263,10 @@ internal fun Summary(
                                             .fillMaxHeight()
                                             .background(LocalOSColors.current.neutral_m5)
                                             .padding(
-                                                bottom = if (continueAction == null) 0.dp else BRAND_BUTTON_PADDING,
+                                                // Reserve the nav-bar inset (content is edge-to-edge) plus the
+                                                // sticky Continue bar height so the last item clears both.
+                                                bottom = navigationBarsBottom +
+                                                    if (continueAction == null) 0.dp else BRAND_BUTTON_PADDING,
                                             ),
                                 ) { page ->
                                     // In single-tab mode (showTabs = false), map page 0 to Gait Lab content
