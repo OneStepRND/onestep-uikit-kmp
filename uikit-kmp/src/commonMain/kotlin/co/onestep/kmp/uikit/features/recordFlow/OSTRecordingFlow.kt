@@ -31,6 +31,10 @@ private enum class FlowPhase { PERMISSION_FLOW, RECORDING_FLOW }
  *        registered at `configure` time (the flow fails fast otherwise). The id is never attached
  *        to analytics, logs, or screen names (HIPAA).
  * @param onResult Callback invoked when the recording flow produces an event (completion, error, etc.).
+ * @param onFinished Callback invoked with the terminal [OSTRecordingFlowResult] — the measurement
+ *        id plus the `summaryUrl` the host opens in a web view — immediately before [onDismiss].
+ *        Fires only when the flow produced an analyzed measurement; a plain cancel/exit signals
+ *        through [onDismiss] alone. The summary URL is never routed through [onResult] (HIPAA).
  * @param onDismiss Callback invoked when the user dismisses the flow.
  * @param shouldShowSoundInstructions Platform callback: returns true if device volume is low/silent.
  * @param onAskMicrophonePermission Platform callback: triggers system microphone permission dialog.
@@ -43,6 +47,7 @@ fun OSTRecordingFlow(
     config: OSTRecordingConfiguration,
     patientId: String? = null,
     onResult: (OSTEvent) -> Unit,
+    onFinished: (OSTRecordingFlowResult) -> Unit = {},
     onDismiss: () -> Unit = {},
     shouldShowSoundInstructions: () -> Boolean = { false },
     onAskMicrophonePermission: () -> Unit = {},
@@ -82,6 +87,7 @@ fun OSTRecordingFlow(
                     config = config,
                     patientId = patientId,
                     onResult = onResult,
+                    onFinished = onFinished,
                     onDismiss = onDismiss,
                     shouldShowSoundInstructions = shouldShowSoundInstructions,
                     onAskMicrophonePermission = onAskMicrophonePermission,

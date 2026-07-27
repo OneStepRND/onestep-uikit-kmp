@@ -258,6 +258,17 @@ private fun AuthenticatedContent(
                 lastEvent = "${current.config.activityType.name}: ${event.name}$idSuffix"
                 screen = if (current.returnToCareLog) TestAppScreen.CareLog else TestAppScreen.Home
             },
+            // What a real host does with this: open `result.summaryUrl` in a web view. The harness
+            // only reports whether the URL arrived — the link is patient-scoped, so it is never
+            // written to the UI label or a log line. (HIPAA)
+            onFinished = { result ->
+                lastEvent = buildString {
+                    append(current.config.activityType.name)
+                    append(": finished")
+                    result.measurementId?.let { append(" (id:${it.take(8)})") }
+                    append(if (result.summaryUrl.isNullOrEmpty()) " — no summaryUrl" else " — summaryUrl ✓")
+                }
+            },
             onDismiss = { screen = TestAppScreen.Home },
         )
 

@@ -21,6 +21,7 @@ import co.onestep.kmp.uikit.features.permissions.OSTPermissionMode
 import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionChecker
 import co.onestep.kmp.uikit.features.permissions.ios.screens.IosMicrophonePermissionScreen
 import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlow
+import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlowResult
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
 import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
@@ -160,6 +161,39 @@ object OSTUIKitIos {
         checkConfigured()
         return ComposeUIViewController {
             OSTRecordingFlow(config = config, patientId = patientId, onResult = onResult, onDismiss = onDismiss)
+        }.applyDefaultStyle()
+    }
+
+    /**
+     * Create a UIViewController for the recording flow that delivers the typed terminal result.
+     *
+     * This is the iOS counterpart of the Swift uikit's `onDismissResult`: [onFinished] fires with
+     * the measurement id and the `summaryUrl` to open in a web view, immediately before
+     * [onDismiss]. Prefer this overload over the event-only ones when the host presents the web
+     * summary. The summary URL is never routed through [onResult] (HIPAA).
+     *
+     * @param config Recording configuration (activity type, duration, post-tagging, etc.).
+     * @param onResult Callback invoked when the recording flow produces an event.
+     * @param onFinished Callback invoked with the terminal [OSTRecordingFlowResult]. Fires only
+     *        when the flow produced an analyzed measurement.
+     * @param onDismiss Callback invoked when the flow should be dismissed.
+     */
+    fun createRecordingFlowViewController(
+        config: OSTRecordingConfiguration,
+        patientId: String? = null,
+        onResult: (OSTEvent) -> Unit,
+        onFinished: (OSTRecordingFlowResult) -> Unit,
+        onDismiss: () -> Unit,
+    ): UIViewController {
+        checkConfigured()
+        return ComposeUIViewController {
+            OSTRecordingFlow(
+                config = config,
+                patientId = patientId,
+                onResult = onResult,
+                onFinished = onFinished,
+                onDismiss = onDismiss,
+            )
         }.applyDefaultStyle()
     }
 

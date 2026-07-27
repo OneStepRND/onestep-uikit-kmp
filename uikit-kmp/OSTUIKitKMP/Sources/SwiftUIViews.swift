@@ -11,31 +11,50 @@ import OSTUIKit
 /// ```swift
 /// OSTRecordingFlowView(
 ///     config: OSTRecordingConfiguration.companion.defaultWalk(),
-///     onResult: { event in handleResult(event) }
+///     onResult: { event in handleResult(event) },
+///     onFinished: { result in
+///         // result.summaryUrl -> present a web view
+///     },
+///     onDismiss: { dismiss() }
 /// )
 /// ```
 public struct OSTRecordingFlowView: UIViewControllerRepresentable {
     private let config: OSTRecordingConfiguration
     private let patientId: String?
     private let onResult: (OSTEvent) -> Void
+    private let onFinished: ((OSTRecordingFlowResult) -> Void)?
     private let onDismiss: (() -> Void)?
 
     /// - Parameter patientId: Clinician-mode selector. `nil` (default) records for the current
     ///   authenticated user. A non-nil OneStep patient UUID records patient-scoped for that patient
     ///   (requires the native SDK wiring from `configureOSTUIKitKMPWithNativeSDK()`). Never logged.
+    /// - Parameter onFinished: Terminal result of the flow — the measurement id plus the
+    ///   `summaryUrl` to open in a web view — delivered immediately before `onDismiss`. Fires only
+    ///   when the flow produced an analyzed measurement. Requires `onDismiss` to be non-nil.
     public init(
         config: OSTRecordingConfiguration,
         patientId: String? = nil,
         onResult: @escaping (OSTEvent) -> Void,
+        onFinished: ((OSTRecordingFlowResult) -> Void)? = nil,
         onDismiss: (() -> Void)? = nil
     ) {
         self.config = config
         self.patientId = patientId
         self.onResult = onResult
+        self.onFinished = onFinished
         self.onDismiss = onDismiss
     }
 
     public func makeUIViewController(context: Context) -> UIViewController {
+        if let onFinished, let onDismiss {
+            return OSTUIKitIos.shared.createRecordingFlowViewController(
+                config: config,
+                patientId: patientId,
+                onResult: onResult,
+                onFinished: onFinished,
+                onDismiss: onDismiss
+            )
+        }
         if let onDismiss {
             return OSTUIKitIos.shared.createRecordingFlowViewController(
                 config: config,

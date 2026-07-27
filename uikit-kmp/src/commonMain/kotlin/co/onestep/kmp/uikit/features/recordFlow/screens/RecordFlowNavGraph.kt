@@ -40,6 +40,7 @@ import co.onestep.kmp.uikit.features.audio.PlatformAudioPlayerAdapter
 import co.onestep.kmp.uikit.features.audio.PlatformTTSPlayerAdapter
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowError
+import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlowResult
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowOutcome
 import co.onestep.kmp.uikit.features.recordFlow.ResultHandler
 import co.onestep.kmp.uikit.features.recordFlow.components.Toolbar
@@ -145,6 +146,7 @@ internal fun RecordFlowNavGraph(
     config: OSTRecordingConfiguration,
     patientId: String? = null,
     onResult: (OSTEvent) -> Unit,
+    onFinished: (OSTRecordingFlowResult) -> Unit = {},
     onDismiss: () -> Unit,
     shouldShowSoundInstructions: () -> Boolean = { false },
     onAskMicrophonePermission: () -> Unit = {},
@@ -608,6 +610,7 @@ internal fun RecordFlowNavGraph(
                     viewModel.motionMeasurement.value,
                     viewModel.sessionUuid,
                     onResult,
+                    onFinished,
                     onDismiss,
                 )
             },
@@ -641,6 +644,23 @@ internal fun RecordFlowNavGraph(
                                 viewModel.onBalanceConditionSaved(outcome.measurement)
                                 backStack.popUpToInclusive(RecordingDestination)
                                 backStack.add(RecordingSavedDestination)
+                            } else if (shouldSkipNativeSummary(
+                                    config.showSummaryScreen,
+                                    outcome.measurement,
+                                )
+                            ) {
+                                // None / WEB-with-a-url: the flow is over here. Finish with the
+                                // measurement id + summaryUrl so the host opens the web summary,
+                                // exactly like uikit's RecordFlowFragment.onMeasurementResult.
+                                // WEB without a summaryUrl (server bug) falls through to the
+                                // native summary rather than dead-ending the user.
+                                finishWithMeasurement(
+                                    measurement = outcome.measurement,
+                                    sessionUuid = null,
+                                    onResult = onResult,
+                                    onFinished = onFinished,
+                                    onDismiss = onDismiss,
+                                )
                             } else {
                                 backStack.popUpToInclusive(RecordingDestination)
                                 backStack.add(SummaryResultDestination)
@@ -702,14 +722,17 @@ internal fun RecordFlowNavGraph(
                     options = OSTSummaryOptions.Full,
                     origin = OSTSummaryOrigin.Recording,
                     configuration = config,
+                    // Dismissing the native summary still delivers the full result (id +
+                    // summaryUrl) — uikit's SummaryFragment does the same, so a host can offer
+                    // "open the web summary" after the in-app one.
                     onDismiss = {
-                        onResult(
-                            OSTEvent(
-                                name = "recording_completed",
-                                properties = mapOf("measurement_id" to measurement.id),
-                            )
+                        finishWithMeasurement(
+                            measurement = measurement,
+                            sessionUuid = null,
+                            onResult = onResult,
+                            onFinished = onFinished,
+                            onDismiss = onDismiss,
                         )
-                        onDismiss()
                     },
                 )
             }
@@ -852,6 +875,7 @@ internal fun RecordFlowNavGraph(
                                 viewModel.lastSavedBalanceMeasurement,
                                 viewModel.sessionUuid,
                                 onResult,
+                                onFinished,
                                 onDismiss,
                             )
                         }
@@ -1175,10 +1199,57 @@ private fun adjustToolBar(
 }
 
 /**
- * Finishes the Static Balance flow with the web summary (OS-15960). The KMP flow has no
- * native summary and no [OSTMotionMeasurement.summaryUrl]; instead it emits a
- * `recording_completed` [OSTEvent] carrying the last completed condition's measurement id and
- * the session grouping key, so the host app opens the web summary, then dismisses the flow.
+ * True when the analyzed measurement should bypass the native summary screen and finish the
+ * flow immediately, handing the result to the host — uikit's `webShortCircuit` rule:
+ *
+ *  - [OSTSummaryOptions.None]: never show a summary.
+ *  - [OSTSummaryOptions.WEB]: show no summary *provided* the server returned a `summaryUrl`;
+ *    without one there is nothing for the host to open, so fall back to the native summary.
+ */
+private fun shouldSkipNativeSummary(
+    option: OSTSummaryOptions,
+    measurement: OSTMotionMeasurement,
+): Boolean = option == OSTSummaryOptions.None ||
+    (option == OSTSummaryOptions.WEB && !measurement.summaryUrl.isNullOrEmpty())
+
+/**
+ * Single terminal exit for a flow that produced a measurement.
+ *
+ * Emits the `recording_completed` [OSTEvent] (PHI-free: ids only — the summary link never goes
+ * into the analytics stream), then hands the host the typed [OSTRecordingFlowResult] carrying
+ * [OSTMotionMeasurement.summaryUrl] so it can open the web summary, then dismisses.
+ */
+private fun finishWithMeasurement(
+    measurement: OSTMotionMeasurement,
+    sessionUuid: String?,
+    onResult: (OSTEvent) -> Unit,
+    onFinished: (OSTRecordingFlowResult) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    onResult(
+        OSTEvent(
+            name = "recording_completed",
+            properties = buildMap {
+                put("measurement_id", measurement.id)
+                sessionUuid?.let { put("session_uuid", it) }
+            },
+        ),
+    )
+    onFinished(
+        OSTRecordingFlowResult(
+            measurementId = measurement.id,
+            summaryUrl = measurement.summaryUrl,
+            sessionUuid = sessionUuid,
+        ),
+    )
+    onDismiss()
+}
+
+/**
+ * Finishes the Static Balance flow with the web summary (OS-15960). Static Balance has no native
+ * summary: the flow finishes with the last completed condition's measurement id, its
+ * [OSTMotionMeasurement.summaryUrl] and the session grouping key, so the host app opens the web
+ * summary showing every condition of the session.
  *
  * When no condition completed this session (no [measurement]), it just dismisses — matching
  * uikit's fallback of exiting cleanly rather than looping on an error screen.
@@ -1187,18 +1258,12 @@ private fun finishStaticBalance(
     measurement: OSTMotionMeasurement?,
     sessionUuid: String,
     onResult: (OSTEvent) -> Unit,
+    onFinished: (OSTRecordingFlowResult) -> Unit,
     onDismiss: () -> Unit,
 ) {
     if (measurement != null) {
-        onResult(
-            OSTEvent(
-                name = "recording_completed",
-                properties = mapOf(
-                    "measurement_id" to measurement.id,
-                    "session_uuid" to sessionUuid,
-                ),
-            ),
-        )
+        finishWithMeasurement(measurement, sessionUuid, onResult, onFinished, onDismiss)
+    } else {
+        onDismiss()
     }
-    onDismiss()
 }

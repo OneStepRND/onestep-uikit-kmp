@@ -32,6 +32,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
+import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
 
 /**
  * A selectable recording preset. [key] doubles as the testTag suffix (`activity.WALK`, …), matching
@@ -135,6 +136,19 @@ fun ConfigureFlowScreen(
                 testTag = "toggle.permissionExplanation",
                 checked = config.showPermissionExplanationScreen,
                 onCheckedChange = { config = config.copy(showPermissionExplanationScreen = it) },
+            )
+            // WEB skips the native summary and finishes the flow with the measurement's
+            // summaryUrl, which the host opens in a web view.
+            ToggleRow(
+                label = "Web summary (skip native summary)",
+                testTag = "toggle.webSummary",
+                checked = config.showSummaryScreen == OSTSummaryOptions.WEB,
+                onCheckedChange = { web ->
+                    config = config.copy(
+                        showSummaryScreen =
+                            if (web) OSTSummaryOptions.WEB else OSTSummaryOptions.Full,
+                    )
+                },
             )
 
             Spacer(Modifier.height(24.dp))
