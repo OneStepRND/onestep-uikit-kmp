@@ -140,7 +140,10 @@ private final class NativeShellDelegate: NSObject, IosTestAppShellDelegate {
         }
     }
 
-    func clearPatient() {
+    // Exported by Kotlin/Native as `clearPatient_()` (trailing underscore): the plain
+    // `clearPatient` selector collides with the SDK-bridge protocols that also export a
+    // `clearPatient` returning a value, so K/N disambiguates this Unit-returning one.
+    func clearPatient_() {
         // The native SDK keeps its own session; the shared UI treats the shell state as logged out.
         MockRecording.clear()
     }
