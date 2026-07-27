@@ -134,7 +134,9 @@ private fun CareLogContentTitle(showInfoSheet: MutableState<Boolean>) {
             fontSize = 20.sp,
             lineHeight = 24.sp,
             fontWeight = FontWeight.W600,
-            color = LocalOSColors.current.neutral_m4,
+            // Foreground role (dark in light, near-white in dark). Was neutral_m4 (a surface
+            // role), i.e. invisible once the screen paints its own neutral_m4 background.
+            color = LocalOSColors.current.neutral_p3,
             modifier = Modifier.align(Alignment.CenterVertically),
         )
         Spacer(modifier = Modifier.width(10.dp))

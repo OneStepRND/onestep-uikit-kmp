@@ -25,7 +25,6 @@ import co.onestep.kmp.uikit.features.recordFlow.screensData.ToolBarData
 import co.onestep.kmp.uikit.features.summary.components.OSTTabData
 import co.onestep.kmp.uikit.features.summary.components.OSTTabsRow
 import co.onestep.kmp.uikit.models.OSTActivityType
-import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.background
@@ -130,7 +129,9 @@ private fun TabbedCarLog(
 ) {
     Column {
         OSTTabsRow(
-            containerColor = LocalOSColors.current.neutral_p3,
+            // Default container (neutral_m4) + the row's own neutral_p3/neutral_p2 label colors,
+            // matching the Summary tabs. The previous neutral_p3 container equalled the selected
+            // label colour, so the active tab was invisible (worst in dark mode).
             selectedTabIndex = pagerState.currentPage,
             tabs =
                 listOf(

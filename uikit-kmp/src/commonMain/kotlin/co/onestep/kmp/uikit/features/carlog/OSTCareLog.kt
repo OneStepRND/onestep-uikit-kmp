@@ -14,6 +14,7 @@ import co.onestep.kmp.uikit.features.carlog.presentation.CareLogViewModel
 import co.onestep.kmp.uikit.features.carlog.screens.CarLogScreen
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.ui.theme.OneStepUiKitTheme
+import co.onestep.designsystem.theme.LocalOSColors
 
 /**
  * Composable entry point for the Care Log screen.
@@ -65,7 +66,15 @@ fun OSTCareLog(
     }
 
     OneStepUiKitTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
+        // Paint the screen from the design-system surface/foreground roles (like the Summary and
+        // record-flow screens) instead of the bare Material `surface`/`onSurface` slots, which the
+        // kit maps to the inverted neutrals (neutral_p3 background, neutral_m5 content) and left
+        // Care Log unreadable in dark mode.
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = LocalOSColors.current.neutral_m4,
+            contentColor = LocalOSColors.current.neutral_p3,
+        ) {
             CarLogScreen(
                 modifier = Modifier.fillMaxSize(),
                 carLogScreenState = inAppState,

@@ -42,7 +42,7 @@ internal fun InAppCarLogScreen(
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .background(LocalOSColors.current.neutral_p3),
+                            .background(LocalOSColors.current.neutral_m4),
                     ) {
                         OSText(
                             modifier =
