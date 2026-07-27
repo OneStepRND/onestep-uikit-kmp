@@ -27,7 +27,7 @@ loss, thread-safety, PII/PHI handling, accessibility, anything explicitly reques
 ## KMP rules
 
 - **Every change must compile for Android AND iOS.** The compile gate is:
-  `./gradlew :uikit-kmp:compileDebugKotlinAndroid :uikit-kmp:compileKotlinIosSimulatorArm64`
+  `./gradlew :uikit-kmp:compileAndroidMain :uikit-kmp:compileKotlinIosSimulatorArm64`
   Run it before claiming any task complete — an Android-only compile proves nothing here.
 - Code goes in `commonMain` unless it genuinely needs platform APIs; then `expect`/`actual`
   or an interface implemented in `androidMain`/`iosMain`. Don't leak platform types into
@@ -64,8 +64,8 @@ Global Compose rules apply (stable params, hoisted state, previews). KMP additio
 
 | What | Command |
 |---|---|
-| Compile gate (both platforms) | `./gradlew :uikit-kmp:compileDebugKotlinAndroid :uikit-kmp:compileKotlinIosSimulatorArm64` |
-| Unit tests | `./gradlew :uikit-kmp:testDebugUnitTest` |
+| Compile gate (both platforms) | `./gradlew :uikit-kmp:compileAndroidMain :uikit-kmp:compileKotlinIosSimulatorArm64` |
+| Unit tests | `./gradlew :uikit-kmp:iosSimulatorArm64Test` (android host tests are not enabled) |
 | Android harness APK | `./gradlew :androidTestApp:assembleDebug` |
 | iOS harness (XCFramework + resources + xcodeproj) | `./iosTestApp/rebuild.sh` |
 | Publishing | see `README.md` / `scripts/publish*.sh` |
