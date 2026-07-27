@@ -1,0 +1,43 @@
+name: iOS SDK version in sync
+
+# Fails if the onestep-sdk-ios pin drifts from the source of truth
+# (gradle/libs.versions.toml -> onestepSdkIos). Realign with
+# ./scripts/sync-ios-sdk-version.sh and commit the result.
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - 'gradle/libs.versions.toml'
+      - 'Package.swift'
+      - 'scripts/publish-xcframework.sh'
+      - 'uikit-kmp/OSTUIKitKMP/Package.swift'
+      - 'iosTestApp/project.yml'
+      - 'iosTestApp/OSTUIKitTestApp.xcodeproj/project.pbxproj'
+      - 'iosTestApp/OSTUIKitTestApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved'
+      - 'scripts/sync-ios-sdk-version.sh'
+      - '.github/workflows/ios-sdk-version.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'gradle/libs.versions.toml'
+      - 'Package.swift'
+      - 'scripts/publish-xcframework.sh'
+      - 'uikit-kmp/OSTUIKitKMP/Package.swift'
+      - 'iosTestApp/project.yml'
+      - 'iosTestApp/OSTUIKitTestApp.xcodeproj/project.pbxproj'
+      - 'iosTestApp/OSTUIKitTestApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved'
+      - 'scripts/sync-ios-sdk-version.sh'
+      - '.github/workflows/ios-sdk-version.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify iOS SDK pins are in sync
+        run: ./scripts/sync-ios-sdk-version.sh --check
