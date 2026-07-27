@@ -39,6 +39,14 @@ interface IosSDKDelegate {
      * unchanged on failure).
      */
     fun updateCustomMetadata(metadata: Map<String, Any>, completion: (Map<String, Any>) -> Unit)
+
+    /**
+     * Triggers an immediate SDK data sync for the identified user (uploads pending recordings and
+     * pulls the latest analyzed results). The Swift side resolves the current patient and calls the
+     * native patient-scope `sync()`, completing with `true` on success and `false` on failure or
+     * when no user is identified — never fails the completion.
+     */
+    fun sync(completion: (Boolean) -> Unit)
 }
 
 /**
@@ -108,5 +116,10 @@ class SwiftSDKBridgeAdapter(private val delegate: IosSDKDelegate) : OSTSDKBridge
     override suspend fun updateCustomMetadata(metadata: Map<String, Any>): Map<String, Any> =
         suspendCancellableCoroutine { continuation ->
             delegate.updateCustomMetadata(metadata) { merged -> continuation.resume(merged) }
+        }
+
+    override suspend fun sync(): Boolean =
+        suspendCancellableCoroutine { continuation ->
+            delegate.sync { ok -> continuation.resume(ok) }
         }
 }

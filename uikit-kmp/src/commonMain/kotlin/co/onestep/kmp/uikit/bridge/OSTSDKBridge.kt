@@ -40,4 +40,11 @@ interface OSTSDKBridge {
      * The endpoint only accepts non-null values.
      */
     suspend fun updateCustomMetadata(metadata: Map<String, Any>): Map<String, Any>
+
+    /**
+     * Triggers an immediate SDK data sync for the identified user — uploads pending recordings and
+     * pulls the latest analyzed results from the backend. Returns true on success, false on failure
+     * (or when no user is identified); never throws. Backed by OSTPatientScope.sync().
+     */
+    suspend fun sync(): Boolean
 }

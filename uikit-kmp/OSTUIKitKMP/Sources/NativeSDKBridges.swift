@@ -330,9 +330,20 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
         endTimeMs: KotlinLong?,
         completion: @escaping ([KMPMotionMeasurement]) -> Void
     ) {
-        // shortcut: care-log history not needed for the walk E2E; return empty. Upgrade path: build a
-        // TimeRangedDataRequest from start/end and call motionLab.getMeasurements(request:).
-        completion([])
+        guard let motionLab else { completion([]); return }
+        Task {
+            // shortcut: the time-range filter is treated as "all history" — the Care Log's only
+            // query is before(now), i.e. everything up to now. Upgrade path: map startTimeMs/
+            // endTimeMs and activityType into the native TimeRangedDataRequest.
+            let native = (try? motionLab.getMeasurements(
+                request: TimeRangedDataRequest(startTime: nil, endTime: nil)
+            )) ?? []
+            // Native getMeasurements is chronological (oldest first); honor the requested order
+            // (Care Log asks for DESCENDING / newest first).
+            let ordered: [OneStepSDK.OSTMotionMeasurement] = order == "ASCENDING" ? native : native.reversed()
+            let limited = limit.map { Int($0.int32Value) }.map { Array(ordered.prefix($0)) } ?? ordered
+            completion(limited.map(toKmp))
+        }
     }
 
     func deleteMotionMeasurement(uuid: String, completion: @escaping () -> Void) {
@@ -502,6 +513,25 @@ final class NativeSDKDelegate: NSObject, IosSDKDelegate {
                 completion(out)
             case .failure:
                 completion(metadata)
+            }
+        }
+    }
+
+    // MARK: Data sync
+
+    /// Triggers an immediate SDK data sync for the identified user (uploads pending recordings and
+    /// pulls the latest analyzed results). Resolves the current patient from `authStateValue`, then
+    /// awaits the native patient-scope `sync()` inside `withPatient` — the same shape as
+    /// `NativePatientScopeDelegate.sync`. Completes with `false` when the SDK is uninitialized, no
+    /// user is identified, or the sync fails; never crashes. `patientId` is never logged (HIPAA).
+    func sync(completion: @escaping (KotlinBoolean) -> Void) {
+        guard case .success(let onestep) = OneStepSDK.OneStep.shared() else { completion(KotlinBoolean(bool: false)); return }
+        guard case .identified(let patientId) = onestep.authStateValue else { completion(KotlinBoolean(bool: false)); return }
+        let scope = OneStepSDK.OneStep.withPatient(patientId) { $0 }
+        Task {
+            switch await scope.sync() {
+            case .success: completion(KotlinBoolean(bool: true))
+            case .failure: completion(KotlinBoolean(bool: false))
             }
         }
     }

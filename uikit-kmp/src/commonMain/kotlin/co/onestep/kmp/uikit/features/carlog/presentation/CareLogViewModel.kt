@@ -60,6 +60,7 @@ import co.onestep.kmp.uikit_kmp.generated.resources.ic_knee_extention
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_location_services
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_sts
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_tug
+import co.onestep.kmp.uikit_kmp.generated.resources.ic_refresh
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_walks
 import co.onestep.kmp.uikit_kmp.generated.resources.no_background_data_collected
 import co.onestep.kmp.uikit_kmp.generated.resources.no_background_permission_notice_text
@@ -121,11 +122,17 @@ internal class CareLogViewModel(
 
     val toolbarState = mutableStateOf<ToolBarData?>(ToolBarData())
 
+    val isSyncing = mutableStateOf(false)
+
     fun setupToolBar(endAction: (() -> Unit)? = null) {
         toolbarState.value =
             if (showCloseButton) {
                 ToolBarData(
                     endIcons = listOf(
+                        IconData(
+                            icon = Res.drawable.ic_refresh,
+                            action = { sync() },
+                        ),
                         IconData(
                             icon = Res.drawable.ic_close,
                             action = endAction,
@@ -135,6 +142,26 @@ internal class CareLogViewModel(
             } else {
                 null
             }
+    }
+
+    // Uploads pending recordings and pulls the latest analyzed results, then refreshes the list.
+    // Reentrancy-guarded via isSyncing so repeated taps don't stack syncs.
+    fun sync() {
+        if (isSyncing.value) return
+        viewModelScope.launch {
+            isSyncing.value = true
+            // Show the shimmer while syncing so the tap has visible feedback even when the sync
+            // returns no new measurements (otherwise a working sync looks like nothing happened).
+            _inAppState.value = CarLogScreenState.Loading
+            if (includeBackgroundData) _backgroundScreenState.value = CarLogScreenState.Loading
+            try {
+                sdkBridge.sync()
+            } finally {
+                isSyncing.value = false
+            }
+            fetchCareLog()
+            fetchBackground()
+        }
     }
 
     fun setPermissionState(require: Boolean) {

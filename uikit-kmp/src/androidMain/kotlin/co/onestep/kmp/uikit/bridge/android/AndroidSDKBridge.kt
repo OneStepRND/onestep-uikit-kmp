@@ -1,6 +1,8 @@
 package co.onestep.kmp.uikit.bridge.android
 
 import co.onestep.android.core.OneStep
+import co.onestep.android.core.OSTIdentificationState
+import co.onestep.android.core.OSTPatientScope
 import co.onestep.android.core.getOr
 import co.onestep.android.core.monitoring.OSTMonitoringRuntimeState
 import co.onestep.android.core.monitoring.getMonitoring
@@ -53,4 +55,16 @@ class AndroidSDKBridge(private val oneStep: OneStep) : OSTSDKBridge {
 
     override suspend fun updateCustomMetadata(metadata: Map<String, Any>): Map<String, Any> =
         oneStep.updateCustomMetadata(metadata).getOr(metadata)
+
+    // Immediate data sync for the identified user. sync() lives on the patient scope, so resolve
+    // the current patient id from identificationState, capture the scope out of withPatient (same
+    // capture idiom as AndroidPatientScope), and await sync(). Degrades to false when no user is
+    // identified or on any failure — the OSTSDKBridge contract forbids throwing.
+    override suspend fun sync(): Boolean = runCatching {
+        val patientId = (oneStep.identificationState.value as? OSTIdentificationState.Identified)
+            ?.patientId ?: return false
+        var scope: OSTPatientScope? = null
+        OneStep.withPatient(patientId) { scope = this }
+        scope?.sync()?.getOr(null) != null
+    }.getOrDefault(false)
 }
