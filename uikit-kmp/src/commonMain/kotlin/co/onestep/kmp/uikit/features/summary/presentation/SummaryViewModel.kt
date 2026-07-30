@@ -271,7 +271,7 @@ internal class SummaryViewModel(
         // Loading shimmer forever (the Highlights tab is the default landing tab), which is the
         // "endless shimmer" seen on iOS. Fall back to the null → error empty state instead.
         val insights = try {
-            insightsBridge.getInsightsByUuid(measurement.id)
+            insightsBridge.getInsights(measurement)
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (t: Throwable) {

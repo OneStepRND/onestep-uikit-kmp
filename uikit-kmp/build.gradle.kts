@@ -53,6 +53,9 @@ kotlin {
         // Package Compose Multiplatform resources (Res.string / Res.drawable) into the Android
         // artifact; without it the strings/images silently fail to resolve at runtime.
         experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
+
+        // Run the shared commonTest suite on the JVM: ./gradlew :uikit-kmp:testAndroidHostTest
+        withHostTest {}
     }
 
     val xcf = XCFramework("OSTUIKit")
@@ -101,6 +104,7 @@ kotlin {
 
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
         }
 
         androidMain.dependencies {

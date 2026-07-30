@@ -71,8 +71,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import org.jetbrains.compose.resources.StringResource
-
-private const val DEFAULT_DISPLAY_START_TIME = "00:00"
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class MotionRecorderViewModel(
     private val resourceProvider: ResourceProvider,
@@ -110,6 +109,10 @@ internal class MotionRecorderViewModel(
     private val toolbar = ToolbarStateHolder(resourceProvider)
     private val balanceManager = BalanceSessionManager()
 
+    // The recorder start/stop lifecycle and the recording clock. The ViewModel is the single
+    // stop authority through it: the SDK's start-duration is only a suspended-app backstop.
+    private val session = RecordingSessionController(recorderBridge, viewModelScope)
+
     val recordingLimit: String =
         (recorderBridge.currentRecordingLimit() / 1000 / 60).toInt().toString()
 
@@ -143,14 +146,19 @@ internal class MotionRecorderViewModel(
      */
     var analyticsTracker: RecordFlowAnalyticsTracker? = null
 
-    /** Wall-clock ms when the current recording started, for `elapsed_seconds` on stop. */
-    private var recordingStartedAtMs: Long? = null
-
     var motionMeasurement = mutableStateOf<OSTMotionMeasurement?>(null)
 
     val language: String = resourceProvider.getLocaleLanguageTag().substringBefore("-")
 
     private var timeout = 60
+
+    /** Activity time in seconds after "go"; null = unrestricted (SDK internal cap only). */
+    private val activityDurationSeconds: Int?
+        get() = when {
+            timeout < 0 -> null // Unrestricted walk
+            timeout == 0 -> 60 // Default to 60 seconds
+            else -> timeout
+        }
 
     private var note: String? = null
 
@@ -186,8 +194,6 @@ internal class MotionRecorderViewModel(
 
     /** The condition configured for the upcoming/current recording, if any. */
     val currentBalanceCondition: OSTBalanceCondition? get() = balanceManager.currentBalanceCondition
-
-    private var isRecording = false
 
     private var readyTimeJob: Job? = null
 
@@ -378,6 +384,15 @@ internal class MotionRecorderViewModel(
                         analyticsTracker?.trackMeasurementCountdownScreen(configuration.value.activityType)
                     }
                     startTimerJob(prepareScreenData)
+                    // TUG/STS: the recorder starts already on Get Ready, so the countdown is
+                    // part of the recording; the GO marker written at the RECORDING transition
+                    // tells analysis where the activity actually began. The SDK backstop
+                    // duration therefore also covers the countdown.
+                    if (startsRecorderOnGetReady()) {
+                        session.startEarly(
+                            buildStartRequest(prepareDurationSeconds = prepareScreenData.prepareDuration.seconds),
+                        )
+                    }
                 }
             }
             recodingScreenState.value =
@@ -403,10 +418,12 @@ internal class MotionRecorderViewModel(
         // measurement_seconds is the recorded length in whole seconds (wall-clock
         // since recording start, matching uikit's recorded-length semantics).
         val measurementSeconds =
-            recordingStartedAtMs?.let { ((currentTimeMillis() - it) / 1000L).toInt() } ?: 0
+            session.goTimeMs?.let { ((currentTimeMillis() - it) / 1000L).toInt() } ?: 0
         analyticsTracker?.trackAnalyzingScreen(configuration.value.activityType, measurementSeconds)
-        isRecording = false
         recordingJob?.cancel()
+        // The recording is over (VM stop, or the SDK backstop/cap fired) — drop the session
+        // bookkeeping so a later exit doesn't try to stop an already-stopped recorder.
+        session.onRecordingFinished()
         if (configuration.value.playVoiceOver) {
             if (!audioPlayer.isPlaying()) {
                 audioPlayer.playAudio(localizedAudioKey("recording_stopped"))
@@ -515,7 +532,16 @@ internal class MotionRecorderViewModel(
         }
     }
 
-    private fun startRecording() {
+    /** TUG/STS begin sensor capture on Get Ready; every other activity starts at "go". */
+    private fun startsRecorderOnGetReady(): Boolean =
+        configuration.value.activityType == OSTActivityType.TUG ||
+            configuration.value.activityType == OSTActivityType.STS
+
+    /**
+     * Assembles everything the recorder needs at start (user-input metadata + custom metadata).
+     * Called once per recording — either at Get Ready (TUG/STS early start) or at "go".
+     */
+    private fun buildStartRequest(prepareDurationSeconds: Int = 0): RecordingSessionController.StartRequest {
         customMetadata.putAll(hostCustomMetadata)
         customMetadata["\$ost_uikit_version"] = ""
 
@@ -535,56 +561,55 @@ internal class MotionRecorderViewModel(
             }
         }
 
-        val duration =
-            when (timeout) {
-                -1 -> null // Unrestricted walk
-                0 -> 60 * 1000L // Default to 60 seconds
-                else -> timeout * 1000L // Or set the duration
-            }
-
         // persist the entered length to the SDK-managed custom-metadata store
         saveHallwayLengthToMetadata()
 
+        return RecordingSessionController.StartRequest(
+            activityType = configuration.value.activityType,
+            activityDurationSeconds = activityDurationSeconds,
+            prepareDurationSeconds = prepareDurationSeconds,
+            sensorEnhancedMode = configuration.value.sensorEnhancedMode,
+            userInputMetadata =
+                OSTUserInputMetaData(
+                    note = note,
+                    tags = tags,
+                    assistiveDevice = assistiveDevice,
+                    walkCourseLength =
+                        hallwayManager.hallwayLengthForCurrentTest?.let {
+                            getWalkCourseLength(it, isImperialSystem())
+                        },
+                ),
+            customMetadata =
+                customMetadata.apply {
+                    put(RecorderBridge.READY_FOR_ANALYSIS_KEY, configuration.value.readyForAnalysisUiAssist)
+                },
+        )
+    }
+
+    private fun startRecording() {
         recordingJob =
             viewModelScope.launch {
-                recorderBridge.start(
-                    activityType = configuration.value.activityType,
-                    duration = duration,
-                    sensorEnhancedMode = configuration.value.sensorEnhancedMode,
-                    userInputMetadata =
-                        OSTUserInputMetaData(
-                            note = note,
-                            tags = tags,
-                            assistiveDevice = assistiveDevice,
-                            walkCourseLength =
-                                hallwayManager.hallwayLengthForCurrentTest?.let {
-                                    getWalkCourseLength(it, isImperialSystem())
-                                },
-                        ),
-                    customMetadata =
-                        customMetadata.apply {
-                            put(RecorderBridge.READY_FOR_ANALYSIS_KEY, configuration.value.readyForAnalysisUiAssist)
-                        },
-                )
-                isRecording = true
-                recordingStartedAtMs = currentTimeMillis()
+                session.onGo { buildStartRequest() }
                 configuration.value.instructions?.recordingInstructions?.let {
                     // start TTS instructions sequence
                     startRecordingInstructionsJob(it)
                 }
                 startStepMonitoring()
-                updateTimeTicker()
+                mirrorRecordingClock()
             }
     }
 
-    private suspend fun updateTimeTicker() {
-        val isUnrestricted = timeout < 0
-        val countdown = configuration.value.isCountingDown && !isUnrestricted
-        timerValue.value =
-            if (countdown) timeout.toDisplayTime() else DEFAULT_DISPLAY_START_TIME
-        while (isRecording) {
-            delay(1000L)
-            timerValue.value = timerValue.value.toDisplayTime(countdown)
+    /** Mirrors the session's recording clock into the on-screen timer text. */
+    private suspend fun mirrorRecordingClock() {
+        val duration = activityDurationSeconds
+        val countdown = configuration.value.isCountingDown && duration != null
+        session.elapsedSeconds.collect { elapsed ->
+            timerValue.value =
+                if (countdown && duration != null) {
+                    (duration - elapsed).coerceAtLeast(0).toDisplayTime()
+                } else {
+                    elapsed.toDisplayTime()
+                }
         }
     }
 
@@ -673,50 +698,37 @@ internal class MotionRecorderViewModel(
         // Drop the per-condition object but keep session_uuid so the next condition stays
         // in the same session.
         customMetadata.remove(OSTBalanceCondition.KEY_BALANCE_CONDITIONS)
+        session.resetForNextRecording()
         recorderBridge.reset()
         timerValue.value = ""
         recodingScreenState.value = getReadyState()
     }
 
     fun stopRecording() {
-        if (!isRecording) return
+        if (!session.isRecording) return
         // Clicked: measurement_stop — user slid to stop. elapsed_seconds is the wall-clock
         // recording duration with ms precision, matching uikit.
-        recordingStartedAtMs?.let { startedAt ->
+        session.goTimeMs?.let { startedAt ->
             analyticsTracker?.trackMeasurementStopClicked(
                 activity = configuration.value.activityType,
                 elapsedSeconds = (currentTimeMillis() - startedAt) / 1000.0,
             )
         }
         viewModelScope.launch {
-            stopRecordingAndWaitForDone()
+            stopMeasurementAndAwaitDone()
         }
     }
 
-    private suspend fun stopRecordingAndWaitForDone(reset: Boolean = false) {
-        if (!isRecording) return
-
-        isRecording = false
-
-        // Stop the recording coroutine (time ticker, step monitoring, etc)
+    private suspend fun stopMeasurementAndAwaitDone(reset: Boolean = false) {
+        // Stop the recording coroutine (clock mirror, step monitoring, etc)
         recordingJob?.cancelAndJoin()
         recordingJob = null
 
         // Stop any TTS instructions tied to the recording
         stopRecordingInstructionsJob()
 
-        // Tell the recorder to stop
-        recorderBridge.stop()
-
-        // Wait until the recorder reports DONE
-        recorderBridge.recorderState
-            .first { state ->
-                state == OSTRecorderState.DONE
-            }
-
-        if (reset) {
-            recorderBridge.reset()
-        }
+        // Stop the recorder and wait until it reports DONE (no-op if it never started)
+        session.stopAndAwaitDone(reset)
     }
 
     fun analyse() {
@@ -755,29 +767,20 @@ internal class MotionRecorderViewModel(
             }
     }
 
+    /** Get Ready countdown: `N…1` (1 s each), then "GO" for 1.5 s, then the recording begins. */
     private fun startTimerJob(prepareData: OSTPrepareData.Duration) {
         readyTimeJob?.cancel()
-        val initialValue =
-            prepareData.prepareDuration.seconds.toLong()
-        timerValue.value = (initialValue.plus(1)).toString()
+        val prepareSeconds = prepareData.prepareDuration.seconds
+        timerValue.value = prepareSeconds.toString()
         readyTimeJob =
             viewModelScope.launch {
-                for (time in initialValue downTo -1) {
-                    if (time == -1L) {
-                        updateState(RecordingScreenData.RecordScreenStage.RECORDING)
-                    } else {
-                        val nextValue = timerValue.value.toIntOrNull()?.minus(1)
-                        var display = nextValue.toString()
-                        // Wait for one second
-                        var delay = 1000L
-                        if ((nextValue ?: 0) < 1) {
-                            delay = 1500L
-                            display = resourceProvider.getString(Res.string.go)
-                        }
-                        timerValue.value = display
-                        delay(delay)
-                    }
+                for (time in prepareSeconds downTo 1) {
+                    timerValue.value = time.toString()
+                    delay(1000L.milliseconds)
                 }
+                timerValue.value = resourceProvider.getString(Res.string.go)
+                delay(1500L.milliseconds)
+                updateState(RecordingScreenData.RecordScreenStage.RECORDING)
             }
     }
 
@@ -794,22 +797,21 @@ internal class MotionRecorderViewModel(
         uiTimeoutJob = null
 
         viewModelScope.launch {
-            // Gracefully stop recording and wait for DONE, if we are recording
-            stopRecordingAndWaitForDone(reset = true)
+            // Gracefully stop the recorder and wait for DONE, if a start was initiated
+            // (covers a TUG/STS early start during Get Ready too)
+            stopMeasurementAndAwaitDone(reset = true)
 
             // Cancel remaining jobs
             readyTimeJob?.cancel()
-            recordingJob?.cancel()
             audioPlayer.stopCurrentAudio()
-            ttsInstructionsJob?.cancel()
             stepMonitorJob?.cancel()
             ttsPlayer.stopCurrentSpeech()
         }
 
         // Ensure reset happens even if viewModelScope is cancelled.
-        // stopRecordingAndWaitForDone returns early when !isRecording (analysis phase),
-        // so reset() never gets called. Do it directly here.
-        if (!isRecording) {
+        // stopMeasurementAndAwaitDone no-ops when no recorder start is in flight
+        // (analysis phase or pre-recording), so reset() never gets called. Do it directly here.
+        if (!session.recorderStartInitiated) {
             recorderBridge.reset()
         }
     }
@@ -823,7 +825,7 @@ internal class MotionRecorderViewModel(
                     for (instruction in instructionsQueue) {
                         val delayTime =
                             instruction.startTimeMillis - (currentTimeMillis() - startTime)
-                        if (delayTime > 0) delay(delayTime) // Wait until the correct timestamp
+                        if (delayTime > 0) delay(delayTime.milliseconds) // Wait until the correct timestamp
                         ttsPlayer.speak(instruction.text)
                         instruction.marker?.let {
                             recorderBridge.addMarker(it)

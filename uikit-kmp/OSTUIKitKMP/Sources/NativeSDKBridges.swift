@@ -558,7 +558,9 @@ final class NativeSDKDelegate: NSObject, IosSDKDelegate {
 
 // MARK: - Direct bridges (MotionData / Insights)
 
-/// Resolves and caches the native `OSTMotionDataService`. The product is obtained asynchronously
+/// Resolves and caches the two native products the direct bridges need, both bound to the same
+/// scope: the `Insights` facade (used directly by `InsightsBridge`) and the `OSTMotionDataService`
+/// it vends (used by `MotionDataBridge`). The data service is obtained asynchronously
 /// (`Insights.getMotionDataService()`), but the KMP `MotionDataBridge` protocol is synchronous —
 /// so this provider supports both a non-blocking async accessor (for the `InsightsBridge`, which is
 /// itself `suspend`) and a bounded blocking accessor (for the synchronous `MotionDataBridge`).
@@ -570,6 +572,7 @@ final class NativeSDKDelegate: NSObject, IosSDKDelegate {
 final class MotionDataServiceProvider: @unchecked Sendable {
     private let lock = NSLock()
     private var cached: (any OSTMotionDataService)?
+    private var cachedInsights: (any OneStepSDK.Insights)?
     private let patientId: OneStepSDK.OSTPatientId?
 
     /// `patientId == nil` → auth-bound (current-user) resolution. Non-nil → the data service is
@@ -620,15 +623,35 @@ final class MotionDataServiceProvider: @unchecked Sendable {
         cached = service
     }
 
-    private func fetch() async -> (any OSTMotionDataService)? {
+    /// Scope-correct `Insights` facade, cached. Resolution is synchronous on both paths, so in
+    /// clinician mode the facade is obtained *inside* the `withPatient` block and the patient scope
+    /// stays bound to the returned object — which is why insight reads must go through this facade
+    /// directly rather than through a product awaited outside the block (see `NativeInsightsBridge`).
+    func insightsFacade() -> (any OneStepSDK.Insights)? {
+        if let cached = currentInsights() { return cached }
+        guard let resolved = resolveInsights() else { return nil }
+        lock.lock(); cachedInsights = resolved; lock.unlock()
+        return resolved
+    }
+
+    private func currentInsights() -> (any OneStepSDK.Insights)? {
+        lock.lock(); defer { lock.unlock() }
+        return cachedInsights
+    }
+
+    private func resolveInsights() -> (any OneStepSDK.Insights)? {
         if let patientId {
-            // Clinician mode: resolve the patient-scoped Insights synchronously inside the scope,
-            // then await its data service outside the (non-async) withPatient block.
-            let insights = OneStepSDK.OneStep.withPatient(patientId) { $0.getInsights() }
-            return await insights.getMotionDataService()
+            return OneStepSDK.OneStep.withPatient(patientId) { $0.getInsights() }
         }
         guard case .success(let onestep) = OneStepSDK.OneStep.shared(),
               case .success(let insights) = onestep.insights() else { return nil }
+        return insights
+    }
+
+    private func fetch() async -> (any OSTMotionDataService)? {
+        // The data service is awaited outside the (non-async) `withPatient` block; that is fine for
+        // the norm/metadata lookups `MotionDataBridge` uses, which are not patient-scoped.
+        guard let insights = insightsFacade() else { return nil }
         return await insights.getMotionDataService()
     }
 }
@@ -872,7 +895,15 @@ final class NativeMotionDataBridge: NSObject, MotionDataBridge {
     }
 }
 
-/// `InsightsBridge` backed by the native `OSTMotionDataService.getInsightsBy(measurementID:)`.
+/// `InsightsBridge` backed by the native `Insights.getInsights(for:)`.
+///
+/// Deliberately calls the `Insights` facade directly instead of the `OSTMotionDataService`
+/// `getInsightsBy(measurementID:)` wrapper it used to use. That wrapper returned HTTP 400 in
+/// clinician (patient-scoped) mode, surfacing as a permanently empty Highlights tab while Android
+/// worked; the likely mechanism is lost patient scope, since the data service is awaited *outside*
+/// the non-async `withPatient` block whereas the facade is resolved inside it. Either way this path
+/// is the direct analogue of Android's `AndroidInsightsBridge`
+/// (`insights.getMeasurementInsights(uuid)`), so both platforms now use the same SDK layer.
 final class NativeInsightsBridge: NSObject, InsightsBridge {
     private let provider: MotionDataServiceProvider
 
@@ -886,13 +917,28 @@ final class NativeInsightsBridge: NSObject, InsightsBridge {
     }
 
     func getInsightsByUuid(uuid: String) async throws -> KMPInsights? {
-        guard let id = UUID(uuidString: uuid),
-              let service = await provider.serviceAsync() else { return nil }
-        // Crash-safe: swallow SDK throws (network / analysis errors) and surface as "no insights".
-        // The summary treats a throw and a nil identically (error empty state), so never propagate.
-        let native = (try? await service.getInsightsBy(measurementID: id)) ?? []
-        let insights = native.compactMap { toKmpInsight($0) }
-        return InsightMapperKt.createKmpInsights(uuid: uuid, insights: insights)
+        guard let id = UUID(uuidString: uuid) else {
+            print("OSTUIKitKMP[Insights]: measurement id is not a UUID — cannot load insights")
+            return nil
+        }
+        guard let insights = provider.insightsFacade() else {
+            print("OSTUIKitKMP[Insights]: OneStep SDK not initialized — cannot load insights")
+            return nil
+        }
+        // Crash-safe: the summary treats a throw and a nil identically (error empty state), so never
+        // propagate. But report the failure instead of returning an empty-but-successful result —
+        // mapping a real error onto "0 insights" is what hid the clinician-mode HTTP 400 above.
+        // HIPAA: log the failure only, never the measurement id or any insight text.
+        do {
+            let native = try await insights.getInsights(for: id)
+            return InsightMapperKt.createKmpInsights(
+                uuid: uuid,
+                insights: native.compactMap { toKmpInsight($0) }
+            )
+        } catch {
+            print("OSTUIKitKMP[Insights]: getInsights(for:) failed — \(error)")
+            return nil
+        }
     }
 
     private func toKmpInsight(_ insight: OneStepSDK.OSTInsight) -> KMPInsight? {
