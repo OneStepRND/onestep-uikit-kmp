@@ -108,8 +108,12 @@ main() {
     confirm_central
   fi
 
+  # ':uikit-kmp:assemble', not 'assembleRelease': the com.android.kotlin.multiplatform.library
+  # plugin creates assembleAndroidMain rather than assembleRelease, so 'assembleRelease' only
+  # abbreviation-matched the XCFramework fat-framework tasks and failed as ambiguous. This step is
+  # a fail-fast build check — the publish tasks below assemble their own inputs regardless.
   echo -e "${BLUE}▶ Step 1/2: Assembling release...${NC}"
-  ./gradlew uikit-kmp:assembleRelease $gradle_props
+  ./gradlew :uikit-kmp:assemble $gradle_props
 
   echo -e "${BLUE}▶ Step 2/2: Publishing to ${target_display}...${NC}"
   ./gradlew $publish_task $gradle_props
