@@ -12,7 +12,7 @@ designSystem = "1.3.1"
 # of truth for the version pinned across Package.swift, scripts/publish-xcframework.sh,
 # uikit-kmp/OSTUIKitKMP/Package.swift and the iOS test app. After editing, run
 # scripts/sync-ios-sdk-version.sh to propagate it; CI (ios-sdk-version.yml) fails on drift.
-onestepSdkIos = "2.1.1"
+onestepSdkIos = "2.1.1-rc1"
 media3 = "1.10.1"
 coil = "2.7.0"
 activityCompose = "1.13.0"
