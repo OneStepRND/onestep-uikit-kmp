@@ -6,13 +6,13 @@ lifecycle = "2.11.0"
 navigation3 = "1.1.1"
 coroutines = "1.11.0" # used in testApp build.gradle
 kotlinxSerializationJson = "1.11.0"
-coreVersion = "2.0.7-SNAPSHOT"
+coreVersion = "2.1.0"
 designSystem = "1.3.1"
 # onestep-sdk-ios (native iOS SDK, consumed via SwiftPM — NOT a Gradle dependency). Single source
 # of truth for the version pinned across Package.swift, scripts/publish-xcframework.sh,
 # uikit-kmp/OSTUIKitKMP/Package.swift and the iOS test app. After editing, run
 # scripts/sync-ios-sdk-version.sh to propagate it; CI (ios-sdk-version.yml) fails on drift.
-onestepSdkIos = "2.1.0-rc3"
+onestepSdkIos = "2.1.1"
 media3 = "1.10.1"
 coil = "2.7.0"
 activityCompose = "1.13.0"

@@ -257,7 +257,7 @@ let package = Package(
     dependencies: [
         // Native OneStep iOS SDK. The permission flow is vendored so this package
         // has NO dependency on the native iOS UIKit.
-        .package(url: "https://github.com/OneStepRND/onestep-sdk-ios", exact: "2.1.0-rc3")
+        .package(url: "https://github.com/OneStepRND/onestep-sdk-ios", exact: "2.1.1")
     ],
     targets: [
 $binary_target
