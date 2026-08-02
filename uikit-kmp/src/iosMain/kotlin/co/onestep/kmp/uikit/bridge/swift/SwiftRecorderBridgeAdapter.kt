@@ -11,6 +11,7 @@ import co.onestep.kmp.uikit.models.OSTAnalyserState
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.models.OSTOrder
 import co.onestep.kmp.uikit.models.OSTRecorderState
+import co.onestep.kmp.uikit.models.OSTRecordingWindow
 import co.onestep.kmp.uikit.models.OSTTimeRangedDataRequest
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData
 import co.onestep.kmp.uikit.models.OSTWalkCourseLength
@@ -111,7 +112,46 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
     private val _analyserState = MutableStateFlow<OSTAnalyserState>(OSTAnalyserState.Idle)
     override val analyserState: StateFlow<OSTAnalyserState> = _analyserState.asStateFlow()
 
+    private val _currentRecordingWindow = MutableStateFlow<OSTRecordingWindow?>(null)
+
+    /**
+     * TODO(OS-16749): stays `null` until the iOS SDK publishes a recording window. The Kotlin side
+     *  is ready — Swift only has to call [onRecordingWindowChanged] / [onRecordingWindowCleared]
+     *  once `OSTMotionLab` exposes `startedAt` / `willEndAt`. Until then the recording clock falls
+     *  back to a UI-side wall clock (see `RecordingSessionController`), i.e. iOS keeps today's
+     *  behaviour and does not yet get the drift/backgrounding fixes this window enables.
+     */
+    override val currentRecordingWindow: StateFlow<OSTRecordingWindow?> =
+        _currentRecordingWindow.asStateFlow()
+
     // --- Swift push functions ---
+
+    /**
+     * Push the current recording window from Swift, before reporting the RECORDING state.
+     *
+     * [startedAtMonotonicMs] and [willEndAtMonotonicMs] must be
+     * `ProcessInfo.processInfo.systemUptime * 1000` readings — the same clock
+     * [co.onestep.kmp.uikit.utils.monotonicNowMillis] uses on iOS. Wall-clock timestamps here
+     * would make every duration wrong the moment the device clock moves.
+     *
+     * @param startedAtEpochMs Wall-clock start, for display and logging only.
+     */
+    fun onRecordingWindowChanged(
+        startedAtMonotonicMs: Long,
+        willEndAtMonotonicMs: Long,
+        startedAtEpochMs: Long,
+    ) {
+        _currentRecordingWindow.value = OSTRecordingWindow(
+            startedAtMonotonicMillis = startedAtMonotonicMs,
+            willEndAtMonotonicMillis = willEndAtMonotonicMs,
+            startedAtEpochMillis = startedAtEpochMs,
+        )
+    }
+
+    /** Clear the recording window from Swift when the recorder is reset. */
+    fun onRecordingWindowCleared() {
+        _currentRecordingWindow.value = null
+    }
 
     /** Push a new recorder state from Swift. Uses the existing [toKmpRecorderState] mapper. */
     fun onRecorderStateChanged(stateName: String) {

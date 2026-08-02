@@ -4,6 +4,7 @@ import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit.models.OSTAnalyserState
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.models.OSTRecorderState
+import co.onestep.kmp.uikit.models.OSTRecordingWindow
 import co.onestep.kmp.uikit.models.OSTTimeRangedDataRequest
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData
 import co.onestep.kmp.uikit.models.OSTWalkCourseLength
@@ -18,6 +19,19 @@ interface RecorderBridge {
     val recorderState: StateFlow<OSTRecorderState>
     val stepsCount: StateFlow<Int>
     val analyserState: StateFlow<OSTAnalyserState>
+
+    /**
+     * Timing of the current recording — when capture began and when the recorder will auto-stop —
+     * or `null` when no recording is in flight or the platform SDK does not publish it.
+     *
+     * **This is the source of truth for recording time.** The recording clock belongs to the SDK:
+     * capture runs to its deadline even when the recording screen is gone, so a UI that counts its
+     * own seconds inevitably disagrees with the recorder. See [OSTRecordingWindow].
+     *
+     * Populated before [recorderState] reaches [OSTRecorderState.RECORDING] and cleared on
+     * [reset], so an observer that sees RECORDING reads a non-null window.
+     */
+    val currentRecordingWindow: StateFlow<OSTRecordingWindow?>
 
     suspend fun prepareForRecording(activityType: OSTActivityType): Boolean
 

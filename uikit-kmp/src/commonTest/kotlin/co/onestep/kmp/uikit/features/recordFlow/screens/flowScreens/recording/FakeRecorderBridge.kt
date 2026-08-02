@@ -6,6 +6,7 @@ import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit.models.OSTAnalyserState
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.models.OSTRecorderState
+import co.onestep.kmp.uikit.models.OSTRecordingWindow
 import co.onestep.kmp.uikit.models.OSTTimeRangedDataRequest
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData
 import co.onestep.kmp.uikit.models.OSTWalkCourseLength
@@ -23,6 +24,15 @@ internal class FakeRecorderBridge : RecorderBridge {
     override val stepsCount = MutableStateFlow(0)
     override val analyserState: StateFlow<OSTAnalyserState> =
         MutableStateFlow(OSTAnalyserState.Idle)
+
+    /**
+     * Mimics an SDK that publishes a recording window: `start()` opens one on the test clock
+     * ([monotonicNow]) for the duration it was given, `reset()` clears it. Leave [monotonicNow]
+     * null to mimic a platform that publishes no window (iOS today).
+     */
+    override val currentRecordingWindow = MutableStateFlow<OSTRecordingWindow?>(null)
+
+    var monotonicNow: (() -> Long)? = null
 
     data class StartCall(val activityType: OSTActivityType, val durationMs: Long?)
 
@@ -49,6 +59,14 @@ internal class FakeRecorderBridge : RecorderBridge {
         startGate?.await()
         calls += "start"
         startCalls += StartCall(activityType, duration)
+        monotonicNow?.let { clock ->
+            val startedAt = clock()
+            currentRecordingWindow.value = OSTRecordingWindow(
+                startedAtMonotonicMillis = startedAt,
+                willEndAtMonotonicMillis = startedAt + (duration ?: currentRecordingLimit()),
+                startedAtEpochMillis = startedAt,
+            )
+        }
         recorderState.value = OSTRecorderState.RECORDING
     }
 
@@ -61,6 +79,7 @@ internal class FakeRecorderBridge : RecorderBridge {
     override fun reset() {
         calls += "reset"
         resetCount++
+        currentRecordingWindow.value = null
         recorderState.value = OSTRecorderState.INITIALIZED
     }
 

@@ -8,6 +8,7 @@ import co.onestep.android.core.getOrThrow
 import co.onestep.android.core.motionLab.OSTMotionLab as CoreMotionLab
 import co.onestep.android.core.motionLab.OSTMotionMeasurement as CoreMeasurement
 import co.onestep.android.core.motionLab.OSTOrder as CoreOrder
+import co.onestep.android.core.motionLab.OSTRecordingWindow as CoreRecordingWindow
 import co.onestep.android.core.motionLab.getMotionLab
 import co.onestep.kmp.uikit.bridge.RecorderBridge
 import co.onestep.kmp.uikit.bridge.SelfReportResult
@@ -17,9 +18,11 @@ import co.onestep.kmp.uikit.models.OSTAnalyserState
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.models.OSTOrder as KmpOrder
 import co.onestep.kmp.uikit.models.OSTRecorderState
+import co.onestep.kmp.uikit.models.OSTRecordingWindow
 import co.onestep.kmp.uikit.models.OSTTimeRangedDataRequest
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData
 import co.onestep.kmp.uikit.models.OSTWalkCourseLength
+import co.onestep.kmp.uikit.utils.monotonicNowMillis
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 
@@ -68,6 +71,27 @@ class AndroidRecorderBridge private constructor(
                 delegate.collect { collector.emit(it.toKmp()) }
             }
         }
+
+    /**
+     * Core's recording window, mapped 1:1. `startedAtRealtimeMillis` / `willEndAtRealtimeMillis`
+     * are `SystemClock.elapsedRealtime()` readings, which is what [monotonicNowMillis] returns on
+     * Android — so the KMP window and the KMP clock share one origin.
+     */
+    override val currentRecordingWindow: StateFlow<OSTRecordingWindow?>
+        get() = object : StateFlow<OSTRecordingWindow?> {
+            private val delegate = motionLab.currentRecordingWindow
+            override val replayCache: List<OSTRecordingWindow?> get() = delegate.replayCache.map { it?.toKmp() }
+            override val value: OSTRecordingWindow? get() = delegate.value?.toKmp()
+            override suspend fun collect(collector: kotlinx.coroutines.flow.FlowCollector<OSTRecordingWindow?>): Nothing {
+                delegate.collect { collector.emit(it?.toKmp()) }
+            }
+        }
+
+    private fun CoreRecordingWindow.toKmp() = OSTRecordingWindow(
+        startedAtMonotonicMillis = startedAtRealtimeMillis,
+        willEndAtMonotonicMillis = willEndAtRealtimeMillis,
+        startedAtEpochMillis = startedAtEpochMillis,
+    )
 
     override suspend fun prepareForRecording(activityType: OSTActivityType): Boolean =
         motionLab.prepareForRecording(activityType.toCore()) is OSTResult.Success
