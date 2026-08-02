@@ -116,6 +116,16 @@ class AndroidRecorderBridge private constructor(
         }
     }
 
+    /**
+     * Core validates this itself: it logs and returns an error when the recorder is not RECORDING
+     * or the duration is not positive, and clamps the new deadline to the recorder limit measured
+     * from the true capture start. The result carries nothing the UI can act on — the recording is
+     * running either way — so it is deliberately dropped.
+     */
+    override fun rescheduleAutoStop(durationMillis: Long) {
+        motionLab.rescheduleAutoStop(durationMillis)
+    }
+
     override suspend fun stop() {
         motionLab.stop()
     }

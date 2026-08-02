@@ -40,6 +40,9 @@ internal class FakeRecorderBridge : RecorderBridge {
     val calls = mutableListOf<String>()
     val startCalls = mutableListOf<StartCall>()
     val markers = mutableListOf<String>()
+
+    /** Durations passed to [rescheduleAutoStop] while RECORDING, in order. */
+    val rescheduleCalls = mutableListOf<Long>()
     var stopCount = 0
         private set
     var resetCount = 0
@@ -68,6 +71,20 @@ internal class FakeRecorderBridge : RecorderBridge {
             )
         }
         recorderState.value = OSTRecorderState.RECORDING
+    }
+
+    /**
+     * Mimics core: ignored unless RECORDING, otherwise republishes the window with the new
+     * deadline, leaving `startedAt` where capture really began.
+     */
+    override fun rescheduleAutoStop(durationMillis: Long) {
+        if (recorderState.value != OSTRecorderState.RECORDING) return
+        calls += "reschedule"
+        rescheduleCalls += durationMillis
+        val clock = monotonicNow ?: return
+        currentRecordingWindow.value = currentRecordingWindow.value?.copy(
+            willEndAtMonotonicMillis = clock() + durationMillis,
+        )
     }
 
     override suspend fun stop() {

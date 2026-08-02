@@ -114,6 +114,7 @@ private class NoopRecorderBridge : RecorderBridge {
         userInputMetadata: OSTUserInputMetaData?,
         customMetadata: Map<String, Any>?,
     ) = Unit
+    override fun rescheduleAutoStop(durationMillis: Long) = Unit
     override suspend fun stop() = Unit
     override fun reset() = Unit
     override suspend fun analyze(timeout: Long): OSTMotionMeasurement? = null

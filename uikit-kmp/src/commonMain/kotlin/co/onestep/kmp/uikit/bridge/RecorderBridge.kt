@@ -43,6 +43,26 @@ interface RecorderBridge {
         customMetadata: Map<String, Any>? = emptyMap(),
     )
 
+    /**
+     * Moves the auto-stop deadline of the recording already in flight to [durationMillis] from
+     * now, without interrupting capture, and republishes [currentRecordingWindow] with the new
+     * deadline (both `startedAt` values are left alone — capture really did begin when they say).
+     *
+     * Exists because a recording that starts early ([start] on the Get Ready screen) can only be
+     * given a *predicted* deadline: the countdown has a "Start now" button, so how long the
+     * preamble lasts is not known until the user reaches the end of it. Re-anchoring at the real
+     * "go" is what makes the measurement come out at its configured length on both paths.
+     *
+     * Re-anchoring only ever **shortens** an over-generous deadline — it cannot revive a recording
+     * that already auto-stopped, so the provisional deadline must still outlast the preamble.
+     *
+     * A no-op when the recorder is not RECORDING, and on any platform whose SDK does not expose
+     * the API yet — the UI-side clock in `RecordingSessionController` is the fallback there.
+     *
+     * @param durationMillis Milliseconds from now until the recorder auto-stops. Must be positive.
+     */
+    fun rescheduleAutoStop(durationMillis: Long)
+
     suspend fun stop()
 
     fun reset()

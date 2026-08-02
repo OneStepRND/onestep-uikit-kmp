@@ -212,6 +212,16 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
         }
     }
 
+    /**
+     * TODO(OS-16817): no-op until the iOS SDK can move a live recording's auto-stop. Adding the
+     *  call to [IosRecorderDelegate] before then would only force every Swift host to implement a
+     *  method with nothing to delegate to. Until it lands, an iOS "Start now" leaves the recorder's
+     *  own deadline where the predicted prepare offset put it, and the recording is ended at
+     *  `go + duration` by `RecordingSessionController`'s clock instead — correct while the app is
+     *  running, but not enforced by the SDK if it is not.
+     */
+    override fun rescheduleAutoStop(durationMillis: Long) = Unit
+
     override suspend fun stop() {
         suspendCancellableCoroutine { continuation ->
             delegate.stop { continuation.resume(Unit) }

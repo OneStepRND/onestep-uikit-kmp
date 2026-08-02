@@ -187,6 +187,117 @@ class RecordingSessionControllerTest {
         assertFalse(session.isRecording)
     }
 
+    // --- Re-anchoring the SDK's auto-stop at "go" (OS-16818/OS-16814) -------------------------
+
+    @Test
+    fun startNowReAnchorsTheRecorderDeadlineToGo() = runTest {
+        val bridge = bridgeWithWindow()
+        val session = controller(bridge)
+
+        // TUG behind a 10 s countdown: capture opens against the provisional 191 500 ms deadline.
+        session.startEarly(
+            request(OSTActivityType.TUG, activityMillis = 180_000L, prepareOffsetMillis = 11_500L),
+        )
+        runCurrent()
+        assertEquals(191_500L, bridge.startCalls.single().durationMs)
+
+        // The user cuts the countdown short 3 s in.
+        advanceTimeBy(3_000)
+        session.onGo { error("recorder already started early") }
+        runCurrent()
+
+        // The recorder — not just this controller — now stops 3 min after "go", so the recording
+        // is its intended length even if the app is suspended and the clock below never runs.
+        assertEquals(listOf(180_000L), bridge.rescheduleCalls)
+        val window = bridge.currentRecordingWindow.value!!
+        assertEquals(180_000L, window.remainingMillisAt(testScheduler.currentTime))
+        assertEquals(
+            0L,
+            window.startedAtMonotonicMillis,
+            "capture really began at the countdown — only the deadline moves",
+        )
+
+        // OS-16814: the count-up display must move immediately, not sit frozen on 00:00 for the
+        // unused remainder of the countdown.
+        assertEquals(0L, session.elapsedMillis.value)
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(5_000L, session.elapsedMillis.value)
+    }
+
+    @Test
+    fun theGoMarkerAndTheReAnchorBothWaitForTheRecorderToBeRecording() = runTest {
+        // "Start now" tapped while start() is still in flight — the SDK drops both the marker and
+        // the re-anchor unless it has reached RECORDING.
+        val bridge = bridgeWithWindow()
+        val gate = CompletableDeferred<Unit>()
+        bridge.startGate = gate
+        val session = controller(bridge)
+
+        session.startEarly(
+            request(OSTActivityType.TUG, activityMillis = 180_000L, prepareOffsetMillis = 11_500L),
+        )
+        runCurrent()
+
+        val go = launch { session.onGo { error("recorder already started early") } }
+        runCurrent()
+        assertTrue(bridge.calls.isEmpty(), "nothing may reach a recorder that has not started")
+
+        gate.complete(Unit)
+        go.join()
+
+        assertEquals(listOf("start", "marker:go", "reschedule"), bridge.calls)
+    }
+
+    @Test
+    fun aCountdownRunToCompletionLandsOnTheSameDeadlineItAlreadyHad() = runTest {
+        val bridge = bridgeWithWindow()
+        val session = controller(bridge)
+
+        session.startEarly(
+            request(OSTActivityType.TUG, activityMillis = 180_000L, prepareOffsetMillis = 11_500L),
+        )
+        runCurrent()
+        advanceTimeBy(11_500) // the countdown runs out on its own
+
+        session.onGo { error("recorder already started early") }
+        runCurrent()
+
+        // Re-anchoring is arithmetically a no-op on this path: the prediction was exact.
+        assertEquals(listOf(180_000L), bridge.rescheduleCalls)
+        assertEquals(191_500L, bridge.currentRecordingWindow.value!!.willEndAtMonotonicMillis)
+    }
+
+    @Test
+    fun aRecorderStartedAtGoIsNeverReAnchored() = runTest {
+        val bridge = bridgeWithWindow()
+        val session = controller(bridge)
+
+        // No early start, so the recorder was handed exactly the measurement duration already.
+        session.onGo { request(activityMillis = 30_000L) }
+        runCurrent()
+
+        assertTrue(bridge.rescheduleCalls.isEmpty())
+    }
+
+    @Test
+    fun anUnrestrictedEarlyStartHasNoDeadlineToReAnchor() = runTest {
+        val bridge = bridgeWithWindow()
+        val session = controller(bridge)
+
+        session.startEarly(
+            request(OSTActivityType.TUG, activityMillis = null, prepareOffsetMillis = 11_500L),
+        )
+        runCurrent()
+        advanceTimeBy(3_000)
+
+        session.onGo { error("recorder already started early") }
+        runCurrent()
+
+        assertEquals(null, bridge.startCalls.single().durationMs)
+        assertTrue(bridge.rescheduleCalls.isEmpty())
+    }
+
     @Test
     fun withoutAnSdkWindowTheControllerStopsAtGoPlusDuration() = runTest {
         // iOS today: the SDK publishes no recording window (OS-16749).

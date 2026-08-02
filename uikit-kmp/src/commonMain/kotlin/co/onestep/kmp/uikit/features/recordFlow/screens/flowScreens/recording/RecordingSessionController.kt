@@ -30,11 +30,18 @@ import kotlinx.coroutines.launch
  *
  * The one thing the SDK cannot know is **when the activity actually begins**. TUG and STS start
  * capture early, on the Get Ready screen ([startEarly]), so the deadline handed to the recorder
- * has to *predict* how long the countdown will take ([StartRequest.prepareOffsetMillis]). That
- * prediction is exact when the countdown runs to completion and too long when the user taps
- * "Start now". So "go" is anchored here, at the UI transition ([onGo], which also writes the
- * [GO_MARKER]), and the clock takes whichever end comes first — the SDK's published deadline or
- * `go + activity duration`. On the normal path those coincide to within a frame.
+ * can only be a *prediction* of how long the countdown will take
+ * ([StartRequest.prepareOffsetMillis]) — the Get Ready screen has a "Start now" button, so the
+ * preamble is however much of it the user let run, which is not knowable up front. "go" is
+ * therefore anchored here ([onGo], which also writes the [GO_MARKER]) and the deadline is
+ * re-anchored to it via [RecorderBridge.rescheduleAutoStop], so the SDK ends the measurement
+ * exactly one activity duration after "go" on both paths (OS-16818/OS-16814).
+ *
+ * The prediction survives only as a provisional bound that has to outlast the preamble:
+ * re-anchoring can shorten an over-generous deadline, never revive a recording that already
+ * auto-stopped. The clock additionally takes whichever end comes first — the SDK's published
+ * deadline or `go + activity duration` — which is what covers a platform that cannot re-anchor
+ * yet (iOS, OS-16817) or a re-anchor the SDK rejected.
  *
  * @param monotonicNow Monotonic clock used for all recording-duration math. Never wall clock:
  *   an NTP sync mid-recording would otherwise change the measured length.
@@ -52,11 +59,16 @@ internal class RecordingSessionController(
         /** Intended measurement length after "go"; null = unrestricted (SDK internal cap only). */
         val activityDurationMillis: Long?,
         /**
-         * Wall time the Get Ready countdown occupies before "go". Added to the recorder's
-         * deadline when capture starts early ([startEarly]) so the deadline lands at
-         * `go + activityDuration` rather than a whole countdown earlier. 0 for any prepare mode
+         * Wall time the Get Ready countdown occupies before "go", assuming it runs to completion.
+         * Added to the recorder's deadline when capture starts early ([startEarly]) so the
+         * deadline lands at `go + activityDuration` rather than a whole countdown earlier.
+         *
+         * Provisional only — [onGo] re-anchors the real deadline, because "Start now" can cut the
+         * countdown short. Its one requirement is that it **outlast** the preamble: the re-anchor
+         * can shorten a too-long deadline but cannot revive an expired one. 0 for any prepare mode
          * whose length is not knowable up front (e.g. a TTS prepare, which ends on a
-         * speech-synthesis callback).
+         * speech-synthesis callback) — which is why such a mode must not early-start until it has
+         * a provisional bound generous enough to cover it.
          */
         val prepareOffsetMillis: Long = 0,
         val sensorEnhancedMode: Boolean = false,
@@ -103,7 +115,12 @@ internal class RecordingSessionController(
     /**
      * The activity begins ("go" — the recording screen appears and the activity timer starts):
      * ensures the recorder is running (starts it now unless [startEarly] already did), writes the
-     * [GO_MARKER] for early starts, and runs the recording clock from this instant.
+     * [GO_MARKER] for early starts, re-anchors an early start's deadline to this instant, and runs
+     * the recording clock from it.
+     *
+     * The in-flight start is awaited **before** any of that: both the marker and the re-anchor are
+     * dropped by the SDK unless the recorder has reached RECORDING, which a fast "Start now" can
+     * beat. That also makes "go" one instant for all three — marker, deadline and clock agree.
      *
      * [requestProvider] is only invoked if the recorder still needs to be started.
      */
@@ -122,7 +139,28 @@ internal class RecordingSessionController(
         // previous recording (e.g. retry after an analysis error).
         _elapsedMillis.value = 0
         val goMonotonicMs = monotonicNow()
+        if (startedEarly) reanchorAutoStop(goMonotonicMs)
         clockJob = scope.launch { runClock(goMonotonicMs) }
+    }
+
+    /**
+     * Moves the recorder's auto-stop from the deadline predicted at [startEarly] to
+     * `go + activityDuration`, so the measurement is its configured length however the user got
+     * here — countdown run out, or "Start now" tapped partway through it. Without this the
+     * deadline sits `predictedOffset - actualPreamble` too late (up to ~11.5 s), and the recording
+     * overruns by that much.
+     *
+     * Only early starts need it: a recorder started at "go" was already given exactly the activity
+     * duration. Unrestricted durations have no deadline to move.
+     *
+     * Floored at 1 ms rather than 0 because the API takes a positive duration — if the whole
+     * measurement had somehow elapsed between the anchor and here, the right answer is "stop
+     * essentially now", not "reject and keep the provisional deadline".
+     */
+    private fun reanchorAutoStop(goMonotonicMs: Long) {
+        val duration = activityDurationMillis ?: return
+        val sinceGo = monotonicNow() - goMonotonicMs
+        recorderBridge.rescheduleAutoStop((duration - sinceGo).coerceAtLeast(1))
     }
 
     /**
@@ -200,11 +238,10 @@ internal class RecordingSessionController(
      * so a late resume or a dropped tick self-corrects on the next one.
      *
      * The recording ends at whichever comes first: the SDK's published deadline, or
-     * `go + activityDuration`. The second term only wins when "go" arrived earlier than the
-     * predicted prepare offset (the user tapped "Start now" during an early-start countdown), a
-     * thing the SDK cannot know about; on every other path the SDK's deadline lands first and
-     * stops the recording itself. It is also the whole clock on a platform whose SDK does not
-     * publish a window yet (see [RecorderBridge.currentRecordingWindow]).
+     * `go + activityDuration`. Once [onGo] has re-anchored, those two coincide; the second term is
+     * the backstop for the cases where the re-anchor did not take — a platform that cannot move
+     * the deadline yet (iOS, OS-16817) or an SDK that rejected the call — and the whole clock on a
+     * platform that publishes no window at all (see [RecorderBridge.currentRecordingWindow]).
      */
     private suspend fun runClock(goMonotonicMs: Long) {
         val duration = activityDurationMillis

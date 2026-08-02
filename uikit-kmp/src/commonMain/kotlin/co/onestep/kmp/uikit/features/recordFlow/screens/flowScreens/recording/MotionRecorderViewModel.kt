@@ -395,7 +395,9 @@ internal class MotionRecorderViewModel(
                     // part of the recording; the GO marker written at the RECORDING transition
                     // tells analysis where the activity actually began. The recorder's deadline
                     // therefore has to cover the countdown too, or the measurement would end a
-                    // whole countdown short of its intended length.
+                    // whole countdown short of its intended length. The offset is only a
+                    // provisional bound — "Start now" can cut the countdown short, so the session
+                    // re-anchors the deadline to the real "go" (see RecordingSessionController).
                     if (startsRecorderOnGetReady()) {
                         session.startEarly(
                             buildStartRequest(prepareOffsetMillis = prepareOffsetMillis(prepareScreenData)),
