@@ -20,8 +20,8 @@ Current pinned versions (generated from `uikit-kmp/build.gradle.kts` and
 `./scripts/update-readme-versions.sh` after a bump):
 
 <!-- versions:start -->
-![uikit-kmp](https://img.shields.io/badge/uikit--kmp-0.6.2-blue)
-![core](https://img.shields.io/badge/core-2.1.0-orange)
+![uikit-kmp](https://img.shields.io/badge/uikit--kmp-0.6.3-blue)
+![core](https://img.shields.io/badge/core-2.1.1--SNAPSHOT-orange)
 ![design-system](https://img.shields.io/badge/design--system-1.3.1-green)
 <!-- versions:end -->
 
