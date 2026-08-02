@@ -152,12 +152,19 @@ internal class MotionRecorderViewModel(
 
     private var timeout = 60
 
-    /** Activity time in seconds after "go"; null = unrestricted (SDK internal cap only). */
-    private val activityDurationSeconds: Int?
+    /**
+     * The intended measurement length after "go" — what the timer counts over, supplied by the
+     * host as [OSTRecordingConfiguration.duration]. `null` = unrestricted (SDK internal cap only).
+     *
+     * Excludes the prepare offset (see [prepareOffsetMillis]): the offset extends the recorder's
+     * deadline so an early-start activity still gets its full length after "go", but it is not
+     * part of the measurement the user is shown.
+     */
+    private val activityDurationMillis: Long?
         get() = when {
             timeout < 0 -> null // Unrestricted walk
-            timeout == 0 -> 60 // Default to 60 seconds
-            else -> timeout
+            timeout == 0 -> DEFAULT_RECORDING_DURATION_MS
+            else -> timeout * MILLIS_PER_SECOND
         }
 
     private var note: String? = null
@@ -386,11 +393,12 @@ internal class MotionRecorderViewModel(
                     startTimerJob(prepareScreenData)
                     // TUG/STS: the recorder starts already on Get Ready, so the countdown is
                     // part of the recording; the GO marker written at the RECORDING transition
-                    // tells analysis where the activity actually began. The SDK backstop
-                    // duration therefore also covers the countdown.
+                    // tells analysis where the activity actually began. The recorder's deadline
+                    // therefore has to cover the countdown too, or the measurement would end a
+                    // whole countdown short of its intended length.
                     if (startsRecorderOnGetReady()) {
                         session.startEarly(
-                            buildStartRequest(prepareDurationSeconds = prepareScreenData.prepareDuration.seconds),
+                            buildStartRequest(prepareOffsetMillis = prepareOffsetMillis(prepareScreenData)),
                         )
                     }
                 }
@@ -541,7 +549,7 @@ internal class MotionRecorderViewModel(
      * Assembles everything the recorder needs at start (user-input metadata + custom metadata).
      * Called once per recording — either at Get Ready (TUG/STS early start) or at "go".
      */
-    private fun buildStartRequest(prepareDurationSeconds: Int = 0): RecordingSessionController.StartRequest {
+    private fun buildStartRequest(prepareOffsetMillis: Long = 0L): RecordingSessionController.StartRequest {
         customMetadata.putAll(hostCustomMetadata)
         customMetadata["\$ost_uikit_version"] = ""
 
@@ -566,8 +574,8 @@ internal class MotionRecorderViewModel(
 
         return RecordingSessionController.StartRequest(
             activityType = configuration.value.activityType,
-            activityDurationSeconds = activityDurationSeconds,
-            prepareDurationSeconds = prepareDurationSeconds,
+            activityDurationMillis = activityDurationMillis,
+            prepareOffsetMillis = prepareOffsetMillis,
             sensorEnhancedMode = configuration.value.sensorEnhancedMode,
             userInputMetadata =
                 OSTUserInputMetaData(
@@ -599,17 +607,29 @@ internal class MotionRecorderViewModel(
             }
     }
 
-    /** Mirrors the session's recording clock into the on-screen timer text. */
+    /**
+     * Mirrors the session's recording clock into the on-screen timer text.
+     *
+     * The clock is owned by [RecordingSessionController] and recomputed from absolute anchors, so
+     * this is pure formatting — there is no counting here and therefore no drift to accumulate.
+     * Both directions read the same elapsed value, which is what makes the early-start activities
+     * work with no per-activity branch: TUG's recorder opens during Get Ready, but elapsed is
+     * measured from "go", so the timer reads 00:00 there rather than 00:11.
+     */
     private suspend fun mirrorRecordingClock() {
-        val duration = activityDurationSeconds
+        val duration = activityDurationMillis
         val countdown = configuration.value.isCountingDown && duration != null
-        session.elapsedSeconds.collect { elapsed ->
-            timerValue.value =
-                if (countdown && duration != null) {
-                    (duration - elapsed).coerceAtLeast(0).toDisplayTime()
-                } else {
-                    elapsed.toDisplayTime()
-                }
+        session.elapsedMillis.collect { elapsed ->
+            val displayMs = if (countdown && duration != null) duration - elapsed else elapsed
+            // Count-down rounds up so the full duration shows until the first second has really
+            // elapsed and 00:00 appears exactly at the end; count-up floors so it reads 00:00
+            // for the first second.
+            val seconds = if (countdown) {
+                (displayMs + MILLIS_PER_SECOND - 1) / MILLIS_PER_SECOND
+            } else {
+                displayMs / MILLIS_PER_SECOND
+            }
+            timerValue.value = seconds.toInt().toDisplayTime()
         }
     }
 
@@ -776,12 +796,31 @@ internal class MotionRecorderViewModel(
             viewModelScope.launch {
                 for (time in prepareSeconds downTo 1) {
                     timerValue.value = time.toString()
-                    delay(1000L.milliseconds)
+                    delay(COUNTDOWN_TICK_MS)
                 }
                 timerValue.value = resourceProvider.getString(Res.string.go)
-                delay(1500L.milliseconds)
+                delay(GO_FRAME_MS)
                 updateState(RecordingScreenData.RecordScreenStage.RECORDING)
             }
+    }
+
+    /**
+     * Wall time the Get Ready countdown occupies before "go" — what an early-start activity has to
+     * add to the recorder's deadline so the measurement still gets its full length after "go".
+     *
+     * Reconstructed from [startTimerJob]'s own schedule: one [COUNTDOWN_TICK_MS] frame per counted
+     * second **plus the longer final "GO" frame**, so a ten-second countdown occupies 11 500 ms,
+     * not 10 000 ms. Both derive from the same constants; keep them in lock-step.
+     *
+     * Only a [OSTPrepareData.Duration] prepare has a length that is knowable up front. A
+     * [OSTPrepareData.Tts] prepare ends on a speech-synthesis callback, so no offset can be
+     * predicted for it — do not extend the early start to a TTS prepare without re-anchoring the
+     * recorder's deadline at "go" instead of predicting it.
+     */
+    private fun prepareOffsetMillis(prepareData: OSTPrepareData.Duration): Long {
+        val seconds = prepareData.prepareDuration.seconds
+        if (seconds <= 0) return 0L
+        return seconds * COUNTDOWN_TICK_MS + GO_FRAME_MS
     }
 
     fun clearJobs() {
@@ -888,4 +927,18 @@ internal class MotionRecorderViewModel(
         hallwayManager.onSuppressShortHallwayWarningChanged(suppress)
 
     fun isImperialSystem(): Boolean = hallwayManager.isImperialSystem()
+
+    private companion object {
+        // Get Ready countdown frame durations. prepareOffsetMillis() reconstructs the countdown's
+        // total wall time from these, so startTimerJob and the offset must share them.
+        const val COUNTDOWN_TICK_MS = 1_000L
+
+        /** The "GO" frame is held longer than a counted second. */
+        const val GO_FRAME_MS = 1_500L
+
+        const val MILLIS_PER_SECOND = 1_000L
+
+        /** Measurement length used when the host supplies none. */
+        const val DEFAULT_RECORDING_DURATION_MS = 60 * MILLIS_PER_SECOND
+    }
 }

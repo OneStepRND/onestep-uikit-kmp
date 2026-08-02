@@ -9,6 +9,7 @@ import co.onestep.kmp.uikit.models.OSTNorm
 import co.onestep.kmp.uikit.models.OSTParamName
 import co.onestep.kmp.uikit.models.OSTParameterMetadata
 import co.onestep.kmp.uikit.models.OSTRecorderState
+import co.onestep.kmp.uikit.models.OSTRecordingWindow
 import co.onestep.kmp.uikit.models.OSTTimeRangedDataRequest
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData
 import co.onestep.kmp.uikit.models.OSTWalkCourseLength
@@ -104,6 +105,7 @@ private class NoopRecorderBridge : RecorderBridge {
     override val recorderState: StateFlow<OSTRecorderState> = MutableStateFlow(OSTRecorderState.INITIALIZED)
     override val stepsCount: StateFlow<Int> = MutableStateFlow(0)
     override val analyserState: StateFlow<OSTAnalyserState> = MutableStateFlow(OSTAnalyserState.Idle)
+    override val currentRecordingWindow: StateFlow<OSTRecordingWindow?> = MutableStateFlow(null)
     override suspend fun prepareForRecording(activityType: OSTActivityType): Boolean = false
     override suspend fun start(
         activityType: OSTActivityType,

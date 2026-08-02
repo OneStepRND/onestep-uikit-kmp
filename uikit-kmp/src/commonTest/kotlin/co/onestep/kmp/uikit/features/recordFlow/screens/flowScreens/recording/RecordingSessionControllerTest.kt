@@ -14,78 +14,107 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Acceptance tests for the ViewModel-owned stop model: the recorder always starts with a
- * grace-padded backstop duration, and the controller — not the SDK — stops the recording when
- * the activity time elapses (wall-clock from "go") or the caller asks.
+ * Acceptance tests for the recording clock and the stop.
+ *
+ * The recorder is started with the exact deadline the measurement should end at — including the
+ * Get Ready countdown when capture starts early — so the SDK owns recording time. The controller
+ * renders from absolute anchors and only stops the recording itself when "go" arrived earlier than
+ * the predicted countdown, or when the platform SDK publishes no recording window.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class RecordingSessionControllerTest {
+
+    /** A bridge whose window tracks the test clock — i.e. a platform SDK that publishes one. */
+    private fun TestScope.bridgeWithWindow() = FakeRecorderBridge().apply {
+        monotonicNow = { testScheduler.currentTime }
+    }
 
     private fun TestScope.controller(bridge: FakeRecorderBridge) =
         RecordingSessionController(
             recorderBridge = bridge,
             scope = backgroundScope,
             now = { testScheduler.currentTime },
+            monotonicNow = { testScheduler.currentTime },
         )
 
     private fun request(
         activityType: OSTActivityType = OSTActivityType.WALK,
-        activitySeconds: Int? = 30,
-        prepareSeconds: Int = 0,
+        activityMillis: Long? = 30_000L,
+        prepareOffsetMillis: Long = 0L,
     ) = RecordingSessionController.StartRequest(
         activityType = activityType,
-        activityDurationSeconds = activitySeconds,
-        prepareDurationSeconds = prepareSeconds,
+        activityDurationMillis = activityMillis,
+        prepareOffsetMillis = prepareOffsetMillis,
     )
 
-    // --- Timed activity, started at "go" ---------------------------------------------------
+    // --- The deadline handed to the recorder ------------------------------------------------
 
     @Test
-    fun timedActivityStartsWithGracePaddedBackstopAndAutoStopsAtActivityDuration() = runTest {
-        val bridge = FakeRecorderBridge()
+    fun startedAtGoPassesExactlyTheMeasurementDuration() = runTest {
+        val bridge = bridgeWithWindow()
         val session = controller(bridge)
 
-        session.onGo { request(activitySeconds = 30) }
+        session.onGo { request(activityMillis = 30_000L) }
 
-        // SDK gets activity + grace as a suspension backstop only.
         assertEquals(
-            listOf(FakeRecorderBridge.StartCall(OSTActivityType.WALK, 40_000L)),
+            listOf(FakeRecorderBridge.StartCall(OSTActivityType.WALK, 30_000L)),
             bridge.startCalls,
         )
         assertTrue(session.isRecording)
-
-        advanceTimeBy(29_999)
-        runCurrent()
-        assertEquals(0, bridge.stopCount, "must not stop before the activity duration elapsed")
-
-        advanceTimeBy(1)
-        runCurrent()
-        assertEquals(1, bridge.stopCount, "controller stops the recorder at go + activity")
-        assertFalse(session.isRecording)
     }
 
     @Test
-    fun clockTicksWholeSecondsFromGo() = runTest {
-        val bridge = FakeRecorderBridge()
+    fun earlyStartAddsTheCountdownSoTheDeadlineLandsAtGoPlusDuration() = runTest {
+        val bridge = bridgeWithWindow()
         val session = controller(bridge)
-        val observed = mutableListOf<Int>()
-        backgroundScope.launch { session.elapsedSeconds.collect { observed += it } }
 
-        session.onGo { request(activitySeconds = 30) }
-        advanceTimeBy(3_000)
+        // TUG: 3 min measurement behind a 10 s countdown whose "GO" frame runs 1.5 s.
+        session.startEarly(
+            request(OSTActivityType.TUG, activityMillis = 180_000L, prepareOffsetMillis = 11_500L),
+        )
         runCurrent()
 
-        assertEquals(listOf(0, 1, 2, 3), observed)
+        assertEquals(191_500L, bridge.startCalls.single().durationMs)
+        assertTrue(bridge.markers.isEmpty(), "no marker until the activity actually begins")
+        assertFalse(session.isRecording, "the countdown is not the activity")
+
+        advanceTimeBy(11_500) // the full Get Ready countdown
+        session.onGo { error("recorder already started early — request must not be rebuilt") }
+
+        assertEquals(listOf(RecordingSessionController.GO_MARKER), bridge.markers)
+        assertTrue(session.isRecording)
+
+        // The recorder's own deadline now falls 3 min after "go" — so the measurement is its full
+        // length even if this controller never runs again (app suspended, screen closed).
+        val window = bridge.currentRecordingWindow.value!!
+        assertEquals(191_500L, window.totalMillis)
+        assertEquals(180_000L, window.remainingMillisAt(testScheduler.currentTime))
+
+        // Nothing ends the recording early.
+        advanceTimeBy(179_999)
+        runCurrent()
+        assertEquals(0, bridge.stopCount)
     }
 
-    // --- Unrestricted recording ------------------------------------------------------------
+    @Test
+    fun durationIsClampedToTheRecorderLimit() = runTest {
+        val bridge = bridgeWithWindow() // limit is 6 min
+        val session = controller(bridge)
+
+        session.startEarly(
+            request(OSTActivityType.TUG, activityMillis = 6 * 60_000L, prepareOffsetMillis = 11_500L),
+        )
+        runCurrent()
+
+        assertEquals(6 * 60_000L, bridge.startCalls.single().durationMs)
+    }
 
     @Test
     fun unrestrictedRecordingStartsWithNullDurationAndNeverAutoStops() = runTest {
-        val bridge = FakeRecorderBridge()
+        val bridge = bridgeWithWindow()
         val session = controller(bridge)
 
-        session.onGo { request(activitySeconds = null) }
+        session.onGo { request(activityMillis = null) }
 
         assertEquals(null, bridge.startCalls.single().durationMs)
 
@@ -93,66 +122,96 @@ class RecordingSessionControllerTest {
         runCurrent()
         assertEquals(0, bridge.stopCount)
         assertTrue(session.isRecording)
+        assertEquals(30 * 60 * 1000L, session.elapsedMillis.value)
     }
 
-    // --- TUG/STS early start ---------------------------------------------------------------
+    // --- The clock --------------------------------------------------------------------------
 
     @Test
-    fun earlyStartBackstopCoversCountdownAndGoMarkerIsWrittenAtGo() = runTest {
-        val bridge = FakeRecorderBridge()
+    fun clockMeasuresFromGoNotFromSensorStart() = runTest {
+        val bridge = bridgeWithWindow()
         val session = controller(bridge)
 
-        session.startEarly(request(OSTActivityType.TUG, activitySeconds = 180, prepareSeconds = 10))
+        session.startEarly(
+            request(OSTActivityType.TUG, activityMillis = 180_000L, prepareOffsetMillis = 11_500L),
+        )
         runCurrent()
+        advanceTimeBy(11_500)
 
-        // 10 s countdown + 180 s activity + 10 s grace.
-        assertEquals(200_000L, bridge.startCalls.single().durationMs)
-        assertTrue(bridge.markers.isEmpty(), "no marker until the activity actually begins")
-        assertFalse(session.isRecording, "countdown is not the activity")
-
-        advanceTimeBy(10_000) // full Get Ready countdown
-        session.onGo { error("recorder already started early — request must not be rebuilt") }
-
-        assertEquals(listOf(RecordingSessionController.GO_MARKER), bridge.markers)
-        assertTrue(session.isRecording)
-
-        // Auto-stop lands activity-duration after GO, not after recorder start.
-        advanceTimeBy(179_999)
+        session.onGo { error("already started") }
         runCurrent()
-        assertEquals(0, bridge.stopCount)
-        advanceTimeBy(1)
+        assertEquals(0L, session.elapsedMillis.value, "TUG must read 00:00 at 'go', not 00:11")
+
+        advanceTimeBy(60_000)
         runCurrent()
-        assertEquals(1, bridge.stopCount)
+        assertEquals(60_000L, session.elapsedMillis.value)
     }
 
     @Test
-    fun startNowSkippingCountdownStillStopsAtGoPlusActivity() = runTest {
-        val bridge = FakeRecorderBridge()
+    fun clockSelfCorrectsAcrossASuspendedTick() = runTest {
+        val bridge = bridgeWithWindow()
         val session = controller(bridge)
 
-        session.startEarly(request(OSTActivityType.STS, activitySeconds = 30, prepareSeconds = 10))
+        session.onGo { request(activityMillis = 120_000L) }
+        // One long jump — a backgrounded app, a screen-off, a stalled dispatcher. A clock that
+        // incremented per tick would be seconds behind; this one recomputes.
+        advanceTimeBy(45_000)
         runCurrent()
 
-        advanceTimeBy(3_000) // user taps "Start now" 3 s into the 10 s countdown
+        assertEquals(45_000L, session.elapsedMillis.value)
+    }
+
+    // --- Stopping ---------------------------------------------------------------------------
+
+    @Test
+    fun startNowTrimsTheSurplusTheSdkDeadlineCannotKnowAbout() = runTest {
+        val bridge = bridgeWithWindow()
+        val session = controller(bridge)
+
+        session.startEarly(
+            request(OSTActivityType.STS, activityMillis = 30_000L, prepareOffsetMillis = 11_500L),
+        )
+        runCurrent()
+
+        // The user taps "Start now" 3 s in, so the SDK's deadline is 8.5 s later than intended.
+        advanceTimeBy(3_000)
         session.onGo { error("recorder already started early") }
 
         advanceTimeBy(29_999)
         runCurrent()
         assertEquals(0, bridge.stopCount)
-        advanceTimeBy(1)
+
+        advanceTimeBy(RecordingSessionController.CLOCK_TICK_MILLIS)
         runCurrent()
-        // Stopped at go + 30 s (t = 33 s), well before the SDK backstop at 50 s.
-        assertEquals(1, bridge.stopCount)
+        assertEquals(1, bridge.stopCount, "the measurement must still be 30 s after 'go'")
+        assertFalse(session.isRecording)
     }
 
-    // --- Caller-initiated stop / teardown --------------------------------------------------
+    @Test
+    fun withoutAnSdkWindowTheControllerStopsAtGoPlusDuration() = runTest {
+        // iOS today: the SDK publishes no recording window (OS-16749).
+        val bridge = FakeRecorderBridge()
+        val session = controller(bridge)
+
+        session.onGo { request(activityMillis = 30_000L) }
+
+        advanceTimeBy(29_999)
+        runCurrent()
+        assertEquals(0, bridge.stopCount, "must not stop before the measurement duration elapsed")
+
+        advanceTimeBy(RecordingSessionController.CLOCK_TICK_MILLIS)
+        runCurrent()
+        assertEquals(1, bridge.stopCount)
+        assertFalse(session.isRecording)
+        assertEquals(30_000L, session.elapsedMillis.value, "elapsed never exceeds the duration")
+    }
 
     @Test
     fun manualStopStopsOnceAndSuppressesTheLaterDeadlineStop() = runTest {
         val bridge = FakeRecorderBridge()
         val session = controller(bridge)
 
-        session.onGo { request(activitySeconds = 30) }
+        session.onGo { request(activityMillis = 30_000L) }
         advanceTimeBy(5_000)
         session.stopAndAwaitDone()
 
@@ -166,10 +225,12 @@ class RecordingSessionControllerTest {
 
     @Test
     fun teardownDuringEarlyStartStopsAndResetsTheRecorder() = runTest {
-        val bridge = FakeRecorderBridge()
+        val bridge = bridgeWithWindow()
         val session = controller(bridge)
 
-        session.startEarly(request(OSTActivityType.TUG, activitySeconds = 180, prepareSeconds = 10))
+        session.startEarly(
+            request(OSTActivityType.TUG, activityMillis = 180_000L, prepareOffsetMillis = 11_500L),
+        )
         runCurrent()
         advanceTimeBy(4_000) // user exits mid-countdown
 
@@ -187,7 +248,9 @@ class RecordingSessionControllerTest {
         bridge.startGate = gate
         val session = controller(bridge)
 
-        session.startEarly(request(OSTActivityType.STS, activitySeconds = 30, prepareSeconds = 10))
+        session.startEarly(
+            request(OSTActivityType.STS, activityMillis = 30_000L, prepareOffsetMillis = 11_500L),
+        )
         runCurrent() // start() is now suspended on the gate
 
         val teardown = launch { session.stopAndAwaitDone(reset = true) }
@@ -201,12 +264,12 @@ class RecordingSessionControllerTest {
 
     @Test
     fun stopAfterRecordingFinishedIsANoOp() = runTest {
-        val bridge = FakeRecorderBridge()
+        val bridge = bridgeWithWindow()
         val session = controller(bridge)
 
-        session.onGo { request(activitySeconds = 30) }
-        // The SDK reported the recording over on its own (backstop/cap) — the ViewModel's
-        // recorder-state collector calls onRecordingFinished().
+        session.onGo { request(activityMillis = 30_000L) }
+        // The SDK reported the recording over on its own — the ViewModel's recorder-state
+        // collector calls onRecordingFinished().
         session.onRecordingFinished()
 
         session.stopAndAwaitDone(reset = true)
