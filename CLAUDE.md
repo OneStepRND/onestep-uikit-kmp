@@ -87,6 +87,37 @@ Global Compose rules apply (stable params, hoisted state, previews). KMP additio
 - Version bumps here have cross-cutting fallout (compileSdk floors, dropped targets,
   transitive androidx requirements) — read the resolution error fully before "fixing" code.
 
+## Versioning & release channels
+
+**`-SNAPSHOT` here is a distribution channel, not a Maven snapshot.** OneStep reuses the
+Maven suffix to mark the **internal** channel, and those builds are **immutable**:
+
+| Version form | Channel | Consumed by |
+|---|---|---|
+| `2.1.1-SNAPSHOT`, `0.6.3-SNAPSHOT` | GitHub Packages (private) | OneStep patient app, clinician app — **this is what ships to production internally** |
+| `2.1.1`, `0.6.3` | Maven Central (public) | External clients (e.g. Zimmer) |
+
+Consequences — get these right, the standard Maven reading of `-SNAPSHOT` is wrong here:
+
+- Never call a OneStep `-SNAPSHOT` pin mutable, unreproducible, or unsafe to ship, and never
+  advise "resolve it to a released version before a production cut". The suffixed version *is*
+  the internal production artifact.
+- Publishing a `-SNAPSHOT` `uikit-kmp` that depends on a `-SNAPSHOT` `core` is the normal
+  internal release path, not a smell.
+- Dropping the suffix is a **distribution decision** (open the version to external clients), not
+  a stability promotion. Don't do it as part of a routine bump.
+
+Version numbers live in `uikit-kmp/build.gradle.kts` (`versionMajor/Minor/Patch`) and dependency
+pins in `gradle/libs.versions.toml`. After any bump run `./scripts/update-readme-versions.sh` —
+the README badges are generated, never hand-edited. Feature work takes a **patch** bump here
+(0.5.11 → 0.5.12 carried a feature); reserve minor bumps for genuinely breaking API changes.
+
+Releasing is CI, not local: dispatch `publish-android.yml` then `publish-ios.yml` (`snapshot: true`)
+against `main`. The iOS job tags, creates the GitHub release, uploads `OSTUIKit.xcframework.zip`,
+and commits the `Package.swift` URL+checksum rewrite back to `main` — so `git pull` afterwards.
+Verify the published zip's `swift package compute-checksum` matches `Package.swift` before
+declaring a release good; a stale checksum fails SPM resolution for every consumer.
+
 ## Git & PRs
 
 - Commit style (match `git log`): `Feat:` / `Fix:` / `Chore:` / `Test:` / `Docs:` prefix,

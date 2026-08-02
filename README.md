@@ -25,6 +25,20 @@ Current pinned versions (generated from `uikit-kmp/build.gradle.kts` and
 ![design-system](https://img.shields.io/badge/design--system-1.3.1-green)
 <!-- versions:end -->
 
+### What `-SNAPSHOT` means here
+
+**It marks the internal distribution channel — it is not a mutable Maven snapshot.** OneStep
+reuses the Maven suffix to separate the two audiences, and suffixed builds are immutable:
+
+| Version form | Published to | Consumed by |
+|---|---|---|
+| `0.6.3-SNAPSHOT`, `core:2.1.1-SNAPSHOT` | GitHub Packages (private) | OneStep patient app and clinician app — **this is what ships to production internally** |
+| `0.6.3`, `core:2.1.1` | Maven Central (public) | External clients (e.g. Zimmer) |
+
+So a `-SNAPSHOT` uikit-kmp depending on a `-SNAPSHOT` core is the normal internal release, not
+a provisional build: it is reproducible and safe to ship. Dropping the suffix is a *distribution*
+decision — opening the version up to external clients — not a stability promotion.
+
 ## Consuming
 
 ### Android / KMP apps (Maven)
@@ -125,8 +139,10 @@ cannot read another repo's packages.
 
 ## Dependencies of note
 
-- `co.onestep.android:core` — Android-only (androidMain). Snapshot builds use
-  `<coreVersion>-SNAPSHOT` from GitHub Packages; release builds use Maven Central.
+- `co.onestep.android:core` — Android-only (androidMain). Pinned by `coreVersion` in
+  `gradle/libs.versions.toml`, used verbatim (nothing appends the suffix for you). A
+  `-SNAPSHOT` pin resolves from GitHub Packages, a plain version from Maven Central — see
+  the channel note below.
 - `co.onestep:design-system-kmp` — KMP design system, from GitHub Packages.
 - iOS Swift bridge depends on `onestep-sdk-ios` (exact version pinned in `Package.swift`).
 
