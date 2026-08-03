@@ -18,6 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +29,8 @@ import co.onestep.kmp.uikit.features.permissions.OSTPermissionMode
 import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlow
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
+import co.onestep.kmp.uikit.features.web.OSTWebScreen
+import co.onestep.kmp.uikit.features.web.enhanceOSTSummaryUrl
 import co.onestep.kmp.uikit.testapp.ui.ClinicianLoginResultScreen
 import co.onestep.kmp.uikit.testapp.ui.ConfigureFlowScreen
 import co.onestep.kmp.uikit.testapp.ui.HomeScreen
@@ -36,6 +39,12 @@ import co.onestep.kmp.uikit.testapp.ui.SettingsScreen
 import co.onestep.kmp.uikit.testapp.ui.SummaryLoadingScreen
 import co.onestep.kmp.uikit.testapp.ui.TestAppTheme
 import kotlinx.coroutines.launch
+
+/**
+ * Identifies the harness in the web summary's analytics, kept distinct from the real hosts'
+ * `pa_recorder` / `ca_carelog` so test traffic is separable.
+ */
+private const val TEST_HARNESS_SUMMARY_ORIGIN = "uikit_test_harness"
 
 /**
  * Root of the consolidated test app — the single shared UI both platform shells host. Owns the
@@ -167,6 +176,9 @@ private fun AuthenticatedContent(
     var lastEvent by remember { mutableStateOf<String?>(null) }
     var isConnecting by remember { mutableStateOf(false) }
     var settingsError by remember { mutableStateOf<String?>(null) }
+    // Staged between OSTRecordingFlow's onFinished and its exit callback; see leaveRecording below.
+    var webSummaryUrl by remember { mutableStateOf<String?>(null) }
+    val deviceLanguage = Locale.current.language
     val scope = rememberCoroutineScope()
 
     // MotionLab is created per patient context, so the baseline mock must be (re-)applied after
@@ -248,28 +260,62 @@ private fun AuthenticatedContent(
             onNavigateToPermissions = { screen = TestAppScreen.PermissionInApp },
         )
 
-        is TestAppScreen.Recording -> OSTRecordingFlow(
-            config = current.config,
-            onResult = { event ->
-                // PHI-free label only: activity type + event name + a truncated measurement id.
-                // `measurement_id` is present only on a real analyzed result. (HIPAA)
-                val measurementId = event.properties["measurement_id"]
-                val idSuffix = measurementId?.let { " (id:${it.take(8)})" }.orEmpty()
-                lastEvent = "${current.config.activityType.name}: ${event.name}$idSuffix"
+        is TestAppScreen.Recording -> {
+            // Where a finished recording lands. A `WEB` flow stages an enhanced summaryUrl in
+            // onFinished (which fires just before onDismiss), and then the harness opens it in
+            // uikit's own OSTWebScreen — which is exactly what a host app does with that URL.
+            val leaveRecording = {
+                val staged = webSummaryUrl
+                screen = when {
+                    staged != null -> {
+                        webSummaryUrl = null
+                        TestAppScreen.WebSummary(staged, current.returnToCareLog)
+                    }
+
+                    current.returnToCareLog -> TestAppScreen.CareLog
+                    else -> TestAppScreen.Home
+                }
+            }
+
+            OSTRecordingFlow(
+                config = current.config,
+                onResult = { event ->
+                    // PHI-free label only: activity type + event name + a truncated measurement id.
+                    // `measurement_id` is present only on a real analyzed result. (HIPAA)
+                    val measurementId = event.properties["measurement_id"]
+                    val idSuffix = measurementId?.let { " (id:${it.take(8)})" }.orEmpty()
+                    lastEvent = "${current.config.activityType.name}: ${event.name}$idSuffix"
+                    leaveRecording()
+                },
+                // The URL is patient-scoped, so it is never written to the UI label or a log line —
+                // only whether it arrived. (HIPAA)
+                onFinished = { result ->
+                    lastEvent = buildString {
+                        append(current.config.activityType.name)
+                        append(": finished")
+                        result.measurementId?.let { append(" (id:${it.take(8)})") }
+                        append(
+                            if (result.summaryUrl.isNullOrEmpty()) " — no summaryUrl"
+                            else " — summaryUrl ✓",
+                        )
+                    }
+                    result.summaryUrl?.takeIf { it.isNotEmpty() }?.let { summaryUrl ->
+                        webSummaryUrl = enhanceOSTSummaryUrl(
+                            url = summaryUrl,
+                            origin = TEST_HARNESS_SUMMARY_ORIGIN,
+                            language = deviceLanguage,
+                        )
+                    }
+                },
+                onDismiss = leaveRecording,
+            )
+        }
+
+        is TestAppScreen.WebSummary -> OSTWebScreen(
+            url = current.url,
+            onClose = {
                 screen = if (current.returnToCareLog) TestAppScreen.CareLog else TestAppScreen.Home
             },
-            // What a real host does with this: open `result.summaryUrl` in a web view. The harness
-            // only reports whether the URL arrived — the link is patient-scoped, so it is never
-            // written to the UI label or a log line. (HIPAA)
-            onFinished = { result ->
-                lastEvent = buildString {
-                    append(current.config.activityType.name)
-                    append(": finished")
-                    result.measurementId?.let { append(" (id:${it.take(8)})") }
-                    append(if (result.summaryUrl.isNullOrEmpty()) " — no summaryUrl" else " — summaryUrl ✓")
-                }
-            },
-            onDismiss = { screen = TestAppScreen.Home },
         )
 
         is TestAppScreen.SummaryLoading -> SummaryLoadingScreen(

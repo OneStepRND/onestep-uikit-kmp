@@ -25,6 +25,7 @@ import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlowResult
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
 import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
+import co.onestep.kmp.uikit.features.web.OSTWebScreen
 import co.onestep.kmp.sdk.OSTEvent
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.utils.ResourceProvider
@@ -266,6 +267,44 @@ object OSTUIKitIos {
         checkConfigured()
         return ComposeUIViewController {
             OSTCareLog(onClose = onClose)
+        }.applyDefaultStyle()
+    }
+
+    /**
+     * Create a UIViewController hosting a OneStep web mini-app (the web summary, a questionnaire,
+     * terms of service) full-screen.
+     *
+     * The page authenticates with the `auth_token` cookie on `.onestep.co`. On iOS the SDK's
+     * `NSHTTPCookieStorage.shared` and the web view's own store are separate, so uikit copies the
+     * cookies that apply to [url] across before the first request — a host only has to make sure the
+     * cookie is planted (which it already is, for the SDK's own calls to work).
+     *
+     * ```swift
+     * let vc = OSTUIKitIos.shared.createWebViewController(
+     *     url: OSTSummaryUrlKt.enhanceOSTSummaryUrl(
+     *         url: summaryUrl, origin: "ca_carelog", language: "en", unitSystem: nil, overlayClose: true
+     *     ),
+     *     onClose: { self.dismiss(animated: true) }
+     * )
+     * ```
+     *
+     * @param url an `https` URL; anything else renders the error state.
+     * @param onClose invoked by the close button and by a back gesture with no page history left.
+     * @param showCloseButton set `false` when the presenting Swift code draws its own chrome.
+     */
+    fun createWebViewController(
+        url: String,
+        onClose: () -> Unit = {},
+        showCloseButton: Boolean = true,
+    ): UIViewController {
+        // No checkConfigured(): a web page needs no SDK bridge, only the auth cookie, so this is
+        // usable before (or without) configure().
+        return ComposeUIViewController {
+            OSTWebScreen(
+                url = url,
+                onClose = onClose,
+                showCloseButton = showCloseButton,
+            )
         }.applyDefaultStyle()
     }
 

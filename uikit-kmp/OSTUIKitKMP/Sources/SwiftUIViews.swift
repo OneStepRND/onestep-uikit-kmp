@@ -170,6 +170,61 @@ public struct OSTCareLogView: UIViewControllerRepresentable {
     public func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
 }
 
+// MARK: - Web
+
+/// SwiftUI view hosting a OneStep web mini-app (web summary, questionnaire, terms of service)
+/// full-screen, with an overlaid close button.
+///
+/// The page authenticates with the `auth_token` cookie on `.onestep.co`. iOS keeps the SDK's
+/// `HTTPCookieStorage.shared` and the web view's own cookie store separate, so uikit copies the
+/// cookies that apply to `url` across before issuing the first request — a host only has to ensure
+/// the cookie is planted, which it already is for the SDK's own calls to work.
+///
+/// Pass a summary URL through `OSTSummaryUrlKt.enhanceOSTSummaryUrl` first so the page receives its
+/// host context (locale, unit system, origin).
+///
+/// ```swift
+/// OSTWebView(
+///     url: OSTSummaryUrlKt.enhanceOSTSummaryUrl(
+///         url: summaryUrl,
+///         origin: "ca_carelog",
+///         language: "en",
+///         unitSystem: nil,
+///         overlayClose: true
+///     ),
+///     onClose: { dismiss() }
+/// )
+/// ```
+public struct OSTWebView: UIViewControllerRepresentable {
+    private let url: String
+    private let onClose: () -> Void
+    private let showCloseButton: Bool
+
+    /// - Parameters:
+    ///   - url: an `https` URL. Anything else renders the error state rather than loading.
+    ///   - onClose: invoked by the close button, and by a back gesture with no page history left.
+    ///   - showCloseButton: `false` when the presenting SwiftUI code draws its own chrome.
+    public init(
+        url: String,
+        onClose: @escaping () -> Void = {},
+        showCloseButton: Bool = true
+    ) {
+        self.url = url
+        self.onClose = onClose
+        self.showCloseButton = showCloseButton
+    }
+
+    public func makeUIViewController(context: Context) -> UIViewController {
+        OSTUIKitIos.shared.createWebViewController(
+            url: url,
+            onClose: onClose,
+            showCloseButton: showCloseButton
+        )
+    }
+
+    public func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}
+
 // MARK: - Push/Pop Transition Demo (test harnesses only)
 
 /// SwiftUI view demoing the Compose-implemented Cupertino push/pop transition and the
