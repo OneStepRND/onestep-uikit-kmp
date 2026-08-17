@@ -155,7 +155,7 @@ class SwiftOneStepAdapter(private val delegate: IosOneStepDelegate) : OneStep {
                     if (message == null) {
                         OSTResult.Success(patientId?.let { OSTPatientId.fromString(it) })
                     } else {
-                        OSTResult.Error(OSTError(code = code, message = message, details = null))
+                        OSTResult.Error(OSTSDKError(code = code, message = message, details = null))
                     },
                 )
             }
@@ -200,7 +200,7 @@ class SwiftPatientScopeAdapter(
                     if (attributes != null && message == null) {
                         OSTResult.Success(attributes)
                     } else {
-                        OSTResult.Error(OSTError(code = code, message = message ?: "getUserAttributes failed", details = null))
+                        OSTResult.Error(OSTSDKError(code = code, message = message ?: "getUserAttributes failed", details = null))
                     },
                 )
             }
@@ -213,7 +213,7 @@ class SwiftPatientScopeAdapter(
                     if (merged != null && message == null) {
                         OSTResult.Success(merged)
                     } else {
-                        OSTResult.Error(OSTError(code = code, message = message ?: "updateCustomMetadata failed", details = null))
+                        OSTResult.Error(OSTSDKError(code = code, message = message ?: "updateCustomMetadata failed", details = null))
                     },
                 )
             }
@@ -250,7 +250,7 @@ class SwiftMotionLabAdapter(
                         OSTResult.Success(measurement)
                     } else {
                         OSTResult.Error(
-                            OSTError(
+                            OSTSDKError(
                                 code = code,
                                 message = message ?: "readSingleMotionMeasurement failed",
                                 details = null,
@@ -300,7 +300,7 @@ object OSTOneStepIos {
 internal actual fun oneStepGetInstance(): OSTResult<OneStep> =
     OSTOneStepIos.currentInstance()?.let { OSTResult.Success(it) }
         ?: OSTResult.Error(
-            OSTError(
+            OSTSDKError(
                 code = 0,
                 message = "OneStep SDK not initialized. The native host must call OSTOneStepIos.register(...) " +
                     "after initializing OneStepSDK.",
@@ -330,7 +330,7 @@ private fun createIdentificationState(
             ?: OSTIdentificationState.Unidentified
     "lost" ->
         OSTIdentificationState.Lost(
-            OSTError(code = errorCode, message = errorMessage ?: "Session lost", details = null),
+            OSTSDKError(code = errorCode, message = errorMessage ?: "Session lost", details = null),
         )
     else -> OSTIdentificationState.Unidentified
 }
@@ -339,5 +339,5 @@ private fun voidResult(errorCode: Int = 0, errorMessage: String?): OSTResult<Uni
     if (errorMessage == null) {
         OSTResult.Success(Unit)
     } else {
-        OSTResult.Error(OSTError(code = errorCode, message = errorMessage, details = null))
+        OSTResult.Error(OSTSDKError(code = errorCode, message = errorMessage, details = null))
     }

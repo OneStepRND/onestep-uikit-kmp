@@ -1,6 +1,7 @@
 package co.onestep.kmp.uikit.mapper
 
 import co.onestep.kmp.sdk.OSTError
+import co.onestep.kmp.sdk.OSTSDKError
 import co.onestep.kmp.uikit.models.OSTMeasurementMetadata
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.models.OSTResultState
@@ -38,6 +39,18 @@ fun createKmpMeasurement(
     resultState = resultState?.toKmpResultState(),
     summaryUrl = summaryUrl,
 )
+
+/**
+ * Build the SDK's own [OSTError] from the native measurement error fields.
+ *
+ * [OSTError] is an interface so hosts can bring their own error type; the SDK implementation
+ * backing it is internal, so native bridge code creates one through this factory.
+ */
+fun createKmpError(
+    code: Int,
+    message: String,
+    details: String? = null,
+): OSTError = OSTSDKError(code = code, message = message, details = details)
 
 fun String.toKmpMeasurementStatus(): OSTMotionMeasurement.MotionMeasurementStatus =
     when (this.uppercase()) {

@@ -195,9 +195,9 @@ private fun CoreError.toKmpCode(): Int? = when (val t = type) {
     else -> null
 }
 
-// shortcut: common OSTError needs a non-null code; 0 is the sentinel for type-only errors,
+// shortcut: common OSTSDKError needs a non-null code; 0 is the sentinel for type-only errors,
 // with the original category preserved in `details` (matches the OSTState mapper convention).
-private fun CoreError.toKmpError(): OSTError = OSTError(
+private fun CoreError.toKmpError(): OSTError = OSTSDKError(
     code = toKmpCode() ?: 0,
     message = message,
     details = type.name,

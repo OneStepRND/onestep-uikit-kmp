@@ -1,11 +1,17 @@
 package co.onestep.kmp.sdk
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+/**
+ * The failure carried by [OSTResult.Error].
+ *
+ * This is an interface, not a concrete type: consumers are free to supply their own error
+ * model (sealed hierarchies, domain-specific types, wrapped exceptions) and still use
+ * [OSTResult] and the extensions in `OSTResultExtensions.kt`. The only contract is a
+ * human-readable [message].
+ *
+ * The SDK's own errors are produced through `String.asErrorResult(...)`.
+ */
+interface OSTError {
 
-@Serializable
-data class OSTError(
-    @SerialName("code") val code: Int,
-    @SerialName("message") val message: String,
-    @SerialName("details") val details: String? = null,
-)
+    /** Human-readable description of the failure. Never PII/PHI (HIPAA). */
+    val message: String
+}

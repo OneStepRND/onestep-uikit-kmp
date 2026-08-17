@@ -1,6 +1,7 @@
 package co.onestep.kmp.uikit.mapper
 
 import co.onestep.kmp.sdk.OSTError as KmpError
+import co.onestep.kmp.sdk.OSTSDKError as KmpSDKError
 import co.onestep.kmp.uikit.models.OSTMeasurementMetadata as KmpMetadata
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement as KmpMeasurement
 import co.onestep.kmp.uikit.models.OSTResultState as KmpResultState
@@ -41,7 +42,7 @@ fun CoreResultState.toKmp(): KmpResultState =
 
 // shortcut: OSTMeasurementError exposes only code + message; KmpError.details has no source.
 fun CoreError.toKmp(): KmpError =
-    KmpError(code = code, message = message, details = null)
+    KmpSDKError(code = code, message = message, details = null)
 
 fun CoreMetadata.toKmp(): KmpMetadata =
     KmpMetadata(

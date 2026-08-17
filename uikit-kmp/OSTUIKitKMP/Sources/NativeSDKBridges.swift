@@ -62,7 +62,9 @@ private func toKmp(_ m: OneStepSDK.OSTMotionMeasurement) -> KMPMotionMeasurement
     // error (raw OSTMeasurementError: code / message / details)
     var kmpError: KMPError? = nil
     if let nativeError = m.error {
-        kmpError = KMPError(
+        // KMPError (OSTError) is a protocol — the SDK implementation behind it is internal to the
+        // KMP module, so build it through the mapper factory rather than a constructor.
+        kmpError = MeasurementMapperKt.createKmpError(
             code: Int32(nativeError.code),
             message: nativeError.message,
             details: nativeError.details

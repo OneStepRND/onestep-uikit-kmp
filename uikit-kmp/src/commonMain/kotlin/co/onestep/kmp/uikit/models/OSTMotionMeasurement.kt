@@ -1,6 +1,7 @@
 package co.onestep.kmp.uikit.models
 
 import co.onestep.kmp.sdk.OSTError
+import co.onestep.kmp.sdk.OSTErrorSerializer
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -13,7 +14,7 @@ data class OSTMotionMeasurement(
     val params: Map<String, Float> = emptyMap(),
     val parameterArrays: Map<String, List<Float>> = emptyMap(),
     val status: MotionMeasurementStatus,
-    var error: OSTError? = null,
+    @Serializable(with = OSTErrorSerializer::class) var error: OSTError? = null,
     var resultState: OSTResultState? = null,
     /** URL of the web summary for this measurement (e.g. Static-Balance), when the SDK provides one. */
     val summaryUrl: String? = null,

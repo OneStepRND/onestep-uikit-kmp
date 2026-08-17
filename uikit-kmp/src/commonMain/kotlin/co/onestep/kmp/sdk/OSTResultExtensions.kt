@@ -236,9 +236,12 @@ fun <T> T.asSuccess(): OSTResult.Success<T> = OSTResult.Success(this)
 
 /**
  * Build an [OSTResult.Error] from a message (and optional numeric code / details).
+ *
+ * This is the entry point for the SDK's own [OSTError]; callers with their own error type
+ * wrap it with `OSTResult.Error(myError)` directly.
  */
 fun String.asErrorResult(code: Int = 0, details: String? = null): OSTResult.Error =
-    OSTResult.Error(OSTError(code = code, message = this, details = details))
+    OSTResult.Error(OSTSDKError(code = code, message = this, details = details))
 
 /**
  * The error message of a failed result, or null on success.

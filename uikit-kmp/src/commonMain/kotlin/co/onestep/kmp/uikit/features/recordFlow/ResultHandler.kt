@@ -1,5 +1,6 @@
 package co.onestep.kmp.uikit.features.recordFlow
 
+import co.onestep.kmp.sdk.sdkCode
 import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit.models.OSTAnalyserError
 import co.onestep.kmp.uikit.models.OSTAnalysisError
@@ -55,7 +56,7 @@ internal object ResultHandler {
                 } else {
                     RecordFlowOutcome.Error(
                         analysisError(
-                            motionMeasurement.error?.code.toAnalysisError(),
+                            motionMeasurement.error?.sdkCode.toAnalysisError(),
                             motionMeasurement.type,
                         ),
                     )

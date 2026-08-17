@@ -31,6 +31,8 @@ import co.onestep.kmp.uikit.models.OSTAnalyserState as KmpAnalyserState
 import co.onestep.kmp.uikit.models.OSTDailyBackgroundMeasurement as KmpDailyMeasurement
 import co.onestep.kmp.uikit.models.OSTDiscreteColor as KmpDiscreteColor
 import co.onestep.kmp.sdk.OSTError as KmpError
+import co.onestep.kmp.sdk.OSTSDKError as KmpSDKError
+import co.onestep.kmp.sdk.sdkCode
 import co.onestep.kmp.sdk.OSTEvent as KmpEvent
 import co.onestep.kmp.uikit.models.OSTInsight as KmpInsight
 import co.onestep.kmp.uikit.models.OSTInsightType as KmpInsightType
@@ -126,10 +128,11 @@ fun KmpResultState.toCore(): CoreResultState? =
 
 // ── Error ────────────────────────────────────────────────────────────────────
 
-// shortcut: OSTMeasurementError exposes only code + message; KmpError.details has no source.
-fun CoreError.toKmp(): KmpError = KmpError(code = code, message = message, details = null)
+// shortcut: OSTMeasurementError exposes only code + message; KmpSDKError.details has no source.
+fun CoreError.toKmp(): KmpError = KmpSDKError(code = code, message = message, details = null)
 
-fun KmpError.toCore(): CoreError = CoreError(code = code, message = message)
+// shortcut: a host-supplied OSTError carries no code; 0 is the sentinel, matching the OSTState mapper.
+fun KmpError.toCore(): CoreError = CoreError(code = sdkCode ?: 0, message = message)
 
 // ── WalkCourseLength ─────────────────────────────────────────────────────────
 
