@@ -348,6 +348,10 @@ internal actual fun PlatformWebView(
         // See https://youtrack.jetbrains.com/issue/CMP-6922
         properties = UIKitInteropProperties(
             interactionMode = UIKitInteropInteractionMode.NonCooperative,
+            // Without this the WKWebView is an opaque leaf in the iOS accessibility tree: the
+            // page DOM is unreadable to VoiceOver and to XCUITest-based drivers (Maestro).
+            // CMP's docs name web views as the case this flag exists for.
+            isNativeAccessibilityEnabled = true,
         ),
         factory = { webView },
     )
