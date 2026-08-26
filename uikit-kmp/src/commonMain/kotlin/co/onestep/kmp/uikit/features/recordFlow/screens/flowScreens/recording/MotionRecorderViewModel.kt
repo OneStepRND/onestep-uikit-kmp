@@ -913,6 +913,9 @@ internal class MotionRecorderViewModel(
 
     // --- Hallway distance — delegated to HallwayDistanceManager --------------------------
 
+    /** The committed hallway length in meters, for the host-facing flow result. Null when skipped. */
+    val committedHallwayLengthMeters: Float? get() = hallwayManager.committedHallwayLengthMeters
+
     fun saveHallwayLengthToMetadata() = hallwayManager.saveHallwayLengthToMetadata()
 
     fun onHallwayInputChanged(rawValue: String) = hallwayManager.onHallwayInputChanged(rawValue)

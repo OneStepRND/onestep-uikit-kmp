@@ -657,6 +657,7 @@ internal fun RecordFlowNavGraph(
                                 finishWithMeasurement(
                                     measurement = outcome.measurement,
                                     sessionUuid = null,
+                                    hallwayLengthMeters = viewModel.committedHallwayLengthMeters,
                                     onResult = onResult,
                                     onFinished = onFinished,
                                     onDismiss = onDismiss,
@@ -729,6 +730,7 @@ internal fun RecordFlowNavGraph(
                         finishWithMeasurement(
                             measurement = measurement,
                             sessionUuid = null,
+                            hallwayLengthMeters = viewModel.committedHallwayLengthMeters,
                             onResult = onResult,
                             onFinished = onFinished,
                             onDismiss = onDismiss,
@@ -1222,6 +1224,7 @@ private fun shouldSkipNativeSummary(
 private fun finishWithMeasurement(
     measurement: OSTMotionMeasurement,
     sessionUuid: String?,
+    hallwayLengthMeters: Float?,
     onResult: (OSTEvent) -> Unit,
     onFinished: (OSTRecordingFlowResult) -> Unit,
     onDismiss: () -> Unit,
@@ -1240,6 +1243,7 @@ private fun finishWithMeasurement(
             measurementId = measurement.id,
             summaryUrl = measurement.summaryUrl,
             sessionUuid = sessionUuid,
+            hallwayLengthMeters = hallwayLengthMeters,
         ),
     )
     onDismiss()

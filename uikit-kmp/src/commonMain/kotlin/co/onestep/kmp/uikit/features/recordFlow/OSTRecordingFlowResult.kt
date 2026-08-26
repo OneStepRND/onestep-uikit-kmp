@@ -18,9 +18,25 @@ package co.onestep.kmp.uikit.features.recordFlow
  *   analysis or the server did not return a URL.
  * @property sessionUuid Session grouping key for multi-condition activities (Static Balance);
  *   `null` for single-measurement activities.
+ * @property hallwayLengthMeters The hallway/walkway length the user committed on the hallway screen,
+ *   in **meters**, for the 6-minute and 2-minute walk flows. `null` for every other activity, and
+ *   when the user skipped entering one.
+ *
+ *   This exists for **clinician-mode hosts**. In current-user mode the length is persisted to the
+ *   SDK-managed custom-metadata store and follows the user across devices, so a host never needs to
+ *   see it. In clinician mode that persistence is deliberately suppressed — the hallway belongs to
+ *   the clinic, not the patient
+ *   ([co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.HallwayDistanceManager])
+ *   — and the host is expected to pre-fill
+ *   [co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration.hallwayLengthMeters]
+ *   instead. Without this field a host had no way to learn the value in the first place: it could
+ *   pre-fill a length it already knew, but never acquire one, so a per-clinic memory could never be
+ *   seeded. Reported in meters regardless of the user's unit system, so the host stores one unit and
+ *   converts only for display.
  */
 data class OSTRecordingFlowResult(
     val measurementId: String?,
     val summaryUrl: String?,
     val sessionUuid: String? = null,
+    val hallwayLengthMeters: Float? = null,
 )

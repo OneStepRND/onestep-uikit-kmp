@@ -99,6 +99,20 @@ internal class HallwayDistanceManager(
     var hallwayLengthForCurrentTest: Int? = null
         private set
 
+    /**
+     * [hallwayLengthForCurrentTest] normalised to **meters**, or null when no length was committed.
+     *
+     * Meters regardless of the user's unit system so a single stored value serves both: the display
+     * unit is a per-user preference, while the hallway is a physical property of the room. Reported
+     * to the host on [co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlowResult], which is the
+     * only way a clinician-mode host can learn the value — its own persistence is suppressed here.
+     */
+    val committedHallwayLengthMeters: Float?
+        get() {
+            val displayValue = hallwayLengthForCurrentTest ?: return null
+            return if (isImperialSystem()) displayValue / METERS_TO_FEET_RATIO else displayValue.toFloat()
+        }
+
     private var savedHallwayLength: Int? = null
 
     var hallwayDistanceState: MutableState<HallwayDistanceScreenState> =
@@ -238,14 +252,11 @@ internal class HallwayDistanceManager(
     fun saveHallwayLengthToMetadata() {
         // Clinician mode: never write the length to a per-user metadata store (would leak the
         // clinic hallway value into the clinician's or a patient's store). The committed length is
-        // still attached to the measurement's walkCourseLength — that is not suppressed here.
+        // still attached to the measurement's walkCourseLength — that is not suppressed here — and
+        // is reported to the host on the flow result ([committedHallwayLengthMeters]), which is how
+        // a clinician host builds a per-clinic memory of its own.
         if (isPatientSession) return
-        val displayValue = hallwayLengthForCurrentTest ?: return
-        val valueInMeters: Float = if (isImperialSystem()) {
-            displayValue / METERS_TO_FEET_RATIO
-        } else {
-            displayValue.toFloat()
-        }
+        val valueInMeters = committedHallwayLengthMeters ?: return
         val key = hallwayLengthKey
         cachedMetersByKey[key] = valueInMeters
         coroutineScope.launch {
