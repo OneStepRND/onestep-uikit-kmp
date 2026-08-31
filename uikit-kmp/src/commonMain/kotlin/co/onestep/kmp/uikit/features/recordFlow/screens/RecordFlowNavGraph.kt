@@ -1266,7 +1266,15 @@ private fun finishStaticBalance(
     onDismiss: () -> Unit,
 ) {
     if (measurement != null) {
-        finishWithMeasurement(measurement, sessionUuid, onResult, onFinished, onDismiss)
+        finishWithMeasurement(
+            measurement = measurement,
+            sessionUuid = sessionUuid,
+            // Static Balance has no hallway screen, so there is no length to report.
+            hallwayLengthMeters = null,
+            onResult = onResult,
+            onFinished = onFinished,
+            onDismiss = onDismiss,
+        )
     } else {
         onDismiss()
     }
