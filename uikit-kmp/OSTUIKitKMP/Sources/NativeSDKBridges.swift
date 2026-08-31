@@ -20,6 +20,11 @@ private func nativeActivityType(fromKmpName name: String) -> OneStepSDK.OSTActiv
     case "SIX_MINUTE_WALK": return .sixMinWalk
     case "TWO_MINUTE_WALK": return .twoMinWalk
     case "STAIRS": return .stairs
+    // Missing until OS-16861: `staticBalance` has existed on the native enum since 2.1.x, but with
+    // no case here every Static Balance condition was silently recorded as a WALK on iOS — the
+    // `default` below is a fallback, not a mapping, and it cannot tell an unmapped type from a walk.
+    case "STATIC_BALANCE": return .staticBalance
+    case "GENERIC_RECORDING": return .genericRecording
     default: return .walk
     }
 }
@@ -220,17 +225,85 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
                 case .analyzedAndSavedSuccessfully(let measurement):
                     self.adapter?.onAnalyserStateChanged(stateName: "ANALYZED", errorName: nil, errorMessage: nil)
                     self.finishAnalyze(with: toKmp(measurement))
-                case .error(let errorInfo):
+                case .uploadedWithoutAnalysis(let measurement):
+                    // Generic Recording (OS-16861), new in iOS SDK 2.1.5. The raw recording was
+                    // stored successfully and no analysis was ever requested, so this is the
+                    // SUCCESS case — not an empty or a failed analysis. Resume the KMP
+                    // `uploadWithoutAnalysis()` continuation with the stored measurement; the record
+                    // flow takes it straight to its notes screen.
+                    //
+                    // Deliberately pushes UPLOADING rather than ANALYZED: the KMP collector's
+                    // Analyzed branch calls onMeasurementResult itself, which on top of the
+                    // continuation below would navigate twice. Uploading has no such side effect,
+                    // and it is also the honest state — uploading is all that happened.
+                    self.adapter?.onAnalyserStateChanged(stateName: "UPLOADING", errorName: nil, errorMessage: nil)
+                    self.finishAnalyze(with: toKmp(measurement))
+                case .savedPendingSync:
+                    // OS-16071's offline path: the recording is persisted (NOT_SYNCED) and the sync
+                    // layer uploads it later. This case was unhandled and fell into
+                    // `@unknown default: break`, so `finishAnalyze` never ran, the KMP `analyze()`
+                    // continuation never resumed, and the flow HUNG until the 60s UI timeout turned
+                    // it into a generic error — a measurement that saved fine presenting as a
+                    // failure, a minute late.
+                    //
+                    // Reported as NETWORK_ERROR because that is what the record flow can render:
+                    // ResultHandler maps it to RecordFlowError.Connectivity, which tells the truth
+                    // (no result to show right now, connectivity is why). There is no
+                    // "saved, will upload later" outcome to route it to.
                     self.adapter?.onAnalyserStateChanged(
                         stateName: "FAILED",
-                        errorName: "GENERAL",
+                        errorName: "NETWORK_ERROR",
+                        errorMessage: "Recording saved — will upload when back online"
+                    )
+                    self.finishAnalyze(with: nil)
+                case .error(let errorInfo):
+                    // Every analyser failure used to be reported as "GENERAL", collapsing four
+                    // distinct outcomes into one screen: the user saw the same "something went
+                    // wrong" whether analysis timed out, the device was offline, or the session had
+                    // expired. The KMP adapter has always understood the richer vocabulary
+                    // (createKmpAnalyserError: TIMEOUT / NETWORK_ERROR / SERVER_ERROR / TOO_SHORT);
+                    // only this mapping was missing.
+                    self.adapter?.onAnalyserStateChanged(
+                        stateName: "FAILED",
+                        errorName: Self.kmpErrorName(for: errorInfo.error),
                         errorMessage: errorInfo.message
                     )
                     self.finishAnalyze(with: nil)
                 @unknown default:
-                    break
+                    // A state this bridge does not know must still resume the continuation, or the
+                    // record flow hangs (see .savedPendingSync above, which is exactly how this
+                    // silent break bit us).
+                    self.adapter?.onAnalyserStateChanged(
+                        stateName: "FAILED",
+                        errorName: "GENERAL",
+                        errorMessage: "Unhandled analyser state"
+                    )
+                    self.finishAnalyze(with: nil)
                 }
             }
+    }
+
+    /// The native SDK's analyser error type → the name `createKmpAnalyserError` expects.
+    ///
+    /// `OSTErrorType` has exactly these four cases, so the switch is total and a new one would fail
+    /// to compile here rather than silently degrade to "GENERAL".
+    ///
+    /// `analysisTakingTime` is the one worth knowing by name: the SDK raises it when the measurement
+    /// has uploaded but the backend has not reported ANALYZED within its **hardcoded ~30 poll
+    /// attempts (~30s)**. The KMP layer asks for 60s (`RecorderBridge.analyze(timeout: Long = 60000)`)
+    /// and the Android bridge honours it (`motionLab.analyze(timeout)`), but the iOS
+    /// `OSTRecorderProtocol.analyze()` takes no timeout, so `timeoutMs` is dropped on this side. A
+    /// backend analysis that takes between ~30s and 60s therefore SUCCEEDS on Android and FAILS on
+    /// iOS. Mapping it to TIMEOUT at least renders the timeout screen instead of a generic one,
+    /// which is what makes that asymmetry visible; closing it needs a timeout parameter on the iOS
+    /// SDK's recorder.
+    private static func kmpErrorName(for error: OneStepSDK.OSTAnalyzerState.OSTErrorType) -> String {
+        switch error {
+        case .analysisTakingTime: return "TIMEOUT"
+        case .noInternetConnection: return "NETWORK_ERROR"
+        case .notAuthenticated: return "GENERAL"
+        case .generalError: return "GENERAL"
+        }
     }
 
     private func finishAnalyze(with measurement: KMPMotionMeasurement?) {
@@ -319,7 +392,9 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
     func readSingleMotionMeasurement(uuid: String, completion: @escaping (KMPMotionMeasurement?) -> Void) {
         guard let id = UUID(uuidString: uuid), let motionLab else { completion(nil); return }
         Task {
-            let measurement = try? motionLab.getMeasurement(id: id)
+            // iOS SDK 2.1.5 changed `getMeasurement(id:)` from `throws -> T?` to `async -> T?`
+            // (not in its CHANGELOG). Already inside a Task, so this is just an `await`.
+            let measurement = await motionLab.getMeasurement(id: id)
             completion(measurement.map(toKmp))
         }
     }
@@ -1214,7 +1289,8 @@ final class NativePatientScopeDelegate: NSObject, IosPatientScopeDelegate {
         // A nil result with a nil error message is treated as not-found by the facade adapter.
         let motionLab = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { $0.getMotionLab() }
         Task {
-            let native = try? motionLab.getMeasurement(id: uuid)
+            // `getMeasurement(id:)` is `async` as of iOS SDK 2.1.5 (was `throws`).
+            let native = await motionLab.getMeasurement(id: uuid)
             completion(native.map(toKmp), KotlinInt(int: 0), nil)
         }
     }
@@ -1318,9 +1394,14 @@ public func fetchRecentKmpMeasurements(limit: Int = 20) -> [KMPMotionMeasurement
 /// logged (HIPAA). Returns nil when the id is malformed or the measurement is not in the local store.
 ///
 /// Call from the main thread (native `getMeasurement` is not thread safe).
-public func fetchPatientScopedKmpMeasurement(patientId: String, measurementId: String) -> KMPMotionMeasurement? {
+///
+/// **`async` as of iOS SDK 2.1.5**, which changed `MotionLab.getMeasurement(id:)` from
+/// `throws -> T?` to `async -> T?` — an API break its CHANGELOG does not mention. There is no
+/// synchronous read left to wrap, and blocking a thread on it would be worse than propagating the
+/// asynchrony, so callers must `await`.
+public func fetchPatientScopedKmpMeasurement(patientId: String, measurementId: String) async -> KMPMotionMeasurement? {
     guard let uuid = UUID(uuidString: measurementId) else { return nil }
     let motionLab = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { $0.getMotionLab() }
-    guard let native = try? motionLab.getMeasurement(id: uuid) else { return nil }
+    guard let native = await motionLab.getMeasurement(id: uuid) else { return nil }
     return toKmp(native)
 }
