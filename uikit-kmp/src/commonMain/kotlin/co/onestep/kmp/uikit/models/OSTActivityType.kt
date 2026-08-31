@@ -3,6 +3,7 @@ package co.onestep.kmp.uikit.models
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.balance_test
 import co.onestep.kmp.uikit_kmp.generated.resources.dual_task_activity_display_name
+import co.onestep.kmp.uikit_kmp.generated.resources.generic_recording
 import co.onestep.kmp.uikit_kmp.generated.resources.knee_extension
 import co.onestep.kmp.uikit_kmp.generated.resources.knee_flexion
 import co.onestep.kmp.uikit_kmp.generated.resources.sit_to_stand
@@ -55,6 +56,18 @@ enum class OSTActivityType(
     TWO_MINUTE_WALK("walk_2_min_test", "two_minute_walk"),
 
     STAIRS("stairs", "stairs"),
+
+    /**
+     * Generic Recording (OS-16861): an open-ended recording with no known protocol. The
+     * participant records whatever the partner's protocol defines, describes it in a free-text
+     * note, and no results are produced — the data is stored raw and never analysed.
+     *
+     * Capped at 30 minutes
+     * ([co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration.GENERIC_RECORDING_DURATION_SEC]),
+     * which is the recorder's own hard limit. There is no parameter to raise or lower it.
+     */
+    @SerialName("generic_recording")
+    GENERIC_RECORDING("generic_recording", "generic_recording"),
 }
 
 fun OSTActivityType.base(): OSTActivityType =
@@ -79,4 +92,5 @@ val OSTActivityType.displayNameRes: StringResource
         OSTActivityType.SIX_MINUTE_WALK -> Res.string.six_minute_walk
         OSTActivityType.TWO_MINUTE_WALK -> Res.string.two_minute_walk
         OSTActivityType.STAIRS -> Res.string.stairs
+        OSTActivityType.GENERIC_RECORDING -> Res.string.generic_recording
     }

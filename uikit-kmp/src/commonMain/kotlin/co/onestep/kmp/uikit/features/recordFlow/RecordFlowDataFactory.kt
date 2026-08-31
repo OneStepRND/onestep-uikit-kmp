@@ -30,6 +30,7 @@ import co.onestep.kmp.uikit_kmp.generated.resources.Reload
 import co.onestep.kmp.uikit_kmp.generated.resources.choose_your_assistive_device
 import co.onestep.kmp.uikit_kmp.generated.resources.choose_your_footwear
 import co.onestep.kmp.uikit_kmp.generated.resources.a_connection_issue
+import co.onestep.kmp.uikit_kmp.generated.resources.generic_recording_too_short_error_description
 import co.onestep.kmp.uikit_kmp.generated.resources.allow
 import co.onestep.kmp.uikit_kmp.generated.resources.continue_camel_case
 import co.onestep.kmp.uikit_kmp.generated.resources.finish
@@ -258,6 +259,15 @@ internal object RecordFlowDataFactory {
                         action = it,
                     )
                 },
+            )
+            // Generic Recording short: shares the neutral too-short title, but its description
+            // states the one rule that applies here, and there are no instructions to view — so
+            // "Try again" is the only action.
+            RecordFlowError.GenericRecordingShort -> UiKitScreenData(
+                title = TextData(resourceProvider.getString(Res.string.this_measurement_s_recording_was_too_short), 28.sp, FontWeight.Bold),
+                subtitle = TextData(resourceProvider.getString(Res.string.generic_recording_too_short_error_description), 20.sp, FontWeight.Normal),
+                mainIcon = IconData(Res.drawable.ic_clock_red_stars),
+                brandButton = tryAgain,
             )
             RecordFlowError.Curvy -> analysisError(resourceProvider,
                 Res.string.your_walk_had_too_many_turns,

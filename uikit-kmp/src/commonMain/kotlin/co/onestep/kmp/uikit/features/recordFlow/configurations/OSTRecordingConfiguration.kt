@@ -136,6 +136,51 @@ data class OSTRecordingConfiguration(
             ),
         )
 
+        /**
+         * Fixed recording cap for the Generic Recording, in seconds (30 minutes).
+         *
+         * Matches the recorder's own hard limit (`OSTMotionLab.RECORDER_LIMIT_MILLIS`), so this is
+         * a ceiling in name only — the recorder rejects anything longer.
+         */
+        const val GENERIC_RECORDING_DURATION_SEC = 30 * 60
+
+        /**
+         * Generic Recording (OS-16861): an open-ended recording with no known protocol.
+         *
+         * The flow is the standard measurement flow with the instructions removed, the timer
+         * counting up, and the analysing/summary screens replaced by a free-text note. Nothing is
+         * analysed — the raw data is uploaded and stored.
+         *
+         * Deliberately parameterless: the 30-minute cap is fixed by the PRD and there is no knob to
+         * raise, lower, or override it. [GENERIC_RECORDING_DURATION_SEC] equals the recorder's own
+         * hard limit, so a longer recording is impossible anyway. The screen copy is resolved at
+         * render time, so nothing needs to be passed in for it either.
+         */
+        fun genericRecording() = OSTRecordingConfiguration(
+            activityType = OSTActivityType.GENERIC_RECORDING,
+            // No instructions screen, no instructions sheet: OneStep does not know what is being
+            // recorded, so there is nothing to instruct.
+            instructions = null,
+            duration = GENERIC_RECORDING_DURATION_SEC,
+            isCountingDown = false,
+            prepareScreenData = OSTPrepareData.Duration(
+                prepareDuration = OSTPrepareDuration.TEN_SECONDS,
+            ),
+            playVoiceOver = true,
+            shouldRecordGeoLocation = false,
+            // No results, scores, or insights are ever shown for this measurement.
+            showSummaryScreen = OSTSummaryOptions.None,
+            // The post-recording note is collected by the Generic Recording's own "Recording saved"
+            // screen, not by the generic post-tagging screen.
+            postTaggingData = OSTPostTaggingData.OSTPostTaggingScreen(
+                questions = null,
+                assistiveDeviceTag = false,
+                levelOfAssistanceTag = false,
+                footwearTag = false,
+                note = false,
+            ),
+        )
+
         fun sts(
             instructions: OSTMeasurementInstructionsData? = null,
             preRecordingQuestions: List<OSTRecordingQuestionData>? = null,
@@ -426,5 +471,14 @@ fun OSTRecordingConfiguration.defaultInstructions(): OSTMeasurementInstructionsD
                 stringResource(Res.string.walk_instructions_4),
                 stringResource(Res.string.walk_instructions_5),
             ),
+        )
+
+        // Generic Recording (OS-16861) has no instructions — OneStep does not know what is being
+        // recorded, so there is nothing to instruct, and `genericRecording()` leaves
+        // `instructions` null so neither the instructions screen nor the sheet is reachable.
+        // This branch exists only to keep the mapping total, as the native SDK's does.
+        OSTActivityType.GENERIC_RECORDING -> OSTMeasurementInstructionsData(
+            activityDisplayName = stringResource(Res.string.generic_recording),
+            instructions = emptyList(),
         )
     }

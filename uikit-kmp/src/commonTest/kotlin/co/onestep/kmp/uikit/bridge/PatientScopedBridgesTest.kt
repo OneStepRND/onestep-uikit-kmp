@@ -119,6 +119,7 @@ private class NoopRecorderBridge : RecorderBridge {
     override fun reset() = Unit
     override suspend fun analyze(timeout: Long): OSTMotionMeasurement? = null
     override suspend fun analyze(uuid: String, timeout: Long, interval: Long): OSTMotionMeasurement? = null
+    override suspend fun uploadWithoutAnalysis(): OSTMotionMeasurement? = null
     override suspend fun updateSixMinuteWalkCourseLength(uuid: String, requestBody: OSTWalkCourseLength) = Unit
     override fun currentRecordingLimit(): Long = 0L
     override fun addMarker(marker: String) = Unit

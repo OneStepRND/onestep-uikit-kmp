@@ -246,6 +246,28 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
             }
         }
 
+    /**
+     * Generic Recording (OS-16861). Deliberately routed through the **same** [IosRecorderDelegate.analyze]
+     * call as an analysed measurement, because that is the only entry point the native iOS SDK has:
+     * `OSTRecorderProtocol` (2.1.5) exposes `analyze()` and nothing else, and the SDK itself decides
+     * from the activity type whether to run the analysis pipeline or bank the raw recording. The two
+     * outcomes are told apart by the *terminal analyser state* it publishes —
+     * `analyzedAndSavedSuccessfully` vs. the new `uploadedWithoutAnalysis` — and the Swift bridge
+     * resumes this continuation with the stored measurement for either.
+     *
+     * So there is no separate `uploadWithoutAnalysis` on [IosRecorderDelegate]: adding one would
+     * force every Swift host to implement a method with nothing of its own to delegate to.
+     *
+     * Uses [RecorderBridge.analyze]'s own default timeout. iOS drops it (the native `analyze()`
+     * takes no timeout), so it is passed only for parity with the analysed path.
+     */
+    override suspend fun uploadWithoutAnalysis(): OSTMotionMeasurement? =
+        suspendCancellableCoroutine { continuation ->
+            delegate.analyze(uuid = null, timeoutMs = DEFAULT_ANALYZE_TIMEOUT_MS) { measurement ->
+                continuation.resume(measurement)
+            }
+        }
+
     override suspend fun updateSixMinuteWalkCourseLength(uuid: String, requestBody: OSTWalkCourseLength) {
         suspendCancellableCoroutine { continuation ->
             delegate.updateSixMinuteWalkCourseLength(uuid, requestBody) { continuation.resume(Unit) }
@@ -314,6 +336,9 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
         }
 
     companion object {
+        /** Mirrors [RecorderBridge.analyze]'s default timeout, for [uploadWithoutAnalysis]. */
+        private const val DEFAULT_ANALYZE_TIMEOUT_MS = 60_000L
+
         /** [selfReportMotionMeasurement] outcome codes exchanged with Swift. */
         const val SELF_REPORT_SUCCESS = 0
         const val SELF_REPORT_NETWORK_FAILURE = 1

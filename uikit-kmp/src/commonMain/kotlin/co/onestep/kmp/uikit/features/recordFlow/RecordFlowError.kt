@@ -31,6 +31,13 @@ enum class RecordFlowError(val errorType: String) {
     RomShort("rom_short"),
     StaticBalanceShort("static_balance_short"),
 
+    /**
+     * Generic Recording under the 10-second minimum (OS-16861). Needs its own variant because the
+     * walk-shaped fallback coaches the participant to "walk in a straight line" — advice for a
+     * protocol OneStep does not know this recording was following.
+     */
+    GenericRecordingShort("generic_recording_short"),
+
     Curvy("curvy"),
     WalkNonRepetitive("walk_non_repetitive"),
 

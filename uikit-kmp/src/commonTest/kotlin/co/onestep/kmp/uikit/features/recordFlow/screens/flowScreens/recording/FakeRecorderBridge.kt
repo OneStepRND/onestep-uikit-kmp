@@ -109,6 +109,16 @@ internal class FakeRecorderBridge : RecorderBridge {
 
     override suspend fun analyze(uuid: String, timeout: Long, interval: Long): OSTMotionMeasurement? = null
 
+    /** Generic Recording upload. Counted so a test can assert the analysis was skipped. */
+    var uploadWithoutAnalysisCount = 0
+        private set
+
+    override suspend fun uploadWithoutAnalysis(): OSTMotionMeasurement? {
+        calls += "uploadWithoutAnalysis"
+        uploadWithoutAnalysisCount++
+        return null
+    }
+
     override suspend fun updateSixMinuteWalkCourseLength(uuid: String, requestBody: OSTWalkCourseLength) = Unit
 
     override fun currentRecordingLimit(): Long = 6 * 60 * 1000L

@@ -396,4 +396,11 @@
     <string name="month_abbrev_oct">Oct</string>
     <string name="month_abbrev_nov">Nov</string>
     <string name="month_abbrev_dec">Dec</string>
+    <!-- Generic Recording (OS-16861): open-ended recording with no instructions and no summary -->
+    <string name="generic_recording">Generic Recording</string>
+    <string name="generic_recording_duration">Duration</string>
+    <string name="generic_recording_note_hint">Tap to add observations about this measurement…</string>
+    <string name="generic_recording_uploading">Uploading</string>
+    <string name="generic_recording_uploading_in_progress">Upload in progress</string>
+    <string name="generic_recording_too_short_error_description">Recordings shorter than 10 seconds are not saved. Try again and record for at least 10 seconds.</string>
 </resources>

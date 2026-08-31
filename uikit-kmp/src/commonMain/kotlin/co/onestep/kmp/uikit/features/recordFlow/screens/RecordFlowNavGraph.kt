@@ -70,6 +70,8 @@ import co.onestep.kmp.uikit.features.recordFlow.destinations.startRecordScreen
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTBalance
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.errors.ErrorScreen
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.ConditionSetupDestination
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.genericRecording.GenericRecordingNotesDestination
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.genericRecording.genericRecordingNotesScreen
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.RecordingSavedDestination
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.conditionSetupScreen
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.recordingSavedScreen
@@ -387,6 +389,7 @@ internal fun RecordFlowNavGraph(
         // reclaim the inset so they keep their full-height layout.
         val collapseToolbarGap = when (currentKey) {
             RecordingSavedDestination,
+            GenericRecordingNotesDestination,
             SummaryResultDestination -> true
             else -> false
         }
@@ -616,6 +619,33 @@ internal fun RecordFlowNavGraph(
             },
         )
 
+        // Generic Recording notes (OS-16861) — shown once the raw recording is banked. Continue is
+        // awaited so the note update lands before the flow finishes and the host tears it down.
+        genericRecordingNotesScreen(
+            durationSeconds = {
+                viewModel.motionMeasurement.value?.metadata?.seconds
+                    ?: viewModel.configuration.value.duration
+                    ?: 0
+            },
+            onContinue = { note ->
+                viewModel.updateGenericRecordingNote(note)
+                val measurement = viewModel.motionMeasurement.value
+                if (measurement != null) {
+                    finishWithMeasurement(
+                        measurement = measurement,
+                        sessionUuid = null,
+                        // Generic Recording has no hallway screen, so there is no length to report.
+                        hallwayLengthMeters = null,
+                        onResult = onResult,
+                        onFinished = onFinished,
+                        onDismiss = onDismiss,
+                    )
+                } else {
+                    onDismiss()
+                }
+            },
+        )
+
         // --- Recording and post-recording screens ---
 
         // Recording screen. RecordingScreenContent is purely presentational (stable data +
@@ -635,7 +665,21 @@ internal fun RecordFlowNavGraph(
                     // FULL_ANALYSIS -> summary; EMPTY/PARTIAL -> the specific analysis-error
                     // screen (or EmptyAnalysisWithSteps for walk/dual-task with steps);
                     // null measurement -> general error.
-                    when (val outcome = ResultHandler.handleMeasurementResult(measurement)) {
+                    if (config.activityType == OSTActivityType.GENERIC_RECORDING) {
+                        // Generic Recording is never analysed, so ResultHandler cannot route it:
+                        // it dispatches on `resultState`, which only the analysis pipeline ever
+                        // sets, and a banked recording has none — it would land on the general
+                        // error screen. A stored recording IS the success case here, so go straight
+                        // to the notes screen. This also has to take precedence over
+                        // shouldSkipNativeSummary(), which would otherwise finish the flow
+                        // immediately on `showSummaryScreen = None` and never collect the note.
+                        // A null measurement means the upload failed; the VM has already reported
+                        // that through onError, so there is nothing to route here.
+                        if (measurement != null) {
+                            backStack.popUpToInclusive(RecordingDestination)
+                            backStack.add(GenericRecordingNotesDestination)
+                        }
+                    } else when (val outcome = ResultHandler.handleMeasurementResult(measurement)) {
                         is RecordFlowOutcome.Summary -> {
                             if (config.activityType == OSTActivityType.STATIC_BALANCE) {
                                 // Session loop: a successful condition lands on the "Recording
@@ -1176,8 +1220,10 @@ private fun adjustToolBar(
         }
 
         // No toolbar on the "Recording saved" screen — its own "Go to summary" /
-        // "Record another test" buttons are the only actions.
-        RecordingSavedDestination -> {
+        // "Record another test" buttons are the only actions. Same for the Generic Recording
+        // notes screen, whose only action is Continue.
+        RecordingSavedDestination,
+        GenericRecordingNotesDestination -> {
             viewModel.showToolbar(false)
         }
 
