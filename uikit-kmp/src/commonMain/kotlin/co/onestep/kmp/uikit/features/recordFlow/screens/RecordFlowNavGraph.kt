@@ -142,6 +142,86 @@ internal data object ErrorResultDestination : UIktDestination
 @Serializable
 internal data object EmptyAnalysisDestination : UIktDestination
 
+/**
+ * The destination the flow records from — the one every "start over" path returns to.
+ *
+ * [StartRecordDestination] for every activity but Generic Recording, whose Start screen is a big
+ * "Start" button beside a "View instructions" link. Neither can be honoured there: OneStep does not
+ * know what is being recorded, so the configuration carries no instructions
+ * (`OSTRecordingConfiguration.genericRecording()`), and the screen's own "Get ready" countdown makes
+ * the extra tap a step that asks for nothing. It records from [RecordingDestination] instead.
+ */
+internal fun recordEntryDestinationFor(activityType: OSTActivityType): UIktDestination =
+    if (activityType == OSTActivityType.GENERIC_RECORDING) {
+        RecordingDestination
+    } else {
+        StartRecordDestination
+    }
+
+/**
+ * The ordered pre-recording screens for [config], ending in the destination it records from
+ * ([recordEntryDestinationFor]). Each screen advances to its successor in this list.
+ *
+ * Pure, and separate from the composable, so the sequence is assertable without a Compose runtime.
+ * [micStatus] stays a lambda rather than a value because it is a permission query, and only
+ * dual-task makes it.
+ */
+internal fun buildPreRecordDestinations(
+    config: OSTRecordingConfiguration,
+    micStatus: () -> PermissionStatus,
+    showSoundInstructions: () -> Boolean,
+): List<UIktDestination> = buildList {
+    // Static Balance (OS-15960): each condition begins on the Condition Setup screen,
+    // then flows StartRecord -> Recording -> "Recording saved". "Record another test"
+    // loops back to the start of this sequence (Condition Setup).
+    if (config.activityType == OSTActivityType.STATIC_BALANCE) {
+        add(ConditionSetupDestination)
+    }
+
+    // a) Hallway distance for 6min/2min walks
+    if (isSixOrTwoMinWalk(config.activityType)) {
+        add(HallwayDistanceDestination)
+    }
+
+    // b) Walk duration picker if duration isn't set
+    if (config.duration == null || config.duration == 0) {
+        add(SelectWalkDurationDestination)
+    }
+
+    // c.1) Optional pre-recording assistive-device selection
+    if (config.showPreRecordingAssistiveDeviceSelection) {
+        add(PreAssistiveDeviceDestination)
+    }
+
+    // c.2) Optional pre-recording footwear selection
+    if (config.showPreRecordingFootwearSelection) {
+        add(PreFootwearDestination)
+    }
+
+    // d) Optional pre-recording questions (custom tags)
+    config.preRecordingQuestions?.let {
+        add(CustomTagsDestination)
+    }
+
+    // e) Microphone permission for dual-task
+    if (config.activityType == OSTActivityType.DUAL_TASK_WALK_SUBTRACT) {
+        val status = micStatus()
+        when {
+            status == PermissionStatus.GRANTED -> Unit
+            status != PermissionStatus.DENIED -> add(SoundPermissionDestination)
+            else -> add(SoundPermissionDeniedAlwaysDestination)
+        }
+    }
+
+    // f) Sound instructions if volume is low
+    if (config.playVoiceOver && showSoundInstructions()) {
+        add(SoundInstructionsDestination)
+    }
+
+    // g) End on the screen the flow records from.
+    add(recordEntryDestinationFor(config.activityType))
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RecordFlowNavGraph(
@@ -179,58 +259,11 @@ internal fun RecordFlowNavGraph(
 
     // Build the ordered pre-recording destination sequence based on config
     val preRecordDestinations = remember(config) {
-        buildList<UIktDestination> {
-            // Static Balance (OS-15960): each condition begins on the Condition Setup screen,
-            // then flows StartRecord -> Recording -> "Recording saved". "Record another test"
-            // loops back to the start of this sequence (Condition Setup).
-            if (config.activityType == OSTActivityType.STATIC_BALANCE) {
-                add(ConditionSetupDestination)
-            }
-
-            // a) Hallway distance for 6min/2min walks
-            if (isSixOrTwoMinWalk(config.activityType)) {
-                add(HallwayDistanceDestination)
-            }
-
-            // b) Walk duration picker if duration isn't set
-            if (config.duration == null || config.duration == 0) {
-                add(SelectWalkDurationDestination)
-            }
-
-
-            // c.1) Optional pre-recording assistive-device selection
-            if (config.showPreRecordingAssistiveDeviceSelection) {
-                add(PreAssistiveDeviceDestination)
-            }
-
-            // c.2) Optional pre-recording footwear selection
-            if (config.showPreRecordingFootwearSelection) {
-                add(PreFootwearDestination)
-            }
-
-            // d) Optional pre-recording questions (custom tags)
-            config.preRecordingQuestions?.let {
-                add(CustomTagsDestination)
-            }
-
-            // e) Microphone permission for dual-task
-            if (config.activityType == OSTActivityType.DUAL_TASK_WALK_SUBTRACT) {
-                val micStatus = permissionsManager.checkPermissionStatus(Permission.MICROPHONE)
-                when {
-                    micStatus == PermissionStatus.GRANTED -> Unit
-                    micStatus != PermissionStatus.DENIED -> add(SoundPermissionDestination)
-                    else -> add(SoundPermissionDeniedAlwaysDestination)
-                }
-            }
-
-            // f) Sound instructions if volume is low
-            if (config.playVoiceOver && shouldShowSoundInstructions()) {
-                add(SoundInstructionsDestination)
-            }
-
-            // g) Always end with Start Record
-            add(StartRecordDestination)
-        }
+        buildPreRecordDestinations(
+            config = config,
+            micStatus = { permissionsManager.checkPermissionStatus(Permission.MICROPHONE) },
+            showSoundInstructions = shouldShowSoundInstructions,
+        )
     }
 
     // Build navigation map: each destination -> its successor
@@ -238,7 +271,12 @@ internal fun RecordFlowNavGraph(
         preRecordDestinations.zipWithNext().toMap()
     }
 
-    val startDestination: NavKey = preRecordDestinations.firstOrNull() ?: StartRecordDestination
+    // Where the flow records from, and so where every "back to the beginning" lands. Generic
+    // Recording has no Start screen (see [buildPreRecordDestinations]), so for it that is the
+    // recording itself.
+    val recordEntryDestination: UIktDestination = recordEntryDestinationFor(config.activityType)
+
+    val startDestination: NavKey = preRecordDestinations.firstOrNull() ?: recordEntryDestination
 
     // Navigation 3 back stack owned by this flow. The uikit serializers module makes it
     // saveable across config changes and process death on every platform (iOS has no
@@ -909,7 +947,9 @@ internal fun RecordFlowNavGraph(
                     }
                     viewModel.clearJobs()
                     backStack.popUpToInclusive(ErrorResultDestination)
-                    backStack.add(StartRecordDestination)
+                    // Back to wherever this flow records from — the Start screen, or the recording
+                    // itself for Generic Recording, which has none.
+                    backStack.add(recordEntryDestination)
                 },
                 // Secondary CTA: "View instructions" opens the instructions sheet on analysis
                 // errors; for the Static Balance short error it is "Finish" — resume to the
@@ -1044,8 +1084,16 @@ internal fun RecordFlowNavGraph(
                 onDismissRequest = { showRecordingExitDialog = false },
                 onConfirm = {
                     viewModel.clearJobs()
-                    backStack.popUpToInclusive(RecordingDestination)
-                    backStack.add(StartRecordDestination)
+                    // Abandoning a recording steps back to the Start screen — except for Generic
+                    // Recording, which starts *at* the recording: stepping "back" to it there would
+                    // restart the very recording the clinician just chose to abandon, so the flow
+                    // exits instead, exactly as backing out of a Start screen does.
+                    if (recordEntryDestination == RecordingDestination) {
+                        onDismiss()
+                    } else {
+                        backStack.popUpToInclusive(RecordingDestination)
+                        backStack.add(recordEntryDestination)
+                    }
                 },
             )
         }
