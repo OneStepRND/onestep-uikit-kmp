@@ -49,6 +49,7 @@ import co.onestep.designsystem.components.PrimaryButton
 import co.onestep.designsystem.components.SecondaryButton
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
@@ -253,7 +254,10 @@ private fun SelectableSectionCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onHeaderClick)
-                .padding(Variables.GapL),
+                .padding(Variables.GapL)
+                // Static Balance is this component's only caller; its tag helpers keep the
+                // ids consistent with the rest of that flow.
+                .test(OSTTestTags.StaticBalance.conditionSection(section.id)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OSText(
@@ -321,6 +325,7 @@ private fun SelectableSectionCard(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .test(OSTTestTags.StaticBalance.conditionOption(section.id, index))
                             .clickable { onSelect(index) }
                             .background(
                                 if (isSelected) colors.primary_m3 else colors.neutral_m4,

@@ -45,6 +45,8 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import co.onestep.kmp.uikit.features.recordFlow.screensData.HallwayDistanceScreenState
 import co.onestep.kmp.uikit.features.recordFlow.screensData.PrimaryButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit.ui.components.KeyboardAware
 import co.onestep.designsystem.components.OSText
 import co.onestep.kmp.uikit.ui.components.PrimaryBrandButton
@@ -76,7 +78,8 @@ internal fun HallwayDistanceScreen(
             modifier =
                 modifier
                     .fillMaxSize()
-                    .padding(horizontal = Variables.GapL),
+                    .padding(horizontal = Variables.GapL)
+                    .test(OSTTestTags.RecordFlow.HALLWAY_SCREEN),
         ) {
             if (state.fromSummary) {
                 Spacer(modifier = Modifier.height(Variables.GapL))
@@ -115,7 +118,9 @@ internal fun HallwayDistanceScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             PrimaryBrandButton(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .test(OSTTestTags.RecordFlow.HALLWAY_CONTINUE_BUTTON),
                 data =
                     PrimaryButtonData(
                         text =
@@ -135,7 +140,9 @@ internal fun HallwayDistanceScreen(
                 TertiaryButton(
                     text = stringResource(Res.string.continue_without_hallway_length),
                     onClick = onContinueWithoutLength,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .test(OSTTestTags.RecordFlow.HALLWAY_SKIP_BUTTON),
                     size = OSButtonSize.Big,
                 )
             }
@@ -181,7 +188,8 @@ private fun NumericInputField(
                     BasicTextField(
                         modifier = Modifier
                             .width(IntrinsicSize.Min)
-                            .focusRequester(focusRequester),
+                            .focusRequester(focusRequester)
+                            .test(OSTTestTags.RecordFlow.HALLWAY_INPUT),
                         value = textFieldValue,
                         onValueChange = { newValue ->
                             textFieldValue = newValue.copy(selection = TextRange(newValue.text.length))
@@ -244,7 +252,9 @@ private fun NumericInputField(
         if (!errorText.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(Variables.GapS))
             OSText(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .test(OSTTestTags.RecordFlow.HALLWAY_ERROR),
                 text = errorText,
                 fontSize = 12.sp,
                 color = LocalOSColors.current.error_p2,

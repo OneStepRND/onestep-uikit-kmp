@@ -17,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -72,6 +74,7 @@ internal fun WheelPickerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(colors.neutral_m4)
+            .test(OSTTestTags.Summary.STS_MANUAL_REPORT_SCREEN)
             .padding(top = if (applyTopToolBarPadding) ToolBarHeight.dp else 0.dp),
     ) {
         Spacer(modifier = Modifier.height(8.dp))
@@ -95,7 +98,9 @@ internal fun WheelPickerScreen(
         WheelNumberPicker(
             value = selected,
             onValueChange = { selected = it },
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .test(OSTTestTags.Summary.STS_MANUAL_REPORT_PICKER),
             range = range,
         )
 
@@ -130,7 +135,9 @@ internal fun WheelPickerScreen(
                     if (value != null && !isSubmitting) onSave(value)
                 },
                 enabled = saveEnabled,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .test(OSTTestTags.Summary.STS_MANUAL_REPORT_SAVE_BUTTON),
                 size = OSButtonSize.Big,
             )
             if (isSubmitting) {

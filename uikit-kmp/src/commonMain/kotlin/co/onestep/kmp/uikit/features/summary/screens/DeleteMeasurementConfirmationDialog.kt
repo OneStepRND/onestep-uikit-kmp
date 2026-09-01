@@ -31,6 +31,7 @@ import co.onestep.kmp.uikit.ui.components.PrimaryBrandButton
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.designsystem.theme.Variables
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.test
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
@@ -42,7 +43,8 @@ import co.onestep.kmp.uikit_kmp.generated.resources.ic_close
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-const val DISCARD_MEASUREMENT_CONFIRMATION = "discard measurement confirmation"
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.Summary.DISCARD_DIALOG"))
+const val DISCARD_MEASUREMENT_CONFIRMATION = OSTTestTags.Summary.DISCARD_DIALOG
 
 @Composable
 internal fun DeleteMeasurementConfirmationDialog(
@@ -52,6 +54,10 @@ internal fun DeleteMeasurementConfirmationDialog(
     Column(
         Modifier
             .wrapContentHeight()
+            // The dialog id used to sit on both buttons, so a selector for it resolved to
+            // whichever came first — Cancel. It now names the dialog; the buttons have
+            // ids of their own.
+            .test(OSTTestTags.Summary.DISCARD_DIALOG)
             .background(
                 LocalOSColors.current.neutral_m5,
                 shape = RoundedCornerShape(10.dp),
@@ -67,6 +73,7 @@ internal fun DeleteMeasurementConfirmationDialog(
                     Modifier
                         .align(Alignment.TopEnd)
                         .size(24.dp)
+                        .test(OSTTestTags.Summary.DISCARD_DIALOG_CLOSE_BUTTON)
                         .clickable(
                             interactionSource =
                                 remember {
@@ -108,7 +115,7 @@ internal fun DeleteMeasurementConfirmationDialog(
                 .fillMaxWidth()
                 .padding(horizontal = Variables.GapL)
                 .height(40.dp)
-                .test(DISCARD_MEASUREMENT_CONFIRMATION),
+                .test(OSTTestTags.Summary.DISCARD_DIALOG_CANCEL_BUTTON),
             size = OSButtonSize.Big,
         )
         PrimaryBrandButton(
@@ -116,7 +123,7 @@ internal fun DeleteMeasurementConfirmationDialog(
                 .fillMaxWidth()
                 .padding(Variables.GapL)
                 .height(40.dp)
-                .test(DISCARD_MEASUREMENT_CONFIRMATION),
+                .test(OSTTestTags.Summary.DISCARD_DIALOG_CONFIRM_BUTTON),
             data = PrimaryButtonData(
                 text =
                     TextData(

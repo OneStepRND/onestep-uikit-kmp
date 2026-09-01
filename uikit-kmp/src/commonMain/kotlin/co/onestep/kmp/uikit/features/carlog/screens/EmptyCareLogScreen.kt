@@ -14,6 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
@@ -62,7 +64,9 @@ internal fun EmptyCareLogScreen(
     emptyScreenState: CarLogScreenState.Empty,
 ) {
     Box(
-        modifier.fillMaxSize(),
+        modifier
+            .fillMaxSize()
+            .test(OSTTestTags.CareLog.EMPTY_STATE),
         contentAlignment = TopCenter,
     ) {
         Column(

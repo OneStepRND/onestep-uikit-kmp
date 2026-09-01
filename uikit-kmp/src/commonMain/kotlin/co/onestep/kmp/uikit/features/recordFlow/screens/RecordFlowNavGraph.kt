@@ -86,6 +86,8 @@ import co.onestep.kmp.uikit.navigation.UIktNavSavedStateConfiguration
 import co.onestep.kmp.uikit.navigation.pop
 import co.onestep.kmp.uikit.navigation.popUpToInclusive
 import co.onestep.kmp.uikit.ui.components.BottomSheet
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.MotionRecorderViewModel
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.RecordingScreenContent
 import co.onestep.kmp.uikit.features.recordFlow.screensData.RecordingScreenData
@@ -1106,6 +1108,7 @@ internal fun RecordFlowNavGraph(
             // and the partially-expanded half-sheet clipped the content on iOS.
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             onDismissRequest = { showInstructionsSheet = false },
+            testTag = OSTTestTags.RecordFlow.INSTRUCTIONS_SHEET,
         ) {
             InstructionsContent(instructionsData = instructions)
         }
@@ -1147,6 +1150,8 @@ private fun HallwayWarningDialog(
 ) {
     LaunchedEffect(Unit) { onShown() }
     OSPopup(
+        // A dialog composes in its own window, so the tag goes on the popup itself.
+        modifier = Modifier.test(OSTTestTags.RecordFlow.HALLWAY_WARNING_DIALOG),
         onDismissRequest = onDismiss,
         title = stringResource(Res.string.short_hallway_length_title),
         description = stringResource(
@@ -1175,6 +1180,7 @@ private fun ExitConfirmationDialog(
     onConfirm: () -> Unit,
 ) {
     OSPopup(
+        modifier = Modifier.test(OSTTestTags.RecordFlow.EXIT_DIALOG),
         onDismissRequest = onDismissRequest,
         title = stringResource(Res.string.stop_recording_dialog_text),
         confirmButtonText = stringResource(Res.string.yes),

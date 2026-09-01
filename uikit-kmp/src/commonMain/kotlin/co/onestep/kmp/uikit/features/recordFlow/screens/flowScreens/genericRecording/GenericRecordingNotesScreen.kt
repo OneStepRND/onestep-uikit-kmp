@@ -38,6 +38,7 @@ import co.onestep.designsystem.components.PrimaryButton
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
 import co.onestep.kmp.uikit.features.tagging.CustomTextField
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.kmp.uikit.utils.UIktDestination
 import co.onestep.kmp.uikit.utils.test
@@ -55,7 +56,15 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-const val GENERIC_RECORDING_NOTES_CONTINUE_BUTTON = "generic_recording_notes_continue_button"
+@Deprecated(
+    "Moved to the OSTTestTags catalog",
+    ReplaceWith(
+        "OSTTestTags.GenericRecording.NOTES_CONTINUE_BUTTON",
+        "co.onestep.kmp.uikit.testing.OSTTestTags",
+    ),
+)
+const val GENERIC_RECORDING_NOTES_CONTINUE_BUTTON =
+    OSTTestTags.GenericRecording.NOTES_CONTINUE_BUTTON
 
 @Serializable
 data object GenericRecordingNotesDestination : UIktDestination
@@ -101,7 +110,11 @@ internal fun GenericRecordingNotesScreen(
     // save or a second navigation.
     var saving by remember { mutableStateOf(false) }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .test(OSTTestTags.GenericRecording.NOTES_SCREEN),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -162,6 +175,7 @@ internal fun GenericRecordingNotesScreen(
                     onValueChange = { note.value = it },
                     modifier = Modifier.padding(vertical = Variables.GapL),
                     hintRes = Res.string.generic_recording_note_hint,
+                    testTag = OSTTestTags.GenericRecording.NOTES_FIELD,
                 )
             }
         }
@@ -192,7 +206,7 @@ internal fun GenericRecordingNotesScreen(
                 size = OSButtonSize.Big,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .test(GENERIC_RECORDING_NOTES_CONTINUE_BUTTON),
+                    .test(OSTTestTags.GenericRecording.NOTES_CONTINUE_BUTTON),
             )
         }
     }

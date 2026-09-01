@@ -16,6 +16,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.carlog.models.CarLogScreenState
 import co.onestep.kmp.uikit.features.carlog.models.InAppScreenState
@@ -73,7 +75,7 @@ internal fun CarLogScreen(
 ) {
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
-    Box(modifier = modifier) {
+    Box(modifier = modifier.test(OSTTestTags.CareLog.SCREEN)) {
         Column {
             toolBarData?.let {
                 Toolbar(
@@ -129,6 +131,8 @@ private fun TabbedCarLog(
 ) {
     Column {
         OSTTabsRow(
+            rowTestTag = OSTTestTags.CareLog.TABS_ROW,
+            tabTestTagPrefix = OSTTestTags.CareLog.TAB_TAG_PREFIX,
             // Default container (neutral_m4) + the row's own neutral_p3/neutral_p2 label colors,
             // matching the Summary tabs. The previous neutral_p3 container equalled the selected
             // label colour, so the active tab was invisible (worst in dark mode).

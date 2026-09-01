@@ -11,6 +11,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,7 +37,8 @@ internal fun InAppCarLogScreen(
         LazyColumn(
             modifier =
                 modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .test(OSTTestTags.CareLog.IN_APP_LIST),
         ) {
             groupedItems.forEach { (day, items) ->
                 stickyHeader {

@@ -10,6 +10,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -54,7 +56,9 @@ internal fun MainParamCardTitle(
             // keeps the pen reachable for touch + TalkBack.
             IconButton(
                 onClick = onEdit,
-                modifier = Modifier.padding(start = 2.dp),
+                modifier = Modifier
+                    .padding(start = 2.dp)
+                    .test(OSTTestTags.Summary.STS_EDIT_BUTTON),
             ) {
                 Icon(
                     modifier = Modifier.size(17.dp),

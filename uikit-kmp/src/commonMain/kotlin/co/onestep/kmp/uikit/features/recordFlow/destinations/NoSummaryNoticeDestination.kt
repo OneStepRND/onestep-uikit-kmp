@@ -14,6 +14,7 @@ import co.onestep.kmp.uikit.features.recordFlow.screensData.PrimaryButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.IconData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.UiKitScreenData
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.UIktDestination
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.continue_camel_case
@@ -37,6 +38,7 @@ fun EntryProviderScope<NavKey>.noSummaryNoticeScreen(onPrimaryAction: () -> Unit
 private fun NoSummaryNoticeContent(onPrimaryAction: () -> Unit) {
     UiKitScreen(
         modifier = Modifier.padding(top = ToolBarHeight.dp),
+        screenTag = OSTTestTags.RecordFlow.NO_SUMMARY_NOTICE_SCREEN,
         onBackPress = onPrimaryAction,
         screenData = UiKitScreenData(
             title = TextData(

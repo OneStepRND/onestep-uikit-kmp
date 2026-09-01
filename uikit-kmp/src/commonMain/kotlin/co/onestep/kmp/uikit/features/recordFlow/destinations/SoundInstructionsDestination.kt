@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.UIktDestination
 import kotlinx.serialization.Serializable
 
@@ -19,6 +20,7 @@ fun EntryProviderScope<NavKey>.soundInstructionsScreen(
     entry<SoundInstructionsDestination> {
         UiKitScreen(
             modifier = Modifier,
+            screenTag = OSTTestTags.RecordFlow.SOUND_INSTRUCTIONS_SCREEN,
             screenData = RecordFlowDataFactory.soundInstructionData(
                 onSelection = primaryAction,
             ),

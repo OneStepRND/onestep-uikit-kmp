@@ -7,6 +7,7 @@ import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.models.OSTActivityType
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.UIktDestination
 import kotlinx.serialization.Serializable
 
@@ -25,6 +26,7 @@ fun EntryProviderScope<NavKey>.startRecordScreen(
     entry<StartRecordDestination> {
         UiKitScreen(
             modifier = Modifier.fillMaxSize(),
+            screenTag = OSTTestTags.RecordFlow.START_RECORD_SCREEN,
             playAudio = playAudio,
             onBackPress = onBackPress,
             screenData = RecordFlowDataFactory.startRecordData(

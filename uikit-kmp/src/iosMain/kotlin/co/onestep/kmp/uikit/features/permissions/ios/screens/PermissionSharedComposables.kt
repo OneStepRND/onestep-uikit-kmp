@@ -12,6 +12,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.unit.sp
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.components.TertiaryButton
@@ -58,7 +60,10 @@ internal fun PermissionCloseButton(onDismiss: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.End,
     ) {
-        TextButton(onClick = onDismiss) {
+        TextButton(
+            onClick = onDismiss,
+            modifier = Modifier.test(OSTTestTags.Permissions.CLOSE_BUTTON),
+        ) {
             OSText(
                 text = "✕",
                 fontSize = 20.sp,
@@ -79,6 +84,7 @@ internal fun DataUsageFooter(description: String) {
     TertiaryButton(
         text = "How is my data used?",
         onClick = { showDataUsage = true },
+        modifier = Modifier.test(OSTTestTags.Permissions.DATA_USAGE_BUTTON),
     )
     if (showDataUsage) {
         DataUsageInfoSheet(

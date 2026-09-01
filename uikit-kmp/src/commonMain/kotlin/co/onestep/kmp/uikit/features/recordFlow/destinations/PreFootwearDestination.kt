@@ -6,6 +6,7 @@ import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.features.tagging.models.Footwear
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.UIktDestination
 import kotlinx.serialization.Serializable
 
@@ -32,6 +33,7 @@ fun EntryProviderScope<NavKey>.preFootwearScreen(
         // onFootwearSelected callback. Kept here to avoid threading a tracker into leaf screens.
         UiKitScreen(
             modifier = Modifier,
+            screenTag = OSTTestTags.RecordFlow.PRE_FOOTWEAR_SCREEN,
             screenData = RecordFlowDataFactory.selectFootwearScreenData(
                 onSelection = { footwear ->
                     onFootwearSelected(footwear, displayNames[footwear].orEmpty())

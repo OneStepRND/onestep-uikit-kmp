@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +36,7 @@ import co.onestep.kmp.uikit.features.recordFlow.components.RoundCtaButtonWithPul
 import co.onestep.kmp.uikit.features.recordFlow.components.UiKitFlowSelectionItem
 import co.onestep.kmp.uikit.features.recordFlow.screensData.SelectionItemData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.UiKitScreenData
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.ui.components.PrimaryBrandButton
 import co.onestep.kmp.uikit.ui.components.FadingSurfaceToTransparent
 import co.onestep.designsystem.components.OSText
@@ -48,14 +48,29 @@ import co.onestep.kmp.uikit.utils.test
 import androidx.compose.material3.Icon
 import org.jetbrains.compose.resources.painterResource
 
-const val WALK_FLOW_SCREEN_BRAND_BUTTON = "walk_flow_screen_brand_button"
-const val WALK_FLOW_SCREEN_BORDER_BRAND_BUTTON = "walk_flow_screen_border_brand_button"
-const val WALK_FLOW_SCREEN_MAIN_BUTTON = "Walk flow screen main button"
+@Deprecated(
+    "Moved to the OSTTestTags catalog",
+    ReplaceWith("OSTTestTags.RecordFlow.PRIMARY_BUTTON", "co.onestep.kmp.uikit.testing.OSTTestTags"),
+)
+const val WALK_FLOW_SCREEN_BRAND_BUTTON = OSTTestTags.RecordFlow.PRIMARY_BUTTON
+
+@Deprecated(
+    "Moved to the OSTTestTags catalog",
+    ReplaceWith("OSTTestTags.RecordFlow.SECONDARY_BUTTON", "co.onestep.kmp.uikit.testing.OSTTestTags"),
+)
+const val WALK_FLOW_SCREEN_BORDER_BRAND_BUTTON = OSTTestTags.RecordFlow.SECONDARY_BUTTON
+
+@Deprecated(
+    "Moved to the OSTTestTags catalog",
+    ReplaceWith("OSTTestTags.RecordFlow.MAIN_BUTTON", "co.onestep.kmp.uikit.testing.OSTTestTags"),
+)
+const val WALK_FLOW_SCREEN_MAIN_BUTTON = OSTTestTags.RecordFlow.MAIN_BUTTON
 
 @Composable
 internal fun UiKitScreen(
     screenData: UiKitScreenData,
     modifier: Modifier = Modifier,
+    screenTag: String? = null,
     playAudio: ((String) -> Unit)? = null,
     onBackPress: (() -> Unit)? = null,
 ) {
@@ -74,11 +89,18 @@ internal fun UiKitScreen(
     Box(
         modifier =
             modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .let { if (screenTag != null) it.test(screenTag) else it },
     ) {
+        // `modifier` is deliberately applied to both the Box and this Column (callers pass a
+        // top padding they expect on both). `screenTag` is not: it stays on the Box alone, so
+        // the screen has exactly one node carrying its test id.
         Column(modifier = modifier.fillMaxSize()) {
             screenData.noteBanner?.let {
-                NoteBanner(bannerData = it, modifier = Modifier.fillMaxWidth())
+                NoteBanner(
+                    bannerData = it,
+                    modifier = Modifier.fillMaxWidth().test(OSTTestTags.RecordFlow.NOTE_BANNER),
+                )
             }
             screenData.mainIcon?.let {
                 Spacer(modifier = Modifier.height(Variables.GapL))
@@ -97,7 +119,8 @@ internal fun UiKitScreen(
                         Modifier
                             .fillMaxWidth()
                             .align(CenterHorizontally)
-                            .padding(horizontal = Variables.GapL),
+                            .padding(horizontal = Variables.GapL)
+                            .test(OSTTestTags.RecordFlow.TITLE),
                     textAlign = it.textAlign ?: TextAlign.Center,
                     text = it.text,
                     lineHeight = 37.sp,
@@ -112,7 +135,8 @@ internal fun UiKitScreen(
                         Modifier
                             .align(CenterHorizontally)
                             .padding(horizontal = 20.dp)
-                            .verticalScroll(rememberScrollState()),
+                            .verticalScroll(rememberScrollState())
+                            .test(OSTTestTags.RecordFlow.SUBTITLE),
                     textAlign = it.textAlign ?: TextAlign.Center,
                     text = it.text,
                     lineHeight = 28.sp,
@@ -128,7 +152,7 @@ internal fun UiKitScreen(
                         Modifier
                             .align(CenterHorizontally)
                             .size(it.buttonSize)
-                            .test(WALK_FLOW_SCREEN_MAIN_BUTTON),
+                            .test(OSTTestTags.RecordFlow.MAIN_BUTTON),
                     mainButtonData = it,
                 )
             }
@@ -175,7 +199,7 @@ internal fun UiKitScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .test(WALK_FLOW_SCREEN_BRAND_BUTTON),
+                                    .test(OSTTestTags.RecordFlow.PRIMARY_BUTTON),
                             data =
                                 it.copy(
                                     action = {
@@ -212,7 +236,7 @@ internal fun UiKitScreen(
                             onClick = secondary.action,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .testTag(WALK_FLOW_SCREEN_BORDER_BRAND_BUTTON),
+                                .test(OSTTestTags.RecordFlow.SECONDARY_BUTTON),
                             size = OSButtonSize.Big,
                             icon = leadingIcon,
                         )
@@ -245,7 +269,7 @@ internal fun SelectionList(
                 modifier =
                     Modifier
                         .align(CenterHorizontally)
-                        .test("selection_item_$index"),
+                        .test(OSTTestTags.RecordFlow.selectionItem(index)),
                 selected = selected,
                 selectionItemData = data,
                 onItemSelected = {

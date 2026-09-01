@@ -23,6 +23,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -45,7 +47,7 @@ private fun CarLogShimmerPreview() {
 
 @Composable
 internal fun CarLogShimmer() {
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().test(OSTTestTags.CareLog.SHIMMER)) {
         Column(
             Modifier
                 .padding(Variables.GapL),

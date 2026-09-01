@@ -18,6 +18,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -77,6 +79,7 @@ private fun HealthKitRequestContent(
         modifier = Modifier
             .fillMaxSize()
             .background(colors.neutral_m5)
+            .test(OSTTestTags.Permissions.HEALTH_KIT_SCREEN)
             .padding(horizontal = 24.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -170,7 +173,9 @@ private fun HealthKitRequestContent(
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .test(OSTTestTags.Permissions.PRIMARY_BUTTON),
             size = OSButtonSize.Big,
             enabled = !isRequesting,
         )

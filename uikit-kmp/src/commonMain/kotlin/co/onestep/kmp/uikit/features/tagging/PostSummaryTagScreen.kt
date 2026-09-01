@@ -71,6 +71,7 @@ import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingQuest
 import co.onestep.kmp.uikit.features.recordFlow.screensData.PrimaryButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
 import co.onestep.kmp.uikit.features.tagging.models.Footwear
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.ui.components.FadingSurfaceToTransparent
 import co.onestep.kmp.uikit.ui.components.KeyboardAware
 import co.onestep.designsystem.components.OSText
@@ -93,14 +94,29 @@ import co.onestep.kmp.uikit_kmp.generated.resources.note_hint_text
 import co.onestep.kmp.uikit_kmp.generated.resources.review_the_following_tags
 import kotlinx.coroutines.launch
 
-const val TAG_SCREEN_NOTE_TEXT_FIELD = "tag_screen_note_text_field"
-const val TAG_SCREEN_ASSISTIVE_DEVICE_EDIT_BUTTON = "tag_screen_assistive_device_edit_button"
-const val TAG_SCREEN_LEVEL_OF_ASSISTANCE_EDIT_BUTTON = "tag_screen_level_of_assistance_edit_button"
-const val TAG_SCREEN_FOOTWEAR_EDIT_BUTTON = "tag_screen_footwear_edit_button"
-const val TAG_SCREEN_ASSISTIVE_DEVICE_TEXT = "tag_screen_assistive_device_text"
-const val TAG_SCREEN_LEVEL_OF_ASSISTANCE_TEXT = "tag_screen_level_of_assistance_text"
-const val TAG_SCREEN_FOOTWEAR_TEXT = "tag_screen_footwear_text"
-const val TAG_SCREEN_MAIN_BUTTON = "tag_screen_main_button"
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.Tagging.NOTE_TEXT_FIELD"))
+const val TAG_SCREEN_NOTE_TEXT_FIELD = OSTTestTags.Tagging.NOTE_TEXT_FIELD
+
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.Tagging.ASSISTIVE_DEVICE_EDIT_BUTTON"))
+const val TAG_SCREEN_ASSISTIVE_DEVICE_EDIT_BUTTON = OSTTestTags.Tagging.ASSISTIVE_DEVICE_EDIT_BUTTON
+
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.Tagging.LEVEL_OF_ASSISTANCE_EDIT_BUTTON"))
+const val TAG_SCREEN_LEVEL_OF_ASSISTANCE_EDIT_BUTTON = OSTTestTags.Tagging.LEVEL_OF_ASSISTANCE_EDIT_BUTTON
+
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.Tagging.FOOTWEAR_EDIT_BUTTON"))
+const val TAG_SCREEN_FOOTWEAR_EDIT_BUTTON = OSTTestTags.Tagging.FOOTWEAR_EDIT_BUTTON
+
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.Tagging.ASSISTIVE_DEVICE_TEXT"))
+const val TAG_SCREEN_ASSISTIVE_DEVICE_TEXT = OSTTestTags.Tagging.ASSISTIVE_DEVICE_TEXT
+
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.Tagging.LEVEL_OF_ASSISTANCE_TEXT"))
+const val TAG_SCREEN_LEVEL_OF_ASSISTANCE_TEXT = OSTTestTags.Tagging.LEVEL_OF_ASSISTANCE_TEXT
+
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.Tagging.FOOTWEAR_TEXT"))
+const val TAG_SCREEN_FOOTWEAR_TEXT = OSTTestTags.Tagging.FOOTWEAR_TEXT
+
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.Tagging.MAIN_BUTTON"))
+const val TAG_SCREEN_MAIN_BUTTON = OSTTestTags.Tagging.MAIN_BUTTON
 const val BLANK_INPUT = "--"
 
 @Composable
@@ -147,7 +163,8 @@ internal fun PostSummaryTagScreen(
     KeyboardAware {
         Box(
             modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .test(OSTTestTags.Tagging.SCREEN),
         ) {
             Column(
                 Modifier
@@ -184,7 +201,9 @@ internal fun PostSummaryTagScreen(
                 }
                 if (postTaggingData?.footwearTag == true) {
                     PostRecordingQuestion(
-                        OSTRecordingQuestionData(
+                        editButtonTestTag = OSTTestTags.Tagging.FOOTWEAR_EDIT_BUTTON,
+                        valueTestTag = OSTTestTags.Tagging.FOOTWEAR_TEXT,
+                        questionData = OSTRecordingQuestionData(
                             stringResource(Res.string.footwear),
                             description = stringResource(Res.string.footwear),
                             listOf(
@@ -199,8 +218,10 @@ internal fun PostSummaryTagScreen(
                         },
                     )
                 }
-                postTaggingData?.questions?.forEach { question ->
+                postTaggingData?.questions?.forEachIndexed { index, question ->
                     PostRecordingQuestion(
+                        editButtonTestTag = OSTTestTags.Tagging.question(index),
+                        valueTestTag = OSTTestTags.Tagging.questionValue(index),
                         questionData = question,
                         selectedAnswer = question.selectedAnswers?.first(),
                         onGoToQuestionClicked = {
@@ -229,6 +250,7 @@ internal fun PostSummaryTagScreen(
                     CustomTextField(
                         value = newNote.value,
                         onValueChange = { newNote.value = it },
+                        testTag = OSTTestTags.Tagging.NOTE_TEXT_FIELD,
                     )
                 }
                 Spacer(modifier = Modifier.height(100.dp))
@@ -250,7 +272,7 @@ internal fun PostSummaryTagScreen(
                             .align(BottomCenter)
                             .windowInsetsPadding(WindowInsets.navigationBars)
                             .padding(Variables.GapL)
-                            .test(TAG_SCREEN_MAIN_BUTTON),
+                            .test(OSTTestTags.Tagging.MAIN_BUTTON),
                     data =
                         PrimaryButtonData(
                             text =
@@ -295,8 +317,8 @@ private fun AssistiveDeviceQuestion(
 ) = TagQuestionRow(
     labelRes = Res.string.assistive_device,
     valueText = assistiveDevice?.displayNameRes?.let { stringResource(it) } ?: BLANK_INPUT,
-    editButtonTestTag = TAG_SCREEN_ASSISTIVE_DEVICE_EDIT_BUTTON,
-    valueTestTag = TAG_SCREEN_ASSISTIVE_DEVICE_TEXT,
+    editButtonTestTag = OSTTestTags.Tagging.ASSISTIVE_DEVICE_EDIT_BUTTON,
+    valueTestTag = OSTTestTags.Tagging.ASSISTIVE_DEVICE_TEXT,
     onEditClicked = onEditAssistiveDeviceClicked,
 )
 
@@ -307,8 +329,8 @@ private fun LevelOfAssistanceQuestion(
 ) = TagQuestionRow(
     labelRes = Res.string.level_of_assistance,
     valueText = levelOfAssistance?.displayNameRes?.let { stringResource(it) } ?: BLANK_INPUT,
-    editButtonTestTag = TAG_SCREEN_LEVEL_OF_ASSISTANCE_EDIT_BUTTON,
-    valueTestTag = TAG_SCREEN_LEVEL_OF_ASSISTANCE_TEXT,
+    editButtonTestTag = OSTTestTags.Tagging.LEVEL_OF_ASSISTANCE_EDIT_BUTTON,
+    valueTestTag = OSTTestTags.Tagging.LEVEL_OF_ASSISTANCE_TEXT,
     onEditClicked = onEditLevelOfAssistanceClicked,
 )
 
@@ -380,8 +402,15 @@ private fun TagQuestionRow(
     HorizontalDivider(modifier = Modifier.fillMaxWidth())
 }
 
+/**
+ * One tappable question row. Renders both the footwear question and every configured
+ * question, so the caller supplies the test ids: sharing one pair across all of them put
+ * several nodes with the same id on the same screen.
+ */
 @Composable
 private fun PostRecordingQuestion(
+    editButtonTestTag: String,
+    valueTestTag: String,
     questionData: OSTRecordingQuestionData,
     selectedAnswer: String? = null,
     onGoToQuestionClicked: (OSTRecordingQuestionData?) -> Unit = {},
@@ -416,7 +445,7 @@ private fun PostRecordingQuestion(
                 modifier = Modifier
                     .wrapContentWidth()
                     .height(40.dp)
-                    .test(TAG_SCREEN_FOOTWEAR_EDIT_BUTTON),
+                    .test(editButtonTestTag),
                 size = OSButtonSize.Small,
                 icon = {
                     Icon(
@@ -432,7 +461,7 @@ private fun PostRecordingQuestion(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .test(TAG_SCREEN_FOOTWEAR_TEXT),
+                .test(valueTestTag),
             text = selectedAnswer ?: BLANK_INPUT,
             fontSize = 20.sp,
             lineHeight = 24.sp,
@@ -454,6 +483,7 @@ internal fun CustomTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier.padding(Variables.GapL),
     hintRes: StringResource = Res.string.note_hint_text,
+    testTag: String = OSTTestTags.Tagging.NOTE_TEXT_FIELD,
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -512,7 +542,7 @@ internal fun CustomTextField(
                         if (!focusState.isFocused) {
                             keyboardController?.hide()
                         }
-                    }.test(TAG_SCREEN_NOTE_TEXT_FIELD),
+                    }.test(testTag),
             keyboardOptions =
                 KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Text,

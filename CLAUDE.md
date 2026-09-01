@@ -59,6 +59,11 @@ Global Compose rules apply (stable params, hoisted state, previews). KMP additio
 - Previews live in `commonMain` via `org.jetbrains.compose.ui.tooling.preview.Preview`.
 - Strings/images go through compose resources (`Res.*`) — never Android-only resources in
   `commonMain`.
+- **Test tags:** every screen root and interactive control gets a tag from `OSTTestTags`
+  (`commonMain/.../testing/OSTTestTags.kt`), applied with `Modifier.test(...)` — never a bare
+  `testTag`, which skips the Android `testTagsAsResourceId` step that makes the tag a Maestro `id:`
+  selector. Tag values are a published contract with the app repos' E2E suites: add constants,
+  don't rename them, and never interpolate patient data into one (HIPAA). See `docs/TestTags.md`.
 
 ## Build, test, verify
 

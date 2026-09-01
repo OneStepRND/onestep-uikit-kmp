@@ -23,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,7 +48,8 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-const val PENDING_WALK_LOG_ITEM = "Pending walk log item"
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.CareLog.PENDING_ITEM"))
+const val PENDING_WALK_LOG_ITEM = OSTTestTags.CareLog.PENDING_ITEM
 
 @Composable
 internal fun PendingMeasurementLogItem(
@@ -67,7 +69,7 @@ internal fun PendingMeasurementLogItem(
                 .fillMaxWidth()
                 .wrapContentHeight()
                 .padding(Variables.GapL)
-                .test(PENDING_WALK_LOG_ITEM),
+                .test(OSTTestTags.CareLog.PENDING_ITEM),
     ) {
         Box(
             modifier =

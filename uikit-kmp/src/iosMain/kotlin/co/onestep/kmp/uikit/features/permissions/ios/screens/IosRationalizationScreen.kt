@@ -14,6 +14,8 @@ import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.designsystem.components.PrimaryButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,6 +42,7 @@ internal fun IosRationalizationScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(colors.neutral_m5)
+            .test(OSTTestTags.Permissions.RATIONALIZATION_SCREEN)
             .padding(horizontal = 24.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -89,7 +92,9 @@ internal fun IosRationalizationScreen(
         PrimaryButton(
             text = "Continue",
             onClick = { coordinator.nextScreen() },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .test(OSTTestTags.Permissions.PRIMARY_BUTTON),
             size = OSButtonSize.Big,
         )
     }

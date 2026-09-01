@@ -25,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -43,6 +42,7 @@ import co.onestep.designsystem.components.TertiaryButton
 import co.onestep.kmp.uikit.ui.components.PrimaryBrandButton
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit.features.recordFlow.screensData.PrimaryButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
@@ -80,6 +80,7 @@ internal fun PermissionRequestScreen(
         modifier =
             modifier
                 .fillMaxSize()
+                .test(OSTTestTags.Permissions.REQUEST_SCREEN)
                 .background(LocalOSColors.current.neutral_m4),
     ) {
         Column(
@@ -192,7 +193,7 @@ internal fun PermissionRequestScreen(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .test(WALK_FLOW_SCREEN_BRAND_BUTTON),
+                                    .test(OSTTestTags.RecordFlow.PRIMARY_BUTTON),
                             data =
                                 it.copy(
                                     action = {
@@ -206,7 +207,9 @@ internal fun PermissionRequestScreen(
                         TertiaryButton(
                             text = it.text.text,
                             onClick = { it.action(); onInfoToggle?.invoke(!showInfo) },
-                            modifier = Modifier.fillMaxWidth().testTag(WALK_FLOW_SCREEN_BORDER_BRAND_BUTTON),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .test(OSTTestTags.RecordFlow.SECONDARY_BUTTON),
                             size = OSButtonSize.Big,
                         )
                         Spacer(Modifier.height(Variables.GapL))

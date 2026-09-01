@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.recordFlow.screensData.EmptyAnalysisScreenData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.PrimaryButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import co.onestep.kmp.uikit.ui.components.FadingSurfaceToTransparent
@@ -49,7 +51,7 @@ internal fun EmptyAnalysisScreen(
     modifier: Modifier = Modifier,
     screenData: EmptyAnalysisScreenData,
 ) {
-    Box(modifier.fillMaxSize()) {
+    Box(modifier.fillMaxSize().test(OSTTestTags.RecordFlow.EMPTY_ANALYSIS_SCREEN)) {
         Column(
             Modifier
                 .fillMaxSize()
@@ -154,7 +156,8 @@ internal fun EmptyAnalysisScreen(
                         .align(BottomCenter)
                         .windowInsetsPadding(WindowInsets.navigationBars)
                         .padding(Variables.GapL)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .test(OSTTestTags.RecordFlow.PRIMARY_BUTTON),
                 data = screenData.brandButtonData,
             )
         }

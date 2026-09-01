@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
+import co.onestep.kmp.uikit.utils.test
 import co.onestep.designsystem.theme.Variables
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.cd_pager_tab
@@ -46,11 +47,16 @@ internal fun OSTTabsRow(
     containerColor: Color? = null,
     onTabSelected: (Int) -> Unit,
     textSize: TextUnit = 14.sp,
+    // Test ids come from the surface that owns the tabs (summary or care log), so the
+    // component stays reusable and the ids stay readable in a flow.
+    rowTestTag: String? = null,
+    tabTestTagPrefix: String? = null,
 ) {
     TabRow(
         modifier =
             Modifier
-                .offset(y = tabBarOffsetY),
+                .offset(y = tabBarOffsetY)
+                .let { if (rowTestTag != null) it.test(rowTestTag) else it },
         containerColor = containerColor ?: LocalOSColors.current.neutral_m4,
         contentColor = LocalOSColors.current.neutral_p3,
         selectedTabIndex = selectedTabIndex,
@@ -74,7 +80,14 @@ internal fun OSTTabsRow(
         },
     ) {
         tabs?.forEachIndexed { index, tab ->
-            OSTTab(onTabSelected, index, tab, selectedTabIndex, textSize)
+            OSTTab(
+                onTabSelected,
+                index,
+                tab,
+                selectedTabIndex,
+                textSize,
+                tabTestTagPrefix?.let { it + index },
+            )
         }
     }
 }
@@ -101,11 +114,13 @@ private fun OSTTab(
     tab: OSTTabData,
     selectedTabIndex: Int,
     textSize: TextUnit = 14.sp,
+    testTag: String? = null,
 ) {
     Column(
         modifier =
             Modifier
                 .fillMaxHeight()
+                .let { if (testTag != null) it.test(testTag) else it }
                 .clip(RoundedCornerShape(4.dp))
                 .clickable(
                     interactionSource =

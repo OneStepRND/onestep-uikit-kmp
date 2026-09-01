@@ -48,6 +48,8 @@ import co.onestep.kmp.uikit.features.recordFlow.previewGetReadyRecordingScreen
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import co.onestep.kmp.uikit.features.recordFlow.screensData.RecordingScreenData
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit.ui.components.AnimatedCounter
 import co.onestep.designsystem.components.OSText
 import co.onestep.kmp.uikit.ui.components.SlideToStopButton
@@ -88,7 +90,7 @@ internal fun RecordingScreenContent(
     // initState() right after first composition) from re-running the push onto itself.
     val dir = if (LocalLayoutDirection.current == LayoutDirection.Ltr) 1 else -1
     AnimatedContent(
-        modifier = modifier,
+        modifier = modifier.test(OSTTestTags.RecordFlow.RECORDING_SCREEN),
         targetState = screenData,
         contentKey = { it.recordScreenStage },
         transitionSpec = { cupertinoPushTransform(dir) },
@@ -146,6 +148,7 @@ internal fun RecordingScreenStateless(
                 targetState = stepCount > RecorderBridge.MIN_STEPS_FOR_ANALYSIS,
             ) { dataIsReadyForAnalysis ->
                 OSText(
+                    modifier = Modifier.test(OSTTestTags.RecordFlow.RECORDING_TITLE),
                     text = if (dataIsReadyForAnalysis) stringResource(Res.string.data_is_ready_for_analysis) else screenData.title.text,
                     color = if (dataIsReadyForAnalysis) colors.success_p3 else screenData.colorTheme,
                     overflow = TextOverflow.Ellipsis,
@@ -220,6 +223,7 @@ private fun RecordingColoredArea(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         OSText(
+                            modifier = Modifier.test(OSTTestTags.RecordFlow.RECORDING_INSTRUCTIONS),
                             text = instructionsText,
                             fontSize = screenData.instructions.textSize,
                             lineHeight = 36.sp,
@@ -238,7 +242,9 @@ private fun RecordingColoredArea(
                         exit = fadeOut(tween(delayMillis = 600)),
                     ) {
                         AnimatedCounter(
-                            modifier = Modifier.animateContentSize(),
+                            modifier = Modifier
+                                .animateContentSize()
+                                .test(OSTTestTags.RecordFlow.RECORDING_TIMER),
                             text = timerValue,
                             textData = screenData.timerValue.text,
                         )
@@ -249,6 +255,7 @@ private fun RecordingColoredArea(
                 screenData.value?.let {
                     Spacer(Modifier.height(32.dp))
                     OSText(
+                        modifier = Modifier.test(OSTTestTags.RecordFlow.RECORDING_VALUE),
                         text = it.text,
                         fontSize = it.textSize,
                         lineHeight = 37.sp,
@@ -265,7 +272,9 @@ private fun RecordingColoredArea(
                 visible = screenData.recordScreenStage.isAnalyzing(),
             ) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(100.dp),
+                    modifier = Modifier
+                        .size(100.dp)
+                        .test(OSTTestTags.RecordFlow.RECORDING_ANALYZING_LOADER),
                     strokeWidth = 10.dp,
                     color = colors.neutral_m5,
                 )
@@ -278,7 +287,8 @@ private fun RecordingColoredArea(
                         .align(Alignment.BottomCenter)
                         .windowInsetsPadding(WindowInsets.navigationBars)
                         .padding(horizontal = Variables.GapL)
-                        .padding(bottom = Variables.GapXL),
+                        .padding(bottom = Variables.GapXL)
+                        .test(OSTTestTags.RecordFlow.RECORDING_STOP_SLIDER),
                     trackTextSize = it.textData?.textSize ?: 20.sp,
                     trackText = it.textData?.text ?: stringResource(Res.string.slide_to_stop),
                     trackColor = colors.error_p2,
@@ -304,6 +314,7 @@ private fun RecordingColoredArea(
                         .padding(horizontal = Variables.GapL)
                         .padding(bottom = Variables.GapXL)
                         .height(60.dp)
+                        .test(OSTTestTags.RecordFlow.RECORDING_BOTTOM_BUTTON)
                         .clip(RoundedCornerShape(Variables.RadiusR4))
                         .border(
                             width = 1.dp,

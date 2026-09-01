@@ -27,6 +27,7 @@ import co.onestep.designsystem.components.OSCircularLoadingBar
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.components.PrimaryButton
 import co.onestep.designsystem.theme.LocalOSColors
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.there_was_a_problem_connecting_to_the_server_please_try_again_later
@@ -34,10 +35,6 @@ import co.onestep.kmp.uikit_kmp.generated.resources.try_again
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 
-internal const val OST_WEB_VIEW = "ost.webView"
-internal const val OST_WEB_VIEW_LOADER = "ost.webView.loader"
-internal const val OST_WEB_VIEW_ERROR = "ost.webView.error"
-internal const val OST_WEB_VIEW_RETRY = "ost.webView.retry"
 
 /**
  * Intercepts a navigation before the web engine performs it. Return `true` to cancel the navigation
@@ -138,7 +135,7 @@ fun OSTWebView(
     var retryRequested by remember { mutableStateOf(false) }
     var autoReloadCount by remember { mutableIntStateOf(0) }
 
-    Box(modifier = modifier.fillMaxSize().test(OST_WEB_VIEW)) {
+    Box(modifier = modifier.fillMaxSize().test(OSTTestTags.Web.VIEW)) {
         // A non-https URL is never handed to the engine — the error state below is the whole
         // behavior. Hosts pass URLs straight through from server payloads, so this is a real case,
         // not a defensive nicety.
@@ -241,7 +238,7 @@ fun OSTWebViewLoader(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxSize()
             .background(LocalOSColors.current.neutral_m5)
-            .test(OST_WEB_VIEW_LOADER),
+            .test(OSTTestTags.Web.LOADER),
         contentAlignment = Alignment.Center,
     ) {
         // Keeps the design-system stroke-to-size ratio (3dp at 48dp).
@@ -264,7 +261,7 @@ fun OSTWebViewError(
             .fillMaxSize()
             .background(colors.neutral_m5)
             .padding(24.dp)
-            .test(OST_WEB_VIEW_ERROR),
+            .test(OSTTestTags.Web.ERROR),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -279,7 +276,7 @@ fun OSTWebViewError(
                 modifier = Modifier
                     .padding(top = 24.dp)
                     .fillMaxWidth()
-                    .test(OST_WEB_VIEW_RETRY),
+                    .test(OSTTestTags.Web.RETRY_BUTTON),
                 text = stringResource(Res.string.try_again),
                 onClick = onRetry,
                 size = OSButtonSize.Big,

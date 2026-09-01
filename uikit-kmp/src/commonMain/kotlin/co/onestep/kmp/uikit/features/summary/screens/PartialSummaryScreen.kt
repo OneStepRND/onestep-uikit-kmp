@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,6 +47,7 @@ internal fun PartialSummaryScreen(
             modifier = modifier
                 .fillMaxSize()
                 .background(LocalOSColors.current.neutral_m4)
+                .test(OSTTestTags.Summary.PARTIAL_RESULT)
                 .then(modifier),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

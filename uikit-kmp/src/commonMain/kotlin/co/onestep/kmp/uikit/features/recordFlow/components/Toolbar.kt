@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import co.onestep.kmp.uikit.features.recordFlow.toolbarData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.ToolBarData
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.kmp.uikit.utils.rtlMirror
@@ -39,9 +40,23 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 
 const val ToolBarHeight = 60
 
-const val TOOLBAR = "toolbar"
-const val TOOLBAR_START_ICON = "Toolbar start icon"
-const val TOOLBAR_END_ICON = "Toolbar end icon"
+@Deprecated(
+    "Moved to the OSTTestTags catalog",
+    ReplaceWith("OSTTestTags.RecordFlow.TOOLBAR", "co.onestep.kmp.uikit.testing.OSTTestTags"),
+)
+const val TOOLBAR = OSTTestTags.RecordFlow.TOOLBAR
+
+@Deprecated(
+    "Moved to the OSTTestTags catalog",
+    ReplaceWith("OSTTestTags.RecordFlow.TOOLBAR_START_ICON", "co.onestep.kmp.uikit.testing.OSTTestTags"),
+)
+const val TOOLBAR_START_ICON = OSTTestTags.RecordFlow.TOOLBAR_START_ICON
+
+@Deprecated(
+    "Moved to the OSTTestTags catalog",
+    ReplaceWith("OSTTestTags.RecordFlow.TOOLBAR_END_ICON", "co.onestep.kmp.uikit.testing.OSTTestTags"),
+)
+const val TOOLBAR_END_ICON = OSTTestTags.RecordFlow.TOOLBAR_END_ICON
 
 data class ToolBarColors(
     val containerColor: Color,
@@ -74,7 +89,7 @@ fun Toolbar(
             .background(toolBarColor?.containerColor ?: LocalOSColors.current.neutral_m4)
             .windowInsetsPadding(WindowInsets.statusBars)
             .height(ToolBarHeight.dp)
-            .test(TOOLBAR)
+            .test(OSTTestTags.RecordFlow.TOOLBAR)
             .then(modifier),
     ) {
         toolbarData.startIcon?.let {
@@ -97,7 +112,7 @@ fun Toolbar(
                             it.action?.invoke()
                         }.size(36.dp)
                         .rtlMirror()
-                        .test(TOOLBAR_START_ICON),
+                        .test(OSTTestTags.RecordFlow.TOOLBAR_START_ICON),
             )
         }
         AnimatedVisibility(
@@ -151,7 +166,7 @@ fun Toolbar(
                                     iconData.action?.invoke()
                                 }.padding(10.dp)
                                 .size(36.dp)
-                                .test("$TOOLBAR_END_ICON: $index"),
+                                .test(OSTTestTags.RecordFlow.toolbarEndIcon(index)),
                     )
                 }
             }

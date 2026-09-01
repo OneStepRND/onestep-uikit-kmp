@@ -10,6 +10,7 @@ import co.onestep.kmp.uikit.features.recordFlow.components.ToolBarHeight
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.features.recordFlow.screensData.UiKitScreenData
 import co.onestep.kmp.uikit.features.permissions.PermissionScreenData
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.ResourceProvider
 import co.onestep.kmp.uikit.utils.UIktDestination
 import kotlinx.serialization.Serializable
@@ -38,6 +39,7 @@ fun EntryProviderScope<NavKey>.soundPermissionScreen(
         )
         UiKitScreen(
             modifier = Modifier.padding(top = ToolBarHeight.dp),
+            screenTag = OSTTestTags.RecordFlow.SOUND_PERMISSION_SCREEN,
             screenData = permData.toUiKitScreenData(),
         )
     }
@@ -50,6 +52,7 @@ fun EntryProviderScope<NavKey>.soundPermissionScreen(
         )
         UiKitScreen(
             modifier = Modifier.padding(top = ToolBarHeight.dp),
+            screenTag = OSTTestTags.RecordFlow.SOUND_PERMISSION_SCREEN,
             screenData = permData.toUiKitScreenData(),
         )
     }

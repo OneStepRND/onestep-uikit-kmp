@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
@@ -218,6 +220,7 @@ private fun HallwayLengthRow(
                     Modifier
                         .padding(start = 6.dp)
                         .size(17.dp)
+                        .test(OSTTestTags.Summary.HALLWAY_EDIT_BUTTON)
                         .clickable { onEdit() },
                 painter = painterResource(Res.drawable.ic_edit),
                 contentDescription = null,
@@ -283,7 +286,7 @@ fun ElevatedDivider(modifier: Modifier = Modifier) {
 @Composable
 private fun LargeMainParamCircle(modifier: Modifier = Modifier, mainParamItem: MainParamItem) {
     MainParamCircle(
-        modifier = modifier,
+        modifier = modifier.test(OSTTestTags.Summary.MAIN_PARAM),
         circleOffsetY = 0.dp,
         scoreOffsetY = scoreExpandedYOffset,
         circleOffsetX = 0.dp,

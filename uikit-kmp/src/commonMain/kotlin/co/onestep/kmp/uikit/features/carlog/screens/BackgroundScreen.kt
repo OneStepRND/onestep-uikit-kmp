@@ -10,6 +10,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.text.font.FontWeight.Companion.W500
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,6 +35,7 @@ internal fun BackgroundScreen(
     Column(
         Modifier
             .fillMaxSize()
+            .test(OSTTestTags.CareLog.BACKGROUND_LIST)
             .then(modifier),
     ) {
         Row(

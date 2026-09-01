@@ -24,6 +24,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -94,6 +96,7 @@ internal fun CareLogContentScreen(
             carLogScreenState.infoData?.let { infoData ->
                 BottomSheet(
                     dragHandle = null,
+                    testTag = OSTTestTags.CareLog.INFO_SHEET,
                     onDismissRequest = {
                         showInfoSheet.value = false
                     },
@@ -107,11 +110,16 @@ internal fun CareLogContentScreen(
 
 @Composable
 private fun ColumnScope.NoticeCards(carLogScreenState: CarLogScreenState) {
-    carLogScreenState.noticeCards.forEach { card ->
+    carLogScreenState.noticeCards.forEachIndexed { index, card ->
         AnimatedVisibility(
             visible = card.isVisible,
         ) {
-            NoticeCard(Modifier.padding(Variables.GapL), card) {
+            NoticeCard(
+                Modifier
+                    .padding(Variables.GapL)
+                    .test(OSTTestTags.CareLog.noticeCard(index)),
+                card,
+            ) {
                 if (card.type == NoticeCardType.BackgroundMonitoring) {
                     card.isVisible = false
                 }
@@ -145,6 +153,7 @@ private fun CareLogContentTitle(showInfoSheet: MutableState<Boolean>) {
             contentDescription = null,
             modifier =
                 Modifier
+                    .test(OSTTestTags.CareLog.INFO_BUTTON)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = osClickIndication(bounded = false),

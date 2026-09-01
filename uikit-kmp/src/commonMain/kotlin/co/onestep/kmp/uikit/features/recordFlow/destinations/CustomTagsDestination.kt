@@ -11,6 +11,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingQuestionData
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.RecordingQuestionScreen
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.UIktDestination
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.serialization.Serializable
@@ -51,6 +52,7 @@ fun EntryProviderScope<NavKey>.customTagsScreen(
         preRecordingQuestions?.let {
             RecordingQuestionScreen(
                 modifier = Modifier.padding(top = topBarPadding.dp),
+                screenTag = OSTTestTags.RecordFlow.CUSTOM_QUESTION_SCREEN,
                 preRecordingQuestionData = preRecordingQuestions,
                 setTags = onAddTags,
                 currentScreenIndex = currentScreenIndex.intValue,

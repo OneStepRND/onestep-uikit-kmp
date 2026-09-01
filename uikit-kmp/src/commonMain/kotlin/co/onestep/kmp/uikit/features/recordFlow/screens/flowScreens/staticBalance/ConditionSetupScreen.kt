@@ -12,7 +12,9 @@ import co.onestep.kmp.uikit.features.recordFlow.components.SelectableSectionsScr
 import co.onestep.kmp.uikit.features.recordFlow.configurations.BalanceIcons
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTBalance
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTBalanceCondition
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
+import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit.utils.UIktDestination
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.static_balance_choose_conditions
@@ -20,8 +22,23 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlinx.serialization.Serializable
 
-const val CONDITION_SETUP_CONTINUE_BUTTON = "condition_setup_continue_button"
-const val CONDITION_SETUP_CLEAR_ALL_BUTTON = "condition_setup_clear_all_button"
+@Deprecated(
+    "Moved to the OSTTestTags catalog",
+    ReplaceWith(
+        "OSTTestTags.StaticBalance.CONDITION_SETUP_CONTINUE_BUTTON",
+        "co.onestep.kmp.uikit.testing.OSTTestTags",
+    ),
+)
+const val CONDITION_SETUP_CONTINUE_BUTTON = OSTTestTags.StaticBalance.CONDITION_SETUP_CONTINUE_BUTTON
+
+@Deprecated(
+    "Moved to the OSTTestTags catalog",
+    ReplaceWith(
+        "OSTTestTags.StaticBalance.CONDITION_SETUP_CLEAR_ALL_BUTTON",
+        "co.onestep.kmp.uikit.testing.OSTTestTags",
+    ),
+)
+const val CONDITION_SETUP_CLEAR_ALL_BUTTON = OSTTestTags.StaticBalance.CONDITION_SETUP_CLEAR_ALL_BUTTON
 
 @Serializable
 data object ConditionSetupDestination : UIktDestination
@@ -82,10 +99,10 @@ internal fun ConditionSetupScreen(
     SelectableSectionsScreen(
         title = stringResource(Res.string.static_balance_choose_conditions),
         sections = sections,
-        modifier = modifier,
+        modifier = modifier.test(OSTTestTags.StaticBalance.CONDITION_SETUP_SCREEN),
         onScreenView = onScreenView,
-        continueButtonTestTag = CONDITION_SETUP_CONTINUE_BUTTON,
-        clearButtonTestTag = CONDITION_SETUP_CLEAR_ALL_BUTTON,
+        continueButtonTestTag = OSTTestTags.StaticBalance.CONDITION_SETUP_CONTINUE_BUTTON,
+        clearButtonTestTag = OSTTestTags.StaticBalance.CONDITION_SETUP_CLEAR_ALL_BUTTON,
         onContinue = { selections, note ->
             // selections maps category.key -> chosen option index, for selected sections only.
             val chosen = balance.categories.mapNotNull { category ->

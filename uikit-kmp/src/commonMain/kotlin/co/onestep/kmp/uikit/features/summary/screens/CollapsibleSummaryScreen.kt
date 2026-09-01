@@ -75,6 +75,7 @@ import co.onestep.designsystem.components.SecondaryButton
 import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.discard
@@ -93,7 +94,8 @@ val MinToolBarHeightNoTabs = MinToolbarHeight - MetaDataHeight
 const val HIGHLIGHTS = 0
 const val GAIT_LAB = 1
 val BRAND_BUTTON_PADDING = 90.dp
-const val SUMMARY_CONTINUE_BUTTON_TEST_TAG = "Summery continue button"
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.Summary.CONTINUE_BUTTON"))
+const val SUMMARY_CONTINUE_BUTTON_TEST_TAG = OSTTestTags.Summary.CONTINUE_BUTTON
 private val CollapsedCircleSize = 40.dp
 
 @Composable
@@ -160,6 +162,7 @@ internal fun Summary(
     var collapseProgress by remember { mutableFloatStateOf(0f) }
 
     Scaffold(
+        modifier = Modifier.test(OSTTestTags.Summary.SCREEN),
         // Edge-to-edge: the content draws behind the system nav bar (the fading sticky bar hides
         // it) so the nav-bar inset is applied exactly once — on the Continue bar — instead of
         // being reserved here as well, which previously pushed the button a nav-bar height too
@@ -177,7 +180,7 @@ internal fun Summary(
                             .background(LocalOSColors.current.neutral_m4)
                             .windowInsetsPadding(WindowInsets.statusBars)
                             .height(ToolBarHeight.dp)
-                            .test(TOOLBAR)
+                            .test(OSTTestTags.Summary.TOOLBAR)
                             .then(modifier),
                     ) {
                         Toolbar(toolbarData = data)
@@ -247,6 +250,8 @@ internal fun Summary(
                                     OSTTabsRow(
                                         selectedTabIndex = pagerState.currentPage,
                                         tabs = mainParamItem.tabs,
+                                        rowTestTag = OSTTestTags.Summary.TABS_ROW,
+                                        tabTestTagPrefix = OSTTestTags.Summary.TAB_TAG_PREFIX,
                                         onTabSelected = {
                                             onTabSelected(it)
                                             tabSwitchScope.launch {
@@ -280,6 +285,7 @@ internal fun Summary(
                                                 toolbarState,
                                                 scope,
                                                 highlightsListState,
+                                                OSTTestTags.Summary.HIGHLIGHTS_LIST,
                                             ) {
                                                 sheetData.show(it)
                                             }
@@ -291,6 +297,7 @@ internal fun Summary(
                                                 toolbarState,
                                                 scope,
                                                 gaitLabListState,
+                                                OSTTestTags.Summary.GAIT_LAB_LIST,
                                             ) {
                                                 sheetData.show(it)
                                             }
@@ -316,6 +323,7 @@ internal fun Summary(
                                     toolbarState,
                                     scope,
                                     highlightsListState,
+                                    OSTTestTags.Summary.HIGHLIGHTS_LIST,
                                 ) {
                                     sheetData.show(it)
                                 }
@@ -330,6 +338,7 @@ internal fun Summary(
                     BottomSheet(
                         sheetData = sheetData,
                         dragHandle = null,
+                        testTag = OSTTestTags.Summary.INFO_SHEET,
                     )
                 }
             }
@@ -364,7 +373,8 @@ private fun BoxScope.BottomActionsSection(
                         onClick = secondaryAction,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(Variables.GapL),
+                            .padding(Variables.GapL)
+                            .test(OSTTestTags.Summary.DISCARD_BUTTON),
                         size = OSButtonSize.Big,
                     )
                 }
@@ -374,7 +384,7 @@ private fun BoxScope.BottomActionsSection(
                             Modifier
                                 .fillMaxWidth()
                                 .padding(Variables.GapL)
-                                .test(SUMMARY_CONTINUE_BUTTON_TEST_TAG),
+                                .test(OSTTestTags.Summary.CONTINUE_BUTTON),
                         data =
                             PrimaryButtonData(
                                 text =
@@ -398,6 +408,7 @@ private fun ItemsList(
     toolbarState: ToolbarState,
     scope: CoroutineScope,
     listState: LazyListState,
+    listTestTag: String,
     onTugInfoClick: (@Composable () -> Unit) -> Unit,
 ) {
     AnimatedContent(
@@ -411,6 +422,7 @@ private fun ItemsList(
                     toolbarState,
                     scope,
                     listState,
+                    listTestTag,
                     onTugInfoClick,
                 )
 
@@ -420,6 +432,7 @@ private fun ItemsList(
                     toolbarState,
                     scope,
                     listState,
+                    listTestTag,
                     onTugInfoClick,
                 )
 
@@ -446,6 +459,7 @@ private fun SummaryItems(
     toolbarState: ToolbarState,
     scope: CoroutineScope,
     listState: LazyListState,
+    listTestTag: String,
     onTugInfoClick: (@Composable () -> Unit) -> Unit,
 ) {
     SummaryItemsList(
@@ -453,6 +467,7 @@ private fun SummaryItems(
         modifier =
             Modifier
                 .fillMaxSize()
+                .test(listTestTag)
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onPress = { scope.coroutineContext.cancelChildren() },

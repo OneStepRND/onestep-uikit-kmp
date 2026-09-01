@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -57,7 +58,8 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-const val WALK_LOG_ITEM = "Walk log item"
+@Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.CareLog.ITEM"))
+const val WALK_LOG_ITEM = OSTTestTags.CareLog.ITEM
 
 @Composable
 internal fun MeasurementLogItem(
@@ -82,7 +84,7 @@ internal fun MeasurementLogItem(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = osClickIndication(bounded = true),
                     onClick = { onClick(measurementItemData.id) },
-                ).test(WALK_LOG_ITEM),
+                ).test(OSTTestTags.CareLog.ITEM),
     ) {
         Box(
             modifier =

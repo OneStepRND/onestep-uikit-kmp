@@ -36,6 +36,7 @@ import co.onestep.designsystem.components.SecondaryButton
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
 import co.onestep.kmp.uikit.features.tagging.CustomTextField
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.kmp.uikit.utils.UIktDestination
 import co.onestep.kmp.uikit.utils.test
@@ -53,8 +54,25 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlinx.serialization.Serializable
 
-const val RECORDING_SAVED_GO_TO_SUMMARY_BUTTON = "recording_saved_go_to_summary_button"
-const val RECORDING_SAVED_RECORD_ANOTHER_BUTTON = "recording_saved_record_another_button"
+@Deprecated(
+    "Moved to the OSTTestTags catalog",
+    ReplaceWith(
+        "OSTTestTags.StaticBalance.RECORDING_SAVED_GO_TO_SUMMARY_BUTTON",
+        "co.onestep.kmp.uikit.testing.OSTTestTags",
+    ),
+)
+const val RECORDING_SAVED_GO_TO_SUMMARY_BUTTON =
+    OSTTestTags.StaticBalance.RECORDING_SAVED_GO_TO_SUMMARY_BUTTON
+
+@Deprecated(
+    "Moved to the OSTTestTags catalog",
+    ReplaceWith(
+        "OSTTestTags.StaticBalance.RECORDING_SAVED_RECORD_ANOTHER_BUTTON",
+        "co.onestep.kmp.uikit.testing.OSTTestTags",
+    ),
+)
+const val RECORDING_SAVED_RECORD_ANOTHER_BUTTON =
+    OSTTestTags.StaticBalance.RECORDING_SAVED_RECORD_ANOTHER_BUTTON
 
 @Serializable
 data object RecordingSavedDestination : UIktDestination
@@ -95,7 +113,11 @@ internal fun RecordingSavedScreen(
     val colors = LocalOSColors.current
     val note = rememberSaveable { mutableStateOf<String?>(null) }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .test(OSTTestTags.StaticBalance.RECORDING_SAVED_SCREEN),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -159,6 +181,7 @@ internal fun RecordingSavedScreen(
                     onValueChange = { note.value = it },
                     modifier = Modifier.padding(vertical = Variables.GapL),
                     hintRes = Res.string.static_balance_observations_hint,
+                    testTag = OSTTestTags.StaticBalance.RECORDING_SAVED_NOTE_FIELD,
                 )
             }
         }
@@ -176,7 +199,7 @@ internal fun RecordingSavedScreen(
                 size = OSButtonSize.Big,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .test(RECORDING_SAVED_GO_TO_SUMMARY_BUTTON),
+                    .test(OSTTestTags.StaticBalance.RECORDING_SAVED_GO_TO_SUMMARY_BUTTON),
             )
             Spacer(Modifier.height(Variables.GapM))
             SecondaryButton(
@@ -185,7 +208,7 @@ internal fun RecordingSavedScreen(
                 size = OSButtonSize.Big,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .test(RECORDING_SAVED_RECORD_ANOTHER_BUTTON),
+                    .test(OSTTestTags.StaticBalance.RECORDING_SAVED_RECORD_ANOTHER_BUTTON),
             )
         }
     }

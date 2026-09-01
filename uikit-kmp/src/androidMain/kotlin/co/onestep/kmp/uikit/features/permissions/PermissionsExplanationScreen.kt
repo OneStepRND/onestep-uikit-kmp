@@ -18,6 +18,8 @@ import co.onestep.kmp.uikit.features.recordFlow.screensData.PrimaryButtonData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.IconData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.UiKitScreenData
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
@@ -48,12 +50,14 @@ fun PermissionsExplanationScreen(
                     Modifier
                         .align(CenterEnd)
                         .padding(Variables.GapL)
+                        .test(OSTTestTags.Permissions.EXPLANATION_CLOSE_BUTTON)
                         .clickable { onClose() },
                 painter = painterResource(Res.drawable.ic_close),
                 contentDescription = stringResource(Res.string.cd_close_permissions),
             )
         }
         UiKitScreen(
+            screenTag = OSTTestTags.Permissions.EXPLANATION_SCREEN,
             screenData =
                 UiKitScreenData(
                     mainIcon =

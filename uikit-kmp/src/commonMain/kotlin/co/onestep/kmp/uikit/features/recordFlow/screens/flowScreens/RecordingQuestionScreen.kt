@@ -14,6 +14,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Composable
 internal fun RecordingQuestionScreen(
     modifier: Modifier = Modifier,
+    screenTag: String? = null,
     preRecordingQuestionData: List<OSTRecordingQuestionData>,
     currentScreenIndex: Int,
     setTags: (List<String>) -> Unit,
@@ -50,6 +51,7 @@ internal fun RecordingQuestionScreen(
         )
         UiKitScreen(
             modifier = modifier,
+            screenTag = screenTag,
             screenData = screenData,
             onBackPress = {
                 if (currentScreenIndex > 0) {

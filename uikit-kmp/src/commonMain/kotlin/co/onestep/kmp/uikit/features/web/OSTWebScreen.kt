@@ -20,13 +20,13 @@ import androidx.compose.ui.unit.dp
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.kmp.uikit.ui.theme.osClickIndication
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_close
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-internal const val OST_WEB_SCREEN_CLOSE = "ost.webScreen.close"
 
 /**
  * Full-screen host for a OneStep web mini-app — the one-call way to show a web summary.
@@ -69,6 +69,7 @@ fun OSTWebScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .test(OSTTestTags.Web.SCREEN)
             .then(
                 if (consumeSafeArea) Modifier.windowInsetsPadding(WindowInsets.safeDrawing)
                 else Modifier,
@@ -123,7 +124,7 @@ private fun OSTWebCloseButton(
                 indication = osClickIndication(),
                 onClick = onClose,
             )
-            .test(OST_WEB_SCREEN_CLOSE),
+            .test(OSTTestTags.Web.CLOSE_BUTTON),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

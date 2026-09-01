@@ -21,7 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.EntryProviderScope
@@ -120,7 +120,7 @@ private fun DemoScreen(
     onPush: (() -> Unit)?,
     onBack: () -> Unit,
 ) {
-    Surface(color = tint, modifier = Modifier.fillMaxSize().testTag(tag)) {
+    Surface(color = tint, modifier = Modifier.fillMaxSize().test(tag)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -139,12 +139,12 @@ private fun DemoScreen(
             if (onPush != null) {
                 Button(
                     onClick = onPush,
-                    modifier = Modifier.testTag("$tag.push"),
+                    modifier = Modifier.test("$tag.push"),
                 ) { Text("Push next screen") }
             }
             TextButton(
                 onClick = onBack,
-                modifier = Modifier.testTag("$tag.back"),
+                modifier = Modifier.test("$tag.back"),
             ) { Text("Pop back") }
             Spacer(Modifier.height(8.dp))
             // Filler rows make the parallax + scrim on the underlying screen easy to see.
