@@ -75,6 +75,20 @@ interface RecorderBridge {
         interval: Long = 500,
     ): OSTMotionMeasurement?
 
+    /**
+     * Generic Recording (OS-16861): uploads the completed recording and banks it **without**
+     * requesting an analysis, returning the stored measurement (or `null` if the upload failed).
+     *
+     * A stored recording is the success case here — there is no analysis pipeline to poll, so the
+     * platform analyser never advances to [OSTAnalyserState.Analyzed] and the flow's completion has
+     * to be driven from this call's return rather than from the analyser-state collector. Calling
+     * [analyze] instead would wait on a result that never arrives.
+     *
+     * The returned measurement carries no score, insight or `summaryUrl`; the only post-recording
+     * input is the free-text note, attached afterwards via [updateMotionMeasurement].
+     */
+    suspend fun uploadWithoutAnalysis(): OSTMotionMeasurement?
+
     suspend fun updateSixMinuteWalkCourseLength(
         uuid: String,
         requestBody: OSTWalkCourseLength,

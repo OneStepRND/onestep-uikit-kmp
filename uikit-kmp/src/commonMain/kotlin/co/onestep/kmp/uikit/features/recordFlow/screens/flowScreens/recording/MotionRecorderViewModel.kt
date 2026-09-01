@@ -46,6 +46,8 @@ import co.onestep.kmp.uikit_kmp.generated.resources.analyzing
 import co.onestep.kmp.uikit_kmp.generated.resources.analyzing_in_progress
 import co.onestep.kmp.uikit_kmp.generated.resources.dual_task_prepare_instructions
 import co.onestep.kmp.uikit_kmp.generated.resources.generating_report
+import co.onestep.kmp.uikit_kmp.generated.resources.generic_recording_uploading
+import co.onestep.kmp.uikit_kmp.generated.resources.generic_recording_uploading_in_progress
 import co.onestep.kmp.uikit_kmp.generated.resources.get_ready
 import co.onestep.kmp.uikit_kmp.generated.resources.go
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_play_button
@@ -214,6 +216,20 @@ internal class MotionRecorderViewModel(
 
     private var uiTimeoutJob: Job? = null
 
+    /**
+     * Latches the first terminal error of this analysis attempt so any later one is ignored.
+     *
+     * The analyser-state collector and the Generic Recording upload path can both observe the same
+     * failure — a too-short recording, for instance, is published as
+     * [OSTAnalyserState.Failed] **and** returned as a null upload — and the collector's
+     * [clearJobs] resets the analyser, so "is the analyser already Failed?" cannot tell a duplicate
+     * report from a first one. Without the latch a too-short Generic Recording navigates to its
+     * error screen and is then covered by a second error screen pushed on top of it.
+     *
+     * Reset at the start of every [analyse].
+     */
+    private var errorReported = false
+
     private var ttsInstructionsJob: Job? = null
 
     private var stepMonitorJob: Job? = null
@@ -280,12 +296,30 @@ internal class MotionRecorderViewModel(
                         OSTAnalyserState.Idle -> Unit
 
                         OSTAnalyserState.Uploading -> {
-                            subtitle.value =
-                                resourceProvider.getString(Res.string.analyzing_in_progress)
+                            // A Generic Recording is never analysed, so "analyzing" would promise
+                            // a report that never comes. Uploading is all that happens on that
+                            // flow, and it is all the copy claims.
+                            subtitle.value = resourceProvider.getString(
+                                if (skipsAnalysis) {
+                                    Res.string.generic_recording_uploading_in_progress
+                                } else {
+                                    Res.string.analyzing_in_progress
+                                },
+                            )
                         }
 
                         OSTAnalyserState.Analyzing -> {
-                            subtitle.value = resourceProvider.getString(Res.string.generating_report)
+                            // Android never reaches Analyzing for a Generic Recording (the upload
+                            // path leaves the analyser at Uploading), but iOS drives both outcomes
+                            // through the same native `analyze()` and may pass through it — and
+                            // "generating report" would promise a report that is never generated.
+                            subtitle.value = resourceProvider.getString(
+                                if (skipsAnalysis) {
+                                    Res.string.generic_recording_uploading_in_progress
+                                } else {
+                                    Res.string.generating_report
+                                },
+                            )
                         }
 
                         OSTAnalyserState.Analyzed -> {
@@ -298,7 +332,7 @@ internal class MotionRecorderViewModel(
                         is OSTAnalyserState.Failed -> {
                             uiTimeoutJob?.cancel()
                             clearJobs()
-                            onError(it.error, configuration.value.activityType)
+                            reportError(it.error)
                         }
                     }
                 }
@@ -499,10 +533,28 @@ internal class MotionRecorderViewModel(
         ),
     )
 
+    // Generic Recording is never analysed, so the ANALYZING stage says "Uploading" rather than
+    // "Analyzing" for it — the stage is the same, only the promise it makes differs.
     private fun analysingState() = RecordingScreenData(
         recordScreenStage = RecordingScreenData.RecordScreenStage.ANALYZING,
-        title = TextData(resourceProvider.getString(Res.string.analyzing), 60.sp, FontWeight.Bold),
-        instructions = TextData(resourceProvider.getString(Res.string.analyzing_in_progress), 28.sp, FontWeight.Bold),
+        title = TextData(
+            resourceProvider.getString(
+                if (skipsAnalysis) Res.string.generic_recording_uploading else Res.string.analyzing,
+            ),
+            60.sp,
+            FontWeight.Bold,
+        ),
+        instructions = TextData(
+            resourceProvider.getString(
+                if (skipsAnalysis) {
+                    Res.string.generic_recording_uploading_in_progress
+                } else {
+                    Res.string.analyzing_in_progress
+                },
+            ),
+            28.sp,
+            FontWeight.Bold,
+        ),
     )
 
     private fun startUiTimeout() {
@@ -709,6 +761,39 @@ internal class MotionRecorderViewModel(
         }
     }
 
+    // --- Generic Recording (OS-16861) -----------------------------------------------------
+
+    /**
+     * Attaches the single optional free-text note — entered on the Generic Recording's own
+     * "Recording saved" screen — to the measurement that was just banked, as the measurement's own
+     * top-level `note`.
+     *
+     * A blank note is a no-op: the note is optional and is never persisted as an empty string.
+     *
+     * **Suspends until the update completes**, so the caller can await it before finishing the
+     * flow. Without that the request is cancelled the moment the host tears the flow down and the
+     * note is lost — which on this screen means losing the only thing that describes what was
+     * recorded.
+     */
+    suspend fun updateGenericRecordingNote(newNote: String?) {
+        if (newNote.isNullOrBlank()) return
+        val measurementId = motionMeasurement.value?.id ?: return
+        try {
+            recorderBridge.updateMotionMeasurement(
+                uuid = measurementId,
+                metadata = OSTUserInputMetaData(note = newNote),
+            )
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
+            // Never log the note itself — it is free text a clinician typed about a patient.
+            println(
+                "MotionRecorderViewModel: Failed to save the generic recording note for " +
+                    "$measurementId: ${failure::class.simpleName}",
+            )
+        }
+    }
+
     /**
      * Resets per-condition state ("Record another test") while keeping the session alive:
      * same [sessionUuid], accumulated measurement ids untouched.
@@ -754,6 +839,7 @@ internal class MotionRecorderViewModel(
     }
 
     fun analyse() {
+        errorReported = false
         recorderBridge.reset()
         recordingJob?.cancel()
         recordingStateJob?.cancel()
@@ -768,10 +854,53 @@ internal class MotionRecorderViewModel(
                     .filter { it } // only pass when in foreground
                     .filter { recorderBridge.analyserState.value == OSTAnalyserState.Idle } // only pass when idle
                     .first() // suspend until the first `true` is emitted
-                // Then do the analysis exactly once
-                motionMeasurement.value = recorderBridge.analyze()
+                if (skipsAnalysis) {
+                    // Generic Recording: raw storage only, no pipeline to poll. A successful upload
+                    // leaves the analyser at Uploading — it never advances to Analyzed — so the
+                    // completion is driven from here rather than from collectAnalyseState().
+                    uploadWithoutAnalysing()
+                } else {
+                    // Then do the analysis exactly once
+                    motionMeasurement.value = recorderBridge.analyze()
+                }
             }
     }
+
+    /**
+     * Banks a Generic Recording and completes the flow with the stored measurement.
+     *
+     * A failed upload mostly arrives as [OSTAnalyserState.Failed] — the SDK publishes it for the
+     * cases the participant can act on, a too-short recording above all — and
+     * [collectAnalyseState] already routes those. What is left are the failures the analyser never
+     * publishes: no active recording session, the analyser not being Idle, or the uploaded sample
+     * not being readable back locally. Without reporting those here the participant would sit on
+     * the uploading screen for the full UI timeout and then be told the upload timed out, which is
+     * not what happened. [reportError] keeps whichever of the two paths fires first.
+     */
+    private suspend fun uploadWithoutAnalysing() {
+        val uploaded = recorderBridge.uploadWithoutAnalysis()
+        motionMeasurement.value = uploaded
+        uiTimeoutJob?.cancel()
+        if (uploaded != null) {
+            onMeasurementResult(uploaded)
+        } else {
+            reportError(OSTAnalyserError.General(null, "Generic recording upload failed"))
+        }
+    }
+
+    /** Reports the first terminal error of this analysis attempt and ignores any later one. */
+    private fun reportError(error: OSTAnalyserError) {
+        if (errorReported) return
+        errorReported = true
+        onError(error, configuration.value.activityType)
+    }
+
+    /**
+     * True for measurements whose data is stored raw and never analysed, so the flow must not wait
+     * on the analysis pipeline or promise a report the participant will never get.
+     */
+    private val skipsAnalysis: Boolean
+        get() = configuration.value.activityType == OSTActivityType.GENERIC_RECORDING
 
     private fun changeDuration(newTimeout: Int) {
         timeout = newTimeout

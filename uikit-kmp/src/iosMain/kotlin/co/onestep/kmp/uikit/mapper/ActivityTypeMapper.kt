@@ -24,6 +24,7 @@ fun String.toKmpActivityType(): OSTActivityType =
         "SIX_MINUTE_WALK" -> OSTActivityType.SIX_MINUTE_WALK
         "TWO_MINUTE_WALK" -> OSTActivityType.TWO_MINUTE_WALK
         "STAIRS" -> OSTActivityType.STAIRS
+        "GENERIC_RECORDING" -> OSTActivityType.GENERIC_RECORDING
         else -> OSTActivityType.WALK
     }
 

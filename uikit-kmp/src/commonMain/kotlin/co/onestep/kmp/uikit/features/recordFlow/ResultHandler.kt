@@ -85,6 +85,9 @@ internal object ResultHandler {
                     OSTActivityType.ROM_KNEE_FLEX, OSTActivityType.ROM_KNEE_EXT ->
                         RecordFlowError.RomShort
                     OSTActivityType.BALANCE_TEST -> RecordFlowError.StaticBalanceShort
+                    // Without its own branch this falls through to the walk error, which coaches
+                    // the participant about a protocol we do not know they followed.
+                    OSTActivityType.GENERIC_RECORDING -> RecordFlowError.GenericRecordingShort
                     else -> RecordFlowError.WalkShort
                 }
 

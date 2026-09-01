@@ -142,6 +142,9 @@ class AndroidRecorderBridge private constructor(
         return motionLab.readSingleMotionMeasurement(uuid).getOr(null as CoreMeasurement?)?.toKmp()
     }
 
+    override suspend fun uploadWithoutAnalysis(): OSTMotionMeasurement? =
+        motionLab.uploadWithoutAnalysis().getOr(null as CoreMeasurement?)?.toKmp()
+
     override suspend fun updateSixMinuteWalkCourseLength(uuid: String, requestBody: OSTWalkCourseLength) {
         val core = requestBody.toCore()
         motionLab.updateMotionMeasurement(uuid) {
