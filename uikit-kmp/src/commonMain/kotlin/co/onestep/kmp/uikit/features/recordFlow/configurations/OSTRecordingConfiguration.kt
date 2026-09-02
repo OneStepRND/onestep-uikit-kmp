@@ -343,6 +343,21 @@ internal expect fun randomUUID(): String
  * time and the assistive device is re-sent, which is the duplicate-tag behaviour from OS-16020. Only
  * [OSTPostTaggingData.OSTPostTaggingScreen] carries these rows; other variants are returned unchanged.
  */
+/**
+ * Whether a free-text note should be collected after the recording.
+ *
+ * Only [OSTPostTaggingData.OSTPostTaggingScreen] carries a note flag; [OSTPostTaggingData.None] is
+ * the host saying "ask nothing after the recording", and the questions-flow variant has no note of
+ * its own. Read by the **Static Balance** "Recording saved" screen, whose note field is the one this
+ * flag describes (see [Companion.staticBalance]) — and which ignored it until OS-16914.
+ *
+ * Deliberately **not** consulted by the Generic Recording notes screen: that recording is never
+ * analysed, so its note is the only description of what was captured, and `genericRecording()`
+ * ships `note = false` on a `postTaggingData` its own screen was never meant to read.
+ */
+fun OSTRecordingConfiguration.collectsPostRecordingNote(): Boolean =
+    (postTaggingData as? OSTPostTaggingData.OSTPostTaggingScreen)?.note == true
+
 fun OSTRecordingConfiguration.effectivePostTaggingData(): OSTPostTaggingData {
     val screen =
         postTaggingData as? OSTPostTaggingData.OSTPostTaggingScreen ?: return postTaggingData

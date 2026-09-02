@@ -85,12 +85,21 @@ data object RecordingSavedDestination : UIktDestination
  * per-condition note, attached to the nested `onestep_balance_conditions` metadata via
  * `updateBalanceConditionNote`. The clinician then either records another condition (same
  * session) or goes to the web summary (flow finishes; the host app opens the web summary).
+ *
+ * [showNote] is the host's post-tagging decision, read off the configuration by the flow
+ * (`OSTRecordingConfiguration.collectsPostRecordingNote`). It exists because this screen is where
+ * the note actually lives: `staticBalance()`'s `postTaggingData` says `note = true` and explains
+ * that the note is collected *here* rather than on the generic tagging screen — but until
+ * OS-16914 nothing read it, so a host that switched the note off still got the field. A workspace
+ * that blinds the analysis is the case that matters: its clinician cannot see the note again in
+ * the app, so asking for one is a dead end (`OSTSummaryOptions.None` + `OSTPostTaggingData.None`).
  */
 fun EntryProviderScope<NavKey>.recordingSavedScreen(
     conditionLine: () -> String,
     durationSeconds: () -> Int,
     onRecordAnother: (note: String?) -> Unit,
     onGoToSummary: (note: String?) -> Unit,
+    showNote: () -> Boolean = { true },
 ) {
     entry<RecordingSavedDestination> {
         RecordingSavedScreen(
@@ -98,6 +107,7 @@ fun EntryProviderScope<NavKey>.recordingSavedScreen(
             durationSeconds = durationSeconds(),
             onRecordAnother = onRecordAnother,
             onGoToSummary = onGoToSummary,
+            showNote = showNote(),
         )
     }
 }
@@ -109,6 +119,7 @@ internal fun RecordingSavedScreen(
     modifier: Modifier = Modifier,
     onRecordAnother: (note: String?) -> Unit = {},
     onGoToSummary: (note: String?) -> Unit = {},
+    showNote: Boolean = true,
 ) {
     val colors = LocalOSColors.current
     val note = rememberSaveable { mutableStateOf<String?>(null) }
@@ -176,13 +187,15 @@ internal fun RecordingSavedScreen(
                         color = colors.primary_p1,
                     )
                 }
-                CustomTextField(
-                    value = note.value,
-                    onValueChange = { note.value = it },
-                    modifier = Modifier.padding(vertical = Variables.GapL),
-                    hintRes = Res.string.static_balance_observations_hint,
-                    testTag = OSTTestTags.StaticBalance.RECORDING_SAVED_NOTE_FIELD,
-                )
+                if (showNote) {
+                    CustomTextField(
+                        value = note.value,
+                        onValueChange = { note.value = it },
+                        modifier = Modifier.padding(vertical = Variables.GapL),
+                        hintRes = Res.string.static_balance_observations_hint,
+                        testTag = OSTTestTags.StaticBalance.RECORDING_SAVED_NOTE_FIELD,
+                    )
+                }
             }
         }
 
@@ -221,6 +234,19 @@ private fun RecordingSavedScreenPreview() {
         RecordingSavedScreen(
             conditionLine = "Feet together | Eyes open | Firm",
             durationSeconds = 30,
+        )
+    }
+}
+
+/** A host that collects no note — a blinded research workspace (OS-16914). */
+@Preview
+@Composable
+private fun RecordingSavedScreenNoNotePreview() {
+    PreviewTheme {
+        RecordingSavedScreen(
+            conditionLine = "Feet together | Eyes open | Firm",
+            durationSeconds = 30,
+            showNote = false,
         )
     }
 }

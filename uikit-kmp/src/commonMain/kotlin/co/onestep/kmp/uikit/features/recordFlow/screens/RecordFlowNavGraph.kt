@@ -49,6 +49,7 @@ import co.onestep.kmp.uikit.features.recordFlow.components.ToolBarHeight
 import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsEvents
 import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsTracker
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
+import co.onestep.kmp.uikit.features.recordFlow.configurations.collectsPostRecordingNote
 import co.onestep.kmp.uikit.features.recordFlow.configurations.defaultInstructions
 import co.onestep.kmp.uikit.features.recordFlow.destinations.CustomTagsDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.HallwayDistanceDestination
@@ -657,6 +658,10 @@ internal fun RecordFlowNavGraph(
                     onDismiss,
                 )
             },
+            // The host's post-tagging decision. A blinded (research) workspace passes
+            // `OSTPostTaggingData.None`, which drops the note field: the clinician there can never
+            // see the note again, so the field was a dead end (OS-16914).
+            showNote = { config.collectsPostRecordingNote() },
         )
 
         // Generic Recording notes (OS-16861) — shown once the raw recording is banked. Continue is
