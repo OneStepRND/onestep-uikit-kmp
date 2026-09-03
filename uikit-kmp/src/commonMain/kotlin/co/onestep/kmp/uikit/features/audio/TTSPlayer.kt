@@ -7,7 +7,8 @@ package co.onestep.kmp.uikit.features.audio
 internal interface TTSPlayer {
     fun enable(enable: Boolean)
 
-    fun speak(text: String)
+    /** Speaks [text] with a voice for [languageTag] (BCP-47). See `PlatformTTSPlayer.speak`. */
+    fun speak(text: String, languageTag: String)
 
     fun stopCurrentSpeech()
 

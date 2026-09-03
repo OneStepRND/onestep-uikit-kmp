@@ -51,6 +51,12 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.roundToInt
 
+/**
+ * Fraction of the track the thumb must reach for the slide to count as complete.
+ * Slightly below 1f so a full drag that stops a pixel short still commits.
+ */
+private const val COMPLETION_FRACTION = 0.98f
+
 @Composable
 fun SlideToStopButton(
     modifier: Modifier = Modifier,
@@ -131,7 +137,10 @@ fun SlideToStopButton(
                         onDragStarted = { isDragging = true },
                         onDragStopped = {
                             isDragging = false
-                            if (thumbOffsetAnim.value > maxOffsetPx / 2f) {
+                            // Only a full slide commits: a partial drag must snap back (OS-17071).
+                            // The maxOffsetPx guard stops a zero-width track (first frame, before
+                            // BoxWithConstraints has measured) auto-committing at offset 0.
+                            if (maxOffsetPx > 0f && thumbOffsetAnim.value >= maxOffsetPx * COMPLETION_FRACTION) {
                                 scope.launch {
                                     thumbOffsetAnim.animateTo(
                                         targetValue = maxOffsetPx,

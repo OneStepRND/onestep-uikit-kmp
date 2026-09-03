@@ -119,12 +119,13 @@ internal class RecordFlowAnalyticsTracker(
     }
 
     /**
-     * [selectionIndex] is the tapped option's index (0=1min, 1=3min, 2=5min,
-     * 3=long walk) — the value the selection screen reports, NOT a seconds value.
+     * [selectionIndex] is the tapped option's index — the value the selection screen reports,
+     * NOT a seconds value. It indexes a different option set per activity: the walk tests use
+     * 0=1min, 1=3min, 2=5min, 3=long walk; Static Balance uses 0=10s, 1=20s, 2=30s.
      */
     fun trackWalkDurationSelected(activity: OSTActivityType, selectionIndex: Int) {
         track(RecordFlowAnalyticsEvents.CLICKED_WALK_DURATION_SELECTED, activity) {
-            put(AnalyticsProps.WALK_DURATION, walkDurationLabel(selectionIndex))
+            put(AnalyticsProps.WALK_DURATION, walkDurationLabel(activity, selectionIndex))
         }
     }
 
@@ -423,11 +424,15 @@ internal class RecordFlowAnalyticsTracker(
 
     // Spec-canonical labels (independent of the localized UI strings).
 
-    private fun walkDurationLabel(selectionIndex: Int): String =
-        when (WalkDuration.values.getOrNull(selectionIndex)) {
+    private fun walkDurationLabel(
+        activity: OSTActivityType,
+        selectionIndex: Int,
+    ): String =
+        when (val option = WalkDuration.optionsFor(activity).getOrNull(selectionIndex)) {
             is WalkDuration.OneMinute -> "1 minute"
             is WalkDuration.ThreeMinute -> "3 minutes"
             is WalkDuration.FiveMinute -> "5 minutes"
+            is WalkDuration.Seconds -> "${option.duration} seconds"
             is WalkDuration.Unrestricted, null -> "Long walk (up to 30 min)"
         }
 

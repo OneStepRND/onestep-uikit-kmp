@@ -38,6 +38,12 @@
     <string name="one_minute">1 минута</string>
     <string name="three_minutes">3 минуты</string>
     <string name="five_minutes">5 минут</string>
+    <!-- Static Balance duration selection (OS-17175): the same duration screen the walk
+         tests use, with a per-condition option set. -->
+    <string name="choose_the_duration_for_this_measurement">Выберите продолжительность этого измерения</string>
+    <string name="ten_seconds">10 секунд</string>
+    <string name="twenty_seconds">20 секунд</string>
+    <string name="thirty_seconds">30 секунд</string>
     <string name="generating_report">Создание отчета</string>
     <string name="preparing_results">Подготовка результатов</string>
     <string name="try_again">Попробовать снова</string>
@@ -383,4 +389,10 @@
     <string name="month_abbrev_oct">окт</string>
     <string name="month_abbrev_nov">ноя</string>
     <string name="month_abbrev_dec">дек</string>
+    <string name="generic_recording">Общая запись</string>
+    <string name="generic_recording_duration">Длительность</string>
+    <string name="generic_recording_note_hint">Нажмите, чтобы добавить наблюдения об этом измерении…</string>
+    <string name="generic_recording_uploading">Загрузка</string>
+    <string name="generic_recording_uploading_in_progress">Загрузка в процессе</string>
+    <string name="generic_recording_too_short_error_description">Записи короче 10 секунд не сохраняются. Попробуйте снова и запишите не менее 10 секунд.</string>
 </resources>

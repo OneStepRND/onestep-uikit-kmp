@@ -49,13 +49,16 @@ actual class PlatformTTSPlayer {
         synthesizer.delegate = delegate
     }
 
-    actual fun speak(text: String) {
+    actual fun speak(text: String, languageTag: String) {
         if (synthesizer.isSpeaking()) {
             @Suppress("UNCHECKED_CAST")
             synthesizer.stopSpeakingAtBoundary(0 as platform.AVFAudio.AVSpeechBoundary)
         }
         val utterance = AVSpeechUtterance.speechUtteranceWithString(text)
-        utterance.voice = AVSpeechSynthesisVoice.voiceWithLanguage("en-US")
+        // voiceWithLanguage returns null when the device has no voice for the tag; leaving
+        // `voice` null makes AVSpeechSynthesizer pick the system default rather than going
+        // silent, which is the better failure than reading Russian text in an English voice.
+        utterance.voice = AVSpeechSynthesisVoice.voiceWithLanguage(languageTag)
         utterance.rate = 0.5f
         synthesizer.speakUtterance(utterance)
     }

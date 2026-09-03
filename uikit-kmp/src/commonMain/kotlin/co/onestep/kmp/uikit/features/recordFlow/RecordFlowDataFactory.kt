@@ -34,7 +34,11 @@ import co.onestep.kmp.uikit_kmp.generated.resources.generic_recording_too_short_
 import co.onestep.kmp.uikit_kmp.generated.resources.allow
 import co.onestep.kmp.uikit_kmp.generated.resources.continue_camel_case
 import co.onestep.kmp.uikit_kmp.generated.resources.finish
+import co.onestep.kmp.uikit_kmp.generated.resources.choose_the_duration_for_this_measurement
 import co.onestep.kmp.uikit_kmp.generated.resources.five_minutes
+import co.onestep.kmp.uikit_kmp.generated.resources.ten_seconds
+import co.onestep.kmp.uikit_kmp.generated.resources.thirty_seconds
+import co.onestep.kmp.uikit_kmp.generated.resources.twenty_seconds
 import co.onestep.kmp.uikit_kmp.generated.resources.for_a_successful_analysis_you_need_to_walk_in_a_straight_line
 import co.onestep.kmp.uikit_kmp.generated.resources.go_to_settings
 import co.onestep.kmp.uikit_kmp.generated.resources.go_to_the_device_settings_and_then_toggle_on_microphone
@@ -300,60 +304,82 @@ internal object RecordFlowDataFactory {
         }
     }
 
+    /**
+     * Data for the shared duration-selection screen.
+     *
+     * The walk tests offer 1 / 3 / 5 minutes plus an unrestricted "long walk"; the Static
+     * Balance Test offers 10 / 20 / 30 seconds per condition (OS-17175). The option order here
+     * must match `WalkDuration.optionsFor` for the same [activityType] — the screen reports the
+     * tapped *index*, and the recorder resolves it against that list.
+     */
     @Composable
     fun walkDurationSelectionScreenData(
+        activityType: OSTActivityType,
         recordingLimit: String,
         onSelection: (Int) -> Unit,
     ) = UiKitScreenData(
         title = TextData(
-            stringResource(Res.string.how_long_do_you_want_to_walk_today),
+            stringResource(durationSelectionTitle(activityType)),
             28.sp,
             FontWeight.Bold,
             textAlign = TextAlign.Start,
         ),
         selectionList = SelectionListData(
+            durationSelectionItems(activityType, recordingLimit),
+        ) {
+            onSelection(it.first())
+        },
+    )
+
+    private fun durationSelectionTitle(
+        activityType: OSTActivityType,
+    ): org.jetbrains.compose.resources.StringResource =
+        when (activityType) {
+            OSTActivityType.STATIC_BALANCE -> Res.string.choose_the_duration_for_this_measurement
+            else -> Res.string.how_long_do_you_want_to_walk_today
+        }
+
+    @Composable
+    private fun durationSelectionItems(
+        activityType: OSTActivityType,
+        recordingLimit: String,
+    ): List<SelectionItemData> = when (activityType) {
+        OSTActivityType.STATIC_BALANCE ->
             listOf(
-                SelectionItemData(
-                    itemHeight = 80.dp,
-                    text = TextData(
-                        stringResource(Res.string.one_minute),
-                        24.sp,
-                        FontWeight.W400,
-                    ),
+                Res.string.ten_seconds,
+                Res.string.twenty_seconds,
+                Res.string.thirty_seconds,
+            ).map { durationSelectionItem(TextData(stringResource(it), 24.sp, FontWeight.W400)) }
+
+        else ->
+            listOf(
+                durationSelectionItem(
+                    TextData(stringResource(Res.string.one_minute), 24.sp, FontWeight.W400),
                 ),
-                SelectionItemData(
-                    itemHeight = 80.dp,
-                    text = TextData(
-                        stringResource(Res.string.three_minutes),
-                        24.sp,
-                        FontWeight.W400,
-                    ),
+                durationSelectionItem(
+                    TextData(stringResource(Res.string.three_minutes), 24.sp, FontWeight.W400),
                 ),
-                SelectionItemData(
-                    itemHeight = 80.dp,
-                    text = TextData(
-                        stringResource(Res.string.five_minutes),
-                        24.sp,
-                        FontWeight.W400,
-                    ),
+                durationSelectionItem(
+                    TextData(stringResource(Res.string.five_minutes), 24.sp, FontWeight.W400),
                 ),
-                SelectionItemData(
-                    itemHeight = 80.dp,
-                    text = TextData(
-                        stringResource(Res.string.long_walk),
-                        24.sp,
-                        FontWeight.W400,
-                    ),
+                durationSelectionItem(
+                    TextData(stringResource(Res.string.long_walk), 24.sp, FontWeight.W400),
                     description = TextData(
                         stringResource(Res.string.long_walk_description, recordingLimit),
                         16.sp,
                         FontWeight.Normal,
                     ),
                 ),
-            ),
-        ) {
-            onSelection(it.first())
-        },
+            )
+    }
+
+    private fun durationSelectionItem(
+        text: TextData,
+        description: TextData? = null,
+    ) = SelectionItemData(
+        itemHeight = 80.dp,
+        text = text,
+        description = description,
     )
 
 /** Builds a standard analysis-error screen. Used by the 16 error cases that share the same

@@ -40,6 +40,12 @@
     <string name="one_minute">1 minute</string>
     <string name="three_minutes">3 minutes</string>
     <string name="five_minutes">5 minutes</string>
+    <!-- Static Balance duration selection (OS-17175): the same duration screen the walk
+         tests use, with a per-condition option set. -->
+    <string name="choose_the_duration_for_this_measurement">Choose the duration for this measurement</string>
+    <string name="ten_seconds">10 seconds</string>
+    <string name="twenty_seconds">20 seconds</string>
+    <string name="thirty_seconds">30 seconds</string>
     <string name="generating_report">Generating report</string>
     <string name="preparing_results">Preparing results</string>
     <string name="try_again">Try again</string>
@@ -403,4 +409,5 @@
     <string name="generic_recording_uploading">Uploading</string>
     <string name="generic_recording_uploading_in_progress">Upload in progress</string>
     <string name="generic_recording_too_short_error_description">Recordings shorter than 10 seconds are not saved. Try again and record for at least 10 seconds.</string>
+    <string name="list_separator">", "</string>
 </resources>

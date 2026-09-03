@@ -152,6 +152,25 @@ internal class MotionRecorderViewModel(
 
     val language: String = resourceProvider.getLocaleLanguageTag().substringBefore("-")
 
+    /**
+     * BCP-47 tag for the voice spoken text is synthesized with (OS-17028).
+     *
+     * Covers the languages the flow is localized in; anything else resolves to the English
+     * resources, so it stays "en-US". Both engines used to hardcode US English, so Russian or
+     * Hebrew text was read by an English voice on any device whose engine did not silently fall
+     * back on the text's script.
+     */
+    private val speechLanguageTag: String
+        get() = when (language) {
+            // The ro and uk resource folders hold Russian (project convention), so the text
+            // being spoken is Russian regardless of which of the three the device is set to.
+            Languages.RUSSIAN, Languages.ROMANIAN, Languages.UKRAINIAN -> Languages.RUSSIAN
+            // "iw" is the legacy tag for Hebrew; pass the effective one through so a device that
+            // reports either gets the voice it actually has.
+            Languages.HEBREW, Languages.HEBREW_LEGACY -> resourceProvider.getLocaleLanguageTag()
+            else -> "en-US"
+        }
+
     private var timeout = 60
 
     /**
@@ -406,7 +425,7 @@ internal class MotionRecorderViewModel(
                     // earlier recording's callback — a retry, or a Static Balance condition —
                     // starting this one behind the clinician's back.
                     ttsPlayer.setOnDoneListener(null)
-                    ttsPlayer.speak(tts ?: instructions)
+                    ttsPlayer.speak(tts ?: instructions, speechLanguageTag)
                 }
 
                 is OSTPrepareData.Duration -> {
@@ -719,8 +738,21 @@ internal class MotionRecorderViewModel(
         }
     }
 
+    /**
+     * Applies the duration-selection screen's tapped option [index].
+     *
+     * The choice is written back into [configuration], not just into [timeout]: [initState]
+     * re-applies `configuration.duration` when the recording screen composes, so a selection
+     * kept only in [timeout] would be silently reset to the configured default (Static Balance
+     * ships one — 30s — where the walk tests do not).
+     *
+     * An index outside the option set for this activity leaves the configured default in place.
+     */
     fun setWalkDuration(index: Int) {
-        changeDuration(WalkDuration.durationByIndex(index).duration)
+        val selected =
+            WalkDuration.durationByIndex(index, configuration.value.activityType) ?: return
+        configuration.value = configuration.value.copy(duration = selected.duration)
+        changeDuration(selected.duration)
     }
 
     /**
@@ -1028,14 +1060,14 @@ internal class MotionRecorderViewModel(
                         val delayTime =
                             instruction.startTimeMillis - (currentTimeMillis() - startTime)
                         if (delayTime > 0) delay(delayTime.milliseconds) // Wait until the correct timestamp
-                        ttsPlayer.speak(instruction.text)
+                        ttsPlayer.speak(instruction.text, speechLanguageTag)
                         instruction.marker?.let {
                             recorderBridge.addMarker(it)
                         }
                     }
                 } catch (e: CancellationException) {
                     e.printStackTrace()
-                    ttsPlayer.speak(resourceProvider.getString(Res.string.measurement_stopped))
+                    ttsPlayer.speak(resourceProvider.getString(Res.string.measurement_stopped), speechLanguageTag)
                 }
             }
     }

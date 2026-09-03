@@ -15,8 +15,8 @@ internal class PlatformTTSPlayerAdapter(
         enabled = enable
     }
 
-    override fun speak(text: String) {
-        if (enabled) platform.speak(text)
+    override fun speak(text: String, languageTag: String) {
+        if (enabled) platform.speak(text, languageTag)
     }
 
     override fun stopCurrentSpeech() {

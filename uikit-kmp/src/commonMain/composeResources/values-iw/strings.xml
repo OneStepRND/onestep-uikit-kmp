@@ -40,6 +40,12 @@
     <string name="one_minute">דקה אחת</string>
     <string name="three_minutes">3 דקות</string>
     <string name="five_minutes">5 דקות</string>
+    <!-- Static Balance duration selection (OS-17175): the same duration screen the walk
+         tests use, with a per-condition option set. -->
+    <string name="choose_the_duration_for_this_measurement">בחר את משך הזמן של המדידה</string>
+    <string name="ten_seconds">10 שניות</string>
+    <string name="twenty_seconds">20 שניות</string>
+    <string name="thirty_seconds">30 שניות</string>
     <string name="generating_report">יוצר דוח</string>
     <string name="preparing_results">מכין תוצאות</string>
     <string name="try_again">נסה שוב</string>
@@ -400,4 +406,10 @@
     <string name="month_abbrev_oct">אוק</string>
     <string name="month_abbrev_nov">נוב</string>
     <string name="month_abbrev_dec">דצמ</string>
+    <string name="generic_recording">מקליט כללי</string>
+    <string name="generic_recording_duration">משך</string>
+    <string name="generic_recording_note_hint">הקישו להוספת הערות על המדידה…</string>
+    <string name="generic_recording_uploading">מעלה</string>
+    <string name="generic_recording_uploading_in_progress">העלאה בתהליך</string>
+    <string name="generic_recording_too_short_error_description">הקלטות קצרות מ-10 שניות אינן נשמרות. נסו שוב והקליטו 10 שניות לפחות.</string>
 </resources>

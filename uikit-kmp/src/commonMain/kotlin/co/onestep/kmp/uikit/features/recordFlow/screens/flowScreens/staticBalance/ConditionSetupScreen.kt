@@ -87,6 +87,9 @@ internal fun ConditionSetupScreen(
                         id = category.key,
                         title = category.displayName,
                         required = category.required,
+                        // Static Balance is single-value-per-category (OSTBalanceCondition
+                        // holds one Selection per key), so every section stays single-select.
+                        allowsMultiSelect = false,
                         options = category.options.map {
                             SelectableOption(it.displayName, BalanceIcons.iconFor(it.code))
                         },
@@ -104,9 +107,10 @@ internal fun ConditionSetupScreen(
         continueButtonTestTag = OSTTestTags.StaticBalance.CONDITION_SETUP_CONTINUE_BUTTON,
         clearButtonTestTag = OSTTestTags.StaticBalance.CONDITION_SETUP_CLEAR_ALL_BUTTON,
         onContinue = { selections, note ->
-            // selections maps category.key -> chosen option index, for selected sections only.
+            // selections maps category.key -> chosen option indices, for selected sections
+            // only. Every section here is single-select, so each list holds exactly one index.
             val chosen = balance.categories.mapNotNull { category ->
-                val index = selections[category.key] ?: return@mapNotNull null
+                val index = selections[category.key]?.firstOrNull() ?: return@mapNotNull null
                 val option = category.options.getOrNull(index) ?: return@mapNotNull null
                 OSTBalanceCondition.Selection(
                     categoryKey = category.key,

@@ -20,7 +20,8 @@ internal class TTSPlayerImpl(
         tts =
             TextToSpeech(context) { status ->
                 if (status == TextToSpeech.SUCCESS) {
-                    tts?.language = Locale.US
+                    // No language is set here: the voice is chosen per utterance in [speak], so a
+                    // non-English measurement is not stuck with whatever the engine started on.
                     tts?.setOnUtteranceProgressListener(
                         object : UtteranceProgressListener() {
                             override fun onStart(utteranceId: String) {}
@@ -51,8 +52,10 @@ internal class TTSPlayerImpl(
         isEnabled = enable
     }
 
-    override fun speak(text: String) {
+    override fun speak(text: String, languageTag: String) {
         if (!isEnabled || tts == null) return
+
+        tts?.language = Locale.forLanguageTag(languageTag)
 
         val segments = text.split(Regex("\\n\\s*\\n"))
         segments.forEachIndexed { index, segment ->

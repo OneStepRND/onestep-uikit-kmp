@@ -192,8 +192,14 @@ internal fun buildPreRecordDestinations(
     // Static Balance (OS-15960): each condition begins on the Condition Setup screen,
     // then flows StartRecord -> Recording -> "Recording saved". "Record another test"
     // loops back to the start of this sequence (Condition Setup).
-    if (config.activityType == OSTActivityType.STATIC_BALANCE) {
+    val isStaticBalance = config.activityType == OSTActivityType.STATIC_BALANCE
+    if (isStaticBalance) {
         add(ConditionSetupDestination)
+        // The length is chosen per condition, right after the condition is confirmed
+        // (OS-17175). Unconditional: `staticBalance()` carries a non-null default duration,
+        // so the generic gate below would never fire, and the session loop must re-ask on
+        // every condition.
+        add(SelectWalkDurationDestination)
     }
 
     // a) Hallway distance for 6min/2min walks
@@ -202,7 +208,7 @@ internal fun buildPreRecordDestinations(
     }
 
     // b) Walk duration picker if duration isn't set
-    if (config.duration == null || config.duration == 0) {
+    if (!isStaticBalance && (config.duration == null || config.duration == 0)) {
         add(SelectWalkDurationDestination)
     }
 
@@ -504,11 +510,27 @@ internal fun RecordFlowNavGraph(
 
         // Walk duration selection
         selectWalkDurationScreen(
+            activityType = activity,
             recordingLimit = viewModel.recordingLimit,
             onPrimaryAction = { index ->
-                // Clicked: walk_duration_selected — the tapped option's index (0=1min …).
+                // Clicked: walk_duration_selected — the tapped option's index. Which option set
+                // it indexes depends on the activity (walk: 0=1min …; Static Balance: 0=10s …).
                 recordFlowTracker?.trackWalkDurationSelected(activity, index)
                 viewModel.setWalkDuration(index)
+                // Static Balance confirms the condition one screen earlier, but the PRD's
+                // static_balance_condition_confirmed carries the recording length — only known
+                // here (OS-17175). Fired after setWalkDuration so the `duration` prop is the
+                // clinician's choice, not the configured default. It emits the full condition
+                // config (canonical category codes) + duration + condition_number +
+                // session_uuid; the optional free-text note is NOT sent (HIPAA).
+                viewModel.currentBalanceCondition?.let { condition ->
+                    recordFlowTracker?.trackStaticBalanceConditionConfirmed(
+                        condition = condition,
+                        durationSeconds = viewModel.configuration.value.duration ?: 0,
+                        conditionNumber = viewModel.balanceConditionCount() + 1,
+                        sessionUuid = viewModel.sessionUuid,
+                    )
+                }
                 navigateToNext(SelectWalkDurationDestination)
             },
         )
@@ -612,15 +634,8 @@ internal fun RecordFlowNavGraph(
                 )
             },
             onContinue = { condition ->
-                // static_balance_condition_confirmed — emits the full condition config
-                // (canonical category codes) + duration + condition_number + session_uuid.
-                // The optional free-text note is NOT sent here (HIPAA).
-                recordFlowTracker?.trackStaticBalanceConditionConfirmed(
-                    condition = condition,
-                    durationSeconds = config.duration ?: 0,
-                    conditionNumber = viewModel.balanceConditionCount() + 1,
-                    sessionUuid = viewModel.sessionUuid,
-                )
+                // static_balance_condition_confirmed is fired from the duration screen that
+                // follows, where the chosen recording length is known (OS-17175).
                 viewModel.setBalanceCondition(condition)
                 navigateToNext(ConditionSetupDestination)
             },

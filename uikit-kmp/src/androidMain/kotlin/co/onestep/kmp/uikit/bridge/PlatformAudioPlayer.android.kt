@@ -15,7 +15,7 @@ actual class PlatformAudioPlayer(context: Context? = null) {
 actual class PlatformTTSPlayer(context: Context? = null) {
     private val delegate: TTSPlayerImpl? = context?.let { TTSPlayerImpl(it) }
 
-    actual fun speak(text: String) { delegate?.speak(text) }
+    actual fun speak(text: String, languageTag: String) { delegate?.speak(text, languageTag) }
     actual fun stop() { delegate?.stopCurrentSpeech() }
     actual fun isSpeaking(): Boolean = delegate?.isSpeaking() ?: false
     actual fun setOnDoneListener(callback: (() -> Unit)?) { delegate?.setOnDoneListener(callback) }
