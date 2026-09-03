@@ -148,17 +148,32 @@ internal data object EmptyAnalysisDestination : UIktDestination
 /**
  * The destination the flow records from — the one every "start over" path returns to.
  *
- * [StartRecordDestination] for every activity but Generic Recording, whose Start screen is a big
- * "Start" button beside a "View instructions" link. Neither can be honoured there: OneStep does not
- * know what is being recorded, so the configuration carries no instructions
- * (`OSTRecordingConfiguration.genericRecording()`), and the screen's own "Get ready" countdown makes
- * the extra tap a step that asks for nothing. It records from [RecordingDestination] instead.
+ * [StartRecordDestination] for most activities: a big "Start" button beside a "View instructions"
+ * link. **Two activities skip it and record from [RecordingDestination]**, each because that screen
+ * would be a tap that asks for nothing:
+ *
+ * - **Generic Recording** — OneStep does not know what is being recorded, so the configuration
+ *   carries no instructions (`OSTRecordingConfiguration.genericRecording()`), and the recording
+ *   screen's own "Get ready" countdown already gives the clinician a beat before it starts.
+ * - **Dual Task** — its Get Ready screen *is* a start screen. It shows the whole spoken protocol
+ *   (`MotionRecorderViewModel.getReadyDualTaskState`, fed the TTS utterance when the host sets
+ *   `OSTPrepareData.Tts(showInstructions = true)`) and waits on its own "Start now" button, so a
+ *   Start screen in front of it asks the clinician to confirm twice — once before the instructions
+ *   are read out, and again after. The instructions link is no loss either: this is the one
+ *   activity whose full instructions are read aloud and printed on the next screen.
+ *
+ * ⚠️ Abandoning a recording behaves differently for these two: there is no Start screen to step
+ * back to, and stepping "back" to [RecordingDestination] would restart the recording just
+ * abandoned, so the flow exits instead. That branch keys off this function's result rather than
+ * naming activities, so it already covers both.
  */
 internal fun recordEntryDestinationFor(activityType: OSTActivityType): UIktDestination =
-    if (activityType == OSTActivityType.GENERIC_RECORDING) {
-        RecordingDestination
-    } else {
-        StartRecordDestination
+    when (activityType) {
+        OSTActivityType.GENERIC_RECORDING,
+        OSTActivityType.DUAL_TASK_WALK_SUBTRACT,
+        -> RecordingDestination
+
+        else -> StartRecordDestination
     }
 
 /**

@@ -395,11 +395,18 @@ internal class MotionRecorderViewModel(
                     if (prepareScreenData.showInstructions && prepareScreenData.ttsSpeechText.isNotEmpty()) {
                         instructions = prepareScreenData.ttsSpeechText
                     }
+                    // Speak, then WAIT. The recording used to start on the speech-done callback,
+                    // which meant a patient who was still getting into position — or a clinician
+                    // who wanted to repeat the starting number — was already being recorded. The
+                    // Get Ready screen's own "Start now" button is the only way forward now (see
+                    // [getReadyDualTaskState]); every Get Ready screen reachable with a TTS
+                    // prepare has one, so nothing can strand here.
+                    //
+                    // Clearing any previous listener is not housekeeping: it is what stops an
+                    // earlier recording's callback — a retry, or a Static Balance condition —
+                    // starting this one behind the clinician's back.
+                    ttsPlayer.setOnDoneListener(null)
                     ttsPlayer.speak(tts ?: instructions)
-                    ttsPlayer.setOnDoneListener {
-                        updateState(RecordingScreenData.RecordScreenStage.RECORDING)
-                        ttsPlayer.setOnDoneListener(null)
-                    }
                 }
 
                 is OSTPrepareData.Duration -> {
@@ -476,6 +483,20 @@ internal class MotionRecorderViewModel(
         recodingScreenState.value = analysingState()
     }
 
+    /**
+     * Dual task's Get Ready screen: the protocol in full, and a button.
+     *
+     * It carries no timer because there is nothing to count — the screen holds until the clinician
+     * taps, rather than starting itself when the speech ends. That button is why this activity has
+     * no [StartRecordDestination] in front of it (see `recordEntryDestinationFor`): the two would
+     * ask for the same confirmation either side of the instructions.
+     *
+     * The click reports `start_measurement`, not `start_measurement_now`. The latter means "the
+     * user skipped the remaining countdown" and carries the seconds left on it; here there is no
+     * countdown to skip and the tap is the *only* way to begin, so it is the start-screen event
+     * this button inherited — which also keeps the dual-task funnel comparable to every other
+     * activity's after the Start screen was removed.
+     */
     private fun getReadyDualTaskState(instructions: String) = RecordingScreenData(
         recordScreenStage = RecordingScreenData.RecordScreenStage.GET_READY,
         // Nunito Sans ships only regular/medium/bold real weights; W600 has no matching
@@ -483,6 +504,17 @@ internal class MotionRecorderViewModel(
         // use FontWeight.Bold to actually render bold on iOS. (Figma: title/subtitle Bold.)
         title = TextData(resourceProvider.getString(Res.string.get_ready), 60.sp, FontWeight.Bold),
         instructions = TextData(instructions, 28.sp, FontWeight.Bold),
+        bottomButton = SecondaryButtonData(
+            text = TextData(resourceProvider.getString(Res.string.start_now), 24.sp, FontWeight.Bold),
+            iconData = IconData(icon = Res.drawable.ic_play_button, tintColor = Color.White),
+            action = {
+                // Clicked: start_measurement — this button is the flow's start control.
+                analyticsTracker?.trackStartMeasurementClicked(configuration.value.activityType)
+                // Silence a prompt still being read; the clinician has decided to begin.
+                ttsPlayer.stopCurrentSpeech()
+                updateState(RecordingScreenData.RecordScreenStage.RECORDING)
+            },
+        ),
     )
 
     /** Resolves the Get Ready screen's instruction text based on activity type and balance condition. */

@@ -4,6 +4,7 @@ import co.onestep.kmp.uikit.bridge.PermissionStatus
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.recordFlow.destinations.CustomTagsDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.SoundInstructionsDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.SoundPermissionDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.StartRecordDestination
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingQuestionData
 import co.onestep.kmp.uikit.models.OSTActivityType
@@ -61,11 +62,60 @@ class PreRecordDestinationsTest {
     }
 
     @Test
+    fun dualTaskRecordsWithNoStartScreenInFront() {
+        // Dual task's Get Ready screen IS a start screen: it prints the whole spoken protocol and
+        // waits on its own "Start now" button. A Start screen in front of it asks the clinician to
+        // confirm twice — once before the instructions are read out, and again after.
+        val destinations = destinationsFor(
+            OSTRecordingConfiguration.dualTaskSubtract(ttsSpeechText = "count back by 3 from 742"),
+        )
+
+        assertSame(
+            RecordingDestination,
+            destinations.last(),
+            "Dual task must record from the recording screen, not a Start screen",
+        )
+        assertFalse(
+            StartRecordDestination in destinations,
+            "Dual task must not be preceded by the Start screen",
+        )
+    }
+
+    @Test
+    fun dualTaskStillReachesTheRecordingBehindItsOwnScreens() {
+        // Dual task is the activity with the MOST pre-recording screens (its subtraction questions,
+        // and the microphone permission only it asks for), and each advances to its successor in
+        // this list — so dropping the Start screen must leave the recording as that successor, or
+        // the flow dead-ends on whichever screen came last.
+        val destinations = destinationsFor(
+            OSTRecordingConfiguration.dualTaskSubtract(
+                ttsSpeechText = "count back by 3 from 742",
+            ).copy(
+                preRecordingQuestions = listOf(
+                    OSTRecordingQuestionData(
+                        title = "What is the environment?",
+                        tagsValues = listOf("Indoor", "Outdoor"),
+                    ),
+                ),
+            ),
+            micStatus = PermissionStatus.NOT_DETERMINED,
+        )
+
+        assertEquals(
+            listOf(CustomTagsDestination, SoundPermissionDestination, RecordingDestination),
+            destinations,
+        )
+    }
+
+    @Test
     fun everyOtherActivityStillEndsOnTheStartScreen() {
         // The Start screen is where an ordinary measurement's instructions are read, so removing it
-        // for Generic Recording must not remove it for anything else.
+        // for Generic Recording and dual task must not remove it for anything else.
         OSTActivityType.entries
-            .filter { it != OSTActivityType.GENERIC_RECORDING }
+            .filter {
+                it != OSTActivityType.GENERIC_RECORDING &&
+                    it != OSTActivityType.DUAL_TASK_WALK_SUBTRACT
+            }
             .forEach { activityType ->
                 val destinations = destinationsFor(timedConfig(activityType))
 
