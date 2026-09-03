@@ -35,6 +35,9 @@ class AndroidMotionDataBridge private constructor(
     /**
      * Clinician-mode path: bound to a patient-scoped [OSTMotionDataService] already resolved inside
      * a `OneStep.withPatient(patientId) { … }` block.
+     *
+     * Prefer [deferred] where the caller can hand over a provider instead: resolving the service
+     * costs two awaited network calls, and this constructor forces the caller to have paid them.
      */
     constructor(service: OSTMotionDataService) : this(serviceProvider = { service })
 
@@ -73,5 +76,27 @@ class AndroidMotionDataBridge private constructor(
     override fun discreteScore(param: OSTParamName, value: Float): OSTDiscreteColor? {
         val coreName = param.toCore() ?: return null
         return service.discreteScore(coreName, value)?.toKmp()
+    }
+
+    companion object {
+        /**
+         * Clinician-mode path with the resolution **deferred to first use** — the counterpart of the
+         * `OneStep` constructor above, for a caller that has a patient scope but no service yet.
+         *
+         * [serviceProvider] is invoked at most once, on the first bridge method call, and must
+         * resolve a *patient-scoped* service — capture the `OSTInsights` obtained inside
+         * `OneStep.withPatient(patientId) { … }` rather than re-entering the scope, so the service
+         * cannot end up bound to a different patient than the bundle it belongs to.
+         *
+         * Why this exists: resolving an [OSTMotionDataService] runs
+         * `MotionDataServiceImpl.initialize()`, which fires the norms and parameter-metadata
+         * requests and awaits both — ~670ms against production from an emulator, measured
+         * 2026-09-03. It is also per-resolve, not once per process: each `withPatient` scope vends a
+         * fresh service whose `isInitialized` starts false. A caller that resolves eagerly pays that
+         * on its own thread, so the recording flow — which never reads this bridge — was paying two
+         * HTTP round trips on the main thread before its first screen could compose.
+         */
+        fun deferred(serviceProvider: () -> OSTMotionDataService): AndroidMotionDataBridge =
+            AndroidMotionDataBridge(serviceProvider)
     }
 }

@@ -33,14 +33,29 @@ class AndroidPatientScopedBridgesFactory : PatientScopedBridgesFactory {
         lateinit var bridges: PatientScopedBridges
         OneStep.withPatient(OSTPatientId.fromString(patientId)) {
             val insights = getInsights()
-            val motionDataService = runBlocking {
-                insights.getMotionDataService()
-                    .getOrThrow { IllegalStateException("MotionDataService unavailable: ${it.message}") }
-            }
             bridges = PatientScopedBridges(
                 recorderBridge = AndroidRecorderBridge(motionLab = getMotionLab()),
                 insightsBridge = AndroidInsightsBridge(insights = insights),
-                motionDataBridge = AndroidMotionDataBridge(service = motionDataService),
+                // Deferred, NOT resolved here: `getMotionDataService()` awaits the norms and
+                // parameter-metadata requests, so resolving it in `create` put two HTTP round trips
+                // on the caller's thread — and `create` is called from composition, on the main
+                // thread. `OSTRecordingFlow` reads only `recorderBridge`, so it was paying ~670ms
+                // of network it never uses before its first screen could appear (measured on a
+                // Pixel 10 Pro emulator against production, 2026-09-03: 667ms of a 716ms frame).
+                // The summary flow, which does read this bridge, resolves its own bundle and now
+                // pays the cost where it is actually needed.
+                //
+                // `insights` is the patient-scoped product resolved above and is captured rather
+                // than re-derived, so the deferred service is bound to this bundle's patient even
+                // though the scope block has long since returned. `runBlocking` survives because
+                // `MotionDataBridge`'s methods are not suspend; it now runs on whichever thread
+                // first reads the bridge instead of on every caller of `create`.
+                motionDataBridge = AndroidMotionDataBridge.deferred {
+                    runBlocking {
+                        insights.getMotionDataService()
+                            .getOrThrow { IllegalStateException("MotionDataService unavailable: ${it.message}") }
+                    }
+                },
             )
         }
         return bridges

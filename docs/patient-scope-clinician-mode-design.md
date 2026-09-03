@@ -141,6 +141,22 @@ Prerequisite refactor (uikit-only): the Android bridges currently take the `OneS
 handle and call `oneStep.getMotionLab()` lazily; they need constructor overloads taking the
 resolved product (the singleton path keeps today's lazy behavior).
 
+⚠️ **The motion-data bridge takes a provider, not a resolved service, and must stay that way
+(0.6.15).** The snippet above is the design sketch; the shipped factory passes
+`AndroidMotionDataBridge.deferred { … }`. Resolving an `OSTMotionDataService` runs
+`MotionDataServiceImpl.initialize()`, which fires the norms and parameter-metadata requests and
+awaits both — and `create()` is called from composition, on the main thread. Because
+`RecordFlowNavGraph` reads only `recorderBridge`, resolving eagerly cost the recording flow **667ms
+of a 716ms first frame** in HTTP it never uses (Pixel 10 Pro emulator against production,
+2026-09-03); the clinician saw it as a blank screen between tapping Start and the flow appearing.
+It is per-resolve, not once per process: each `withPatient` scope vends a fresh service whose
+`isInitialized` starts false, so a second launch paid it again. The summary flow, which does read
+the bridge, resolves its own bundle and pays the cost where it is needed.
+
+The iOS factory never had this problem and is the precedent: `MotionDataServiceProvider.warmUp()`
+is a `Task.detached`, and its blocking accessor is documented "MUST be called off the main thread".
+`AndroidMotionDataBridgeLazinessTest` pins the Android half.
+
 **No SDK change required.** `OSTPatientId`'s primary constructor is `internal`
 (`OneStepImpl.kt:37`) but the SDK ships a public factory `OSTPatientId.fromString(String)`
 (`OneStepImpl.kt:39`), and `OneStep.withPatient(OSTPatientId, ...)` is already public
