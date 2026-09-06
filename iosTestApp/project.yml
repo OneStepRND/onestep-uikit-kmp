@@ -91,7 +91,7 @@ packages:
   onestep-sdk-ios:
     url: https://github.com/OneStepRND/onestep-sdk-ios
     # Must match the exact version pinned by the OSTUIKitKMP package (uikit-kmp/OSTUIKitKMP/Package.swift).
-    exactVersion: 2.1.5
+    exactVersion: 2.2.2-rc2
   # Local alternative:
   # onestep-sdk-ios:
   #   path: /path/to/onestep-sdk-ios
