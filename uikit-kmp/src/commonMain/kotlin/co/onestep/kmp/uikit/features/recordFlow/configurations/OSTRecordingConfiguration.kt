@@ -68,6 +68,28 @@ data class OSTRecordingConfiguration(
      * not the patient — so a clinician host should pre-fill this value; edits are not persisted.
      */
     val hallwayLengthMeters: Float? = null,
+    /**
+     * Show the "Thank you for completing this measurement" notice
+     * ([co.onestep.kmp.uikit.features.recordFlow.destinations.NoSummaryNoticeDestination]) instead
+     * of dismissing silently, once an analysed measurement is in and no summary is being shown.
+     *
+     * For a **research-partner (blinded) workspace**: the clinician records, the result is
+     * deliberately withheld, and without this the flow simply ends — the app returns to the Measure
+     * screen with nothing said. Legacy shows this screen
+     * (`summary/AlternativeSummaryFragment`), gated on the same three things the flow already
+     * enforces here: an analysed result, no summary, and arriving from the recorder.
+     *
+     * ⚠️ **Explicitly a flag, not inferred from `showSummaryScreen == None`.** Generic Recording
+     * also sets `None`, and there it means *never analysed* rather than *blinded* — thanking a
+     * clinician for a measurement nobody will ever look at is the wrong message, and conflating the
+     * two is exactly the mistake this field exists to prevent. It is the host that knows which case
+     * it is in.
+     *
+     * Ignored where the flow does not reach that exit anyway: Generic Recording (its own notes
+     * screen), Static Balance (its own "Recording saved" screen), and any failed or empty analysis
+     * (the error screens).
+     */
+    val showCompletionNotice: Boolean = false,
 ) {
     companion object {
         fun defaultWalk(

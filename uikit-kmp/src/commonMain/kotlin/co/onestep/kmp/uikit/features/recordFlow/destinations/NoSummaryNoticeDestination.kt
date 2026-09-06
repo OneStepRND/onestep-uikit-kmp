@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.EntryProviderScope
@@ -28,16 +29,25 @@ data object NoSummaryNoticeDestination : UIktDestination
 
 // Preview skipped: requires NavController
 
-fun EntryProviderScope<NavKey>.noSummaryNoticeScreen(onPrimaryAction: () -> Unit) {
+/**
+ * @param topPadding space to leave for the host's toolbar. Defaults to [ToolBarHeight] for the
+ *   summary flow, whose NavDisplay reserves nothing and leaves each screen to inset itself. The
+ *   record flow's NavDisplay already reserves the status bar plus the toolbar for every
+ *   non-collapsed route, so it passes `0.dp` — otherwise this screen pays for the toolbar twice.
+ */
+fun EntryProviderScope<NavKey>.noSummaryNoticeScreen(
+    topPadding: Dp = ToolBarHeight.dp,
+    onPrimaryAction: () -> Unit,
+) {
     entry<NoSummaryNoticeDestination> {
-        NoSummaryNoticeContent(onPrimaryAction = onPrimaryAction)
+        NoSummaryNoticeContent(topPadding = topPadding, onPrimaryAction = onPrimaryAction)
     }
 }
 
 @Composable
-private fun NoSummaryNoticeContent(onPrimaryAction: () -> Unit) {
+private fun NoSummaryNoticeContent(topPadding: Dp, onPrimaryAction: () -> Unit) {
     UiKitScreen(
-        modifier = Modifier.padding(top = ToolBarHeight.dp),
+        modifier = Modifier.padding(top = topPadding),
         screenTag = OSTTestTags.RecordFlow.NO_SUMMARY_NOTICE_SCREEN,
         onBackPress = onPrimaryAction,
         screenData = UiKitScreenData(
