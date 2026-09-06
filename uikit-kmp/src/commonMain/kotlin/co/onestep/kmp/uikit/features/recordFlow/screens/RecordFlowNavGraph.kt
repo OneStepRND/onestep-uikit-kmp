@@ -149,8 +149,8 @@ internal data object EmptyAnalysisDestination : UIktDestination
  * The destination the flow records from — the one every "start over" path returns to.
  *
  * [StartRecordDestination] for most activities: a big "Start" button beside a "View instructions"
- * link. **Two activities skip it and record from [RecordingDestination]**, each because that screen
- * would be a tap that asks for nothing:
+ * link. **Three activities skip it and record from [RecordingDestination]**, each because that
+ * screen would be a tap that asks for nothing:
  *
  * - **Generic Recording** — OneStep does not know what is being recorded, so the configuration
  *   carries no instructions (`OSTRecordingConfiguration.genericRecording()`), and the recording
@@ -161,16 +161,38 @@ internal data object EmptyAnalysisDestination : UIktDestination
  *   Start screen in front of it asks the clinician to confirm twice — once before the instructions
  *   are read out, and again after. The instructions link is no loss either: this is the one
  *   activity whose full instructions are read aloud and printed on the next screen.
+ * - **Walk** — a product decision (clinician-app QA row 6), not a property of the activity: a free
+ *   walk went Measure "Start" → Start screen → Get Ready countdown → recording, and product wanted
+ *   the middle tap gone. Unlike the two above, walk's Get Ready **keeps its 10 s countdown**, so it
+ *   still gives the clinician a beat, and its "Start now" button still means *skipped the
+ *   countdown* rather than *confirmed the start* — see the analytics note below.
  *
- * ⚠️ Abandoning a recording behaves differently for these two: there is no Start screen to step
+ * ⚠️ **The instructions link.** Walk is the one of the three that has instructions worth reading,
+ * and dropping the Start screen drops the in-flow route to them. The clinician app — uikit-kmp's
+ * only consumer, since the patient app is on the native `co.onestep.android:uikit` — already offers
+ * "View instructions" on its Measure screen, directly under the Start button, for the selected
+ * activity (`MeasureTabContent`, gated on `hasInstructions`). So the route survives one tap
+ * earlier. It is not quite equivalent: that link is hidden when the clinician config supplies no
+ * instructions for the activity, where this sheet falls back to `defaultInstructions()`. For walk
+ * the config supplies them; a host in a workspace where it does not would lose the link entirely.
+ *
+ * ⚠️ **Analytics.** `screen: measurement_start` no longer fires for these three, and neither does
+ * `clicked: start_measurement` — except from dual task's button, which is genuinely the only way to
+ * begin there. Walk reports `start_measurement_now` from Get Ready, deliberately: its countdown
+ * remains, so the tap is an impatience signal and not a confirmation, and relabelling it
+ * `start_measurement` would make one event mean two different user actions and undercount starts
+ * (most walks never tap it — the countdown just runs out).
+ *
+ * ⚠️ Abandoning a recording behaves differently for these three: there is no Start screen to step
  * back to, and stepping "back" to [RecordingDestination] would restart the recording just
  * abandoned, so the flow exits instead. That branch keys off this function's result rather than
- * naming activities, so it already covers both.
+ * naming activities, so it already covers all three.
  */
 internal fun recordEntryDestinationFor(activityType: OSTActivityType): UIktDestination =
     when (activityType) {
         OSTActivityType.GENERIC_RECORDING,
         OSTActivityType.DUAL_TASK_WALK_SUBTRACT,
+        OSTActivityType.WALK,
         -> RecordingDestination
 
         else -> StartRecordDestination

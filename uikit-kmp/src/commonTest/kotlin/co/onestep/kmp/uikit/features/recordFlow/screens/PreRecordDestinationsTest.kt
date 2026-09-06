@@ -108,13 +108,33 @@ class PreRecordDestinationsTest {
     }
 
     @Test
+    fun walkRecordsWithNoStartScreenInFront() {
+        // A product decision (clinician-app QA row 6), unlike the two above: walk's Start screen was
+        // a tap between the Measure screen's Start and the Get Ready countdown, and product wanted
+        // it gone. Walk keeps its countdown, so the clinician still gets a beat before the sensors
+        // run.
+        val destinations = destinationsFor(timedConfig(OSTActivityType.WALK))
+
+        assertSame(
+            RecordingDestination,
+            destinations.last(),
+            "Walk must record from the recording screen, not a Start screen",
+        )
+        assertFalse(
+            StartRecordDestination in destinations,
+            "Walk must not be preceded by the Start screen",
+        )
+    }
+
+    @Test
     fun everyOtherActivityStillEndsOnTheStartScreen() {
         // The Start screen is where an ordinary measurement's instructions are read, so removing it
-        // for Generic Recording and dual task must not remove it for anything else.
+        // for Generic Recording, dual task and walk must not remove it for anything else.
         OSTActivityType.entries
             .filter {
                 it != OSTActivityType.GENERIC_RECORDING &&
-                    it != OSTActivityType.DUAL_TASK_WALK_SUBTRACT
+                    it != OSTActivityType.DUAL_TASK_WALK_SUBTRACT &&
+                    it != OSTActivityType.WALK
             }
             .forEach { activityType ->
                 val destinations = destinationsFor(timedConfig(activityType))
@@ -128,8 +148,10 @@ class PreRecordDestinationsTest {
     }
 
     @Test
-    fun preRecordingQuestionsStillPrecedeTheStartScreen() {
+    fun preRecordingQuestionsStillPrecedeTheRecording() {
         // Guards the extraction itself: the ordering rules moved out of the composable unchanged.
+        // Kept on WALK — the Apos footwear question is asked on a walk, so this is the real case —
+        // which is why the destination it precedes is now the recording rather than a Start screen.
         val destinations = destinationsFor(
             timedConfig(OSTActivityType.WALK).copy(
                 preRecordingQuestions = listOf(
@@ -141,7 +163,7 @@ class PreRecordDestinationsTest {
             ),
         )
 
-        assertEquals(listOf(CustomTagsDestination, StartRecordDestination), destinations)
+        assertEquals(listOf(CustomTagsDestination, RecordingDestination), destinations)
         assertTrue(destinations.indexOf(CustomTagsDestination) < destinations.lastIndex)
     }
 

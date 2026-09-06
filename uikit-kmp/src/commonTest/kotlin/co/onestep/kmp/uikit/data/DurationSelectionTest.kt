@@ -3,6 +3,7 @@ package co.onestep.kmp.uikit.data
 import co.onestep.kmp.uikit.bridge.PermissionStatus
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.recordFlow.destinations.HallwayDistanceDestination
+import co.onestep.kmp.uikit.features.recordFlow.screens.RecordingDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.SelectWalkDurationDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.StartRecordDestination
 import co.onestep.kmp.uikit.features.recordFlow.screens.buildPreRecordDestinations
@@ -73,12 +74,14 @@ class DurationSelectionTest {
 
     @Test
     fun walkStillShowsTheDurationScreenOnlyWhenNoDurationIsConfigured() {
+        // Walk records from the recording screen, not a Start screen (clinician-app QA row 6) —
+        // which is what it now ends on. The duration gate itself is unchanged.
         assertEquals(
-            listOf(SelectWalkDurationDestination, StartRecordDestination),
+            listOf(SelectWalkDurationDestination, RecordingDestination),
             destinationsFor(OSTActivityType.WALK, null),
         )
         assertEquals(
-            listOf(StartRecordDestination),
+            listOf(RecordingDestination),
             destinationsFor(OSTActivityType.WALK, 60),
         )
     }
