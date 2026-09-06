@@ -449,6 +449,14 @@ internal fun RecordFlowNavGraph(
         //
         // Screens that intentionally render with no top chrome (Recording saved, Summary)
         // reclaim the inset so they keep their full-height layout.
+        //
+        // ⚠️ A route listed here OWNS ITS OWN TOP INSET. Nothing above it applies `statusBars`, so a
+        // collapsed route that does not apply it itself draws its first pixel under the status bar
+        // — which is exactly what Recording saved and Generic Recording notes did until 2026-09-06
+        // (QA known-issues row 21). Adding a route here means adding
+        // `.windowInsetsPadding(WindowInsets.statusBars)` to whatever it scrolls. Do NOT reinstate
+        // the inset here for them instead: Summary already applies it to its own toolbar and would
+        // double-pad.
         val collapseToolbarGap = when (currentKey) {
             RecordingSavedDestination,
             GenericRecordingNotesDestination,

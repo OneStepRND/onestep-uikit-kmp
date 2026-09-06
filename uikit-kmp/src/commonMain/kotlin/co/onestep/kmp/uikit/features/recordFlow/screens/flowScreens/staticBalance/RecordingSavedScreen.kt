@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
@@ -132,6 +133,10 @@ internal fun RecordingSavedScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                // This route is in RecordFlowNavGraph's collapseToolbarGap set, so nothing above it
+                // reserves the status bar — it owns its own top inset. Without this the card, the
+                // condition recap and the note field start at y=0, under the clock and the notch.
+                .windowInsetsPadding(WindowInsets.statusBars)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Variables.GapL)
                 .padding(bottom = 180.dp),

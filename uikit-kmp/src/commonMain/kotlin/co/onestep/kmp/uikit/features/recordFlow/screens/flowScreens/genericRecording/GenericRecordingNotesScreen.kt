@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -118,6 +119,10 @@ internal fun GenericRecordingNotesScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                // This route is in RecordFlowNavGraph's collapseToolbarGap set, so nothing above it
+                // reserves the status bar — it owns its own top inset. Same defect as Static
+                // Balance's Recording saved screen, just less exercised.
+                .windowInsetsPadding(WindowInsets.statusBars)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Variables.GapL)
                 // Clears the sticky Continue button below.
