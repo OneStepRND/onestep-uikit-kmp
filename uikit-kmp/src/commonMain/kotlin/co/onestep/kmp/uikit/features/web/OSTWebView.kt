@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import co.onestep.designsystem.components.OSButtonSize
@@ -126,6 +127,19 @@ fun OSTWebView(
 ) {
     val isUrlLoadable = remember(url) { isLoadableWebUrl(url) }
 
+    // The device text-scaling setting, appended to the query because that is the only channel the
+    // mini-apps read it on — see withHostFontScale. Done here rather than at each host's call site
+    // because the value is only reachable from a composition, and this is the one composable every
+    // web surface in both apps goes through.
+    //
+    // Enhanced AFTER the scheme check above, never before: isLoadableWebUrl is a trust boundary and
+    // must judge what the host actually passed. Appending a query param cannot change a URL's scheme
+    // or host, so the check still holds for what is loaded.
+    val fontScale = LocalDensity.current.fontScale
+    val hostedUrl = remember(url, fontScale, isUrlLoadable) {
+        if (isUrlLoadable) withHostFontScale(url, fontScale) else url
+    }
+
     val isLoading = remember { mutableStateOf(isUrlLoadable) }
     val isError = remember { mutableStateOf(!isUrlLoadable) }
     val engine = remember { mutableStateOf<OSTWebEngine?>(null) }
@@ -141,7 +155,7 @@ fun OSTWebView(
         // not a defensive nicety.
         if (isUrlLoadable) {
             PlatformWebView(
-                url = url,
+                url = hostedUrl,
                 urlRouter = urlRouter,
                 theme = theme,
                 onCloseForm = onCloseForm,
