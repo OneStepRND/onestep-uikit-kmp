@@ -53,6 +53,7 @@ import co.onestep.kmp.uikit.features.recordFlow.configurations.collectsPostRecor
 import co.onestep.kmp.uikit.features.recordFlow.configurations.defaultInstructions
 import co.onestep.kmp.uikit.features.recordFlow.destinations.CustomTagsDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.HallwayDistanceDestination
+import co.onestep.kmp.uikit.features.recordFlow.destinations.NoSummaryNoticeDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.PreAssistiveDeviceDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.PreFootwearDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.SelectWalkDurationDestination
@@ -62,6 +63,7 @@ import co.onestep.kmp.uikit.features.recordFlow.destinations.SoundPermissionDest
 import co.onestep.kmp.uikit.features.recordFlow.destinations.StartRecordDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.customTagsScreen
 import co.onestep.kmp.uikit.features.recordFlow.destinations.hallwayDistanceScreen
+import co.onestep.kmp.uikit.features.recordFlow.destinations.noSummaryNoticeScreen
 import co.onestep.kmp.uikit.features.recordFlow.destinations.preAssistiveDeviceScreen
 import co.onestep.kmp.uikit.features.recordFlow.destinations.preFootwearScreen
 import co.onestep.kmp.uikit.features.recordFlow.destinations.selectWalkDurationScreen
@@ -149,8 +151,8 @@ internal data object EmptyAnalysisDestination : UIktDestination
  * The destination the flow records from — the one every "start over" path returns to.
  *
  * [StartRecordDestination] for most activities: a big "Start" button beside a "View instructions"
- * link. **Two activities skip it and record from [RecordingDestination]**, each because that screen
- * would be a tap that asks for nothing:
+ * link. **Three activities skip it and record from [RecordingDestination]**, each because that
+ * screen would be a tap that asks for nothing:
  *
  * - **Generic Recording** — OneStep does not know what is being recorded, so the configuration
  *   carries no instructions (`OSTRecordingConfiguration.genericRecording()`), and the recording
@@ -161,16 +163,38 @@ internal data object EmptyAnalysisDestination : UIktDestination
  *   Start screen in front of it asks the clinician to confirm twice — once before the instructions
  *   are read out, and again after. The instructions link is no loss either: this is the one
  *   activity whose full instructions are read aloud and printed on the next screen.
+ * - **Walk** — a product decision (clinician-app QA row 6), not a property of the activity: a free
+ *   walk went Measure "Start" → Start screen → Get Ready countdown → recording, and product wanted
+ *   the middle tap gone. Unlike the two above, walk's Get Ready **keeps its 10 s countdown**, so it
+ *   still gives the clinician a beat, and its "Start now" button still means *skipped the
+ *   countdown* rather than *confirmed the start* — see the analytics note below.
  *
- * ⚠️ Abandoning a recording behaves differently for these two: there is no Start screen to step
+ * ⚠️ **The instructions link.** Walk is the one of the three that has instructions worth reading,
+ * and dropping the Start screen drops the in-flow route to them. The clinician app — uikit-kmp's
+ * only consumer, since the patient app is on the native `co.onestep.android:uikit` — already offers
+ * "View instructions" on its Measure screen, directly under the Start button, for the selected
+ * activity (`MeasureTabContent`, gated on `hasInstructions`). So the route survives one tap
+ * earlier. It is not quite equivalent: that link is hidden when the clinician config supplies no
+ * instructions for the activity, where this sheet falls back to `defaultInstructions()`. For walk
+ * the config supplies them; a host in a workspace where it does not would lose the link entirely.
+ *
+ * ⚠️ **Analytics.** `screen: measurement_start` no longer fires for these three, and neither does
+ * `clicked: start_measurement` — except from dual task's button, which is genuinely the only way to
+ * begin there. Walk reports `start_measurement_now` from Get Ready, deliberately: its countdown
+ * remains, so the tap is an impatience signal and not a confirmation, and relabelling it
+ * `start_measurement` would make one event mean two different user actions and undercount starts
+ * (most walks never tap it — the countdown just runs out).
+ *
+ * ⚠️ Abandoning a recording behaves differently for these three: there is no Start screen to step
  * back to, and stepping "back" to [RecordingDestination] would restart the recording just
  * abandoned, so the flow exits instead. That branch keys off this function's result rather than
- * naming activities, so it already covers both.
+ * naming activities, so it already covers all three.
  */
 internal fun recordEntryDestinationFor(activityType: OSTActivityType): UIktDestination =
     when (activityType) {
         OSTActivityType.GENERIC_RECORDING,
         OSTActivityType.DUAL_TASK_WALK_SUBTRACT,
+        OSTActivityType.WALK,
         -> RecordingDestination
 
         else -> StartRecordDestination
@@ -449,6 +473,14 @@ internal fun RecordFlowNavGraph(
         //
         // Screens that intentionally render with no top chrome (Recording saved, Summary)
         // reclaim the inset so they keep their full-height layout.
+        //
+        // ⚠️ A route listed here OWNS ITS OWN TOP INSET. Nothing above it applies `statusBars`, so a
+        // collapsed route that does not apply it itself draws its first pixel under the status bar
+        // — which is exactly what Recording saved and Generic Recording notes did until 2026-09-06
+        // (QA known-issues row 21). Adding a route here means adding
+        // `.windowInsetsPadding(WindowInsets.statusBars)` to whatever it scrolls. Do NOT reinstate
+        // the inset here for them instead: Summary already applies it to its own toolbar and would
+        // double-pad.
         val collapseToolbarGap = when (currentKey) {
             RecordingSavedDestination,
             GenericRecordingNotesDestination,
@@ -721,6 +753,30 @@ internal fun RecordFlowNavGraph(
             },
         )
 
+        // Blinded-recording thank-you (clinician-app QA row 20). Reached only when the host set
+        // `showCompletionNotice`; Continue takes the exit the flow would otherwise have taken
+        // straight from the recording screen, so the host still gets its OSTRecordingFlowResult.
+        noSummaryNoticeScreen(
+            // This NavDisplay already reserves the status bar plus the toolbar for every
+            // non-collapsed route; the screen's own default would pay for the toolbar twice.
+            topPadding = 0.dp,
+            onPrimaryAction = {
+                val measurement = viewModel.motionMeasurement.value
+                if (measurement != null) {
+                    finishWithMeasurement(
+                        measurement = measurement,
+                        sessionUuid = null,
+                        hallwayLengthMeters = viewModel.committedHallwayLengthMeters,
+                        onResult = onResult,
+                        onFinished = onFinished,
+                        onDismiss = onDismiss,
+                    )
+                } else {
+                    onDismiss()
+                }
+            },
+        )
+
         // --- Recording and post-recording screens ---
 
         // Recording screen. RecordingScreenContent is purely presentational (stable data +
@@ -773,14 +829,25 @@ internal fun RecordFlowNavGraph(
                                 // exactly like uikit's RecordFlowFragment.onMeasurementResult.
                                 // WEB without a summaryUrl (server bug) falls through to the
                                 // native summary rather than dead-ending the user.
-                                finishWithMeasurement(
-                                    measurement = outcome.measurement,
-                                    sessionUuid = null,
-                                    hallwayLengthMeters = viewModel.committedHallwayLengthMeters,
-                                    onResult = onResult,
-                                    onFinished = onFinished,
-                                    onDismiss = onDismiss,
-                                )
+                                //
+                                // Unless the host asked for a completion notice: a blinded
+                                // (research-partner) recording withholds its result deliberately,
+                                // so without a word here the clinician taps through a whole
+                                // recording and lands back on the patient screen with nothing said.
+                                // Say thank you first, then take this same exit from there.
+                                if (config.showCompletionNotice) {
+                                    backStack.popUpToInclusive(RecordingDestination)
+                                    backStack.add(NoSummaryNoticeDestination)
+                                } else {
+                                    finishWithMeasurement(
+                                        measurement = outcome.measurement,
+                                        sessionUuid = null,
+                                        hallwayLengthMeters = viewModel.committedHallwayLengthMeters,
+                                        onResult = onResult,
+                                        onFinished = onFinished,
+                                        onDismiss = onDismiss,
+                                    )
+                                }
                             } else {
                                 backStack.popUpToInclusive(RecordingDestination)
                                 backStack.add(SummaryResultDestination)
@@ -1310,9 +1377,14 @@ private fun adjustToolBar(
 
         // No toolbar on the "Recording saved" screen — its own "Go to summary" /
         // "Record another test" buttons are the only actions. Same for the Generic Recording
-        // notes screen, whose only action is Continue.
+        // notes screen, whose only action is Continue, and the blinded-recording thank-you, where a
+        // back button would step back into the recording that just finished.
+        //
+        // Note these are NOT the same set as `collapseToolbarGap` above: the thank-you keeps its
+        // reserved top space (with nothing drawn in it) and so is not listed there.
         RecordingSavedDestination,
-        GenericRecordingNotesDestination -> {
+        GenericRecordingNotesDestination,
+        NoSummaryNoticeDestination -> {
             viewModel.showToolbar(false)
         }
 
