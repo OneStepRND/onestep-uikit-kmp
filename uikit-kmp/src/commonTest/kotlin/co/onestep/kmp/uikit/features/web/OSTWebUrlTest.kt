@@ -150,7 +150,7 @@ class EnhanceOSTSummaryUrlTest {
 class WithHostFontScaleTest {
 
     @Test
-    fun `appends the scale, preserving the host context params already on the url`() {
+    fun `appends the scale and preserves the host context params already on the url`() {
         val hosted = enhanceOSTSummaryUrl(
             "https://e.com/s/overview/patient/uuid",
             origin = "ca_patient",
@@ -169,7 +169,7 @@ class WithHostFontScaleTest {
     }
 
     @Test
-    fun `is sent even at the default scale, so a host that forgot it stays distinguishable`() {
+    fun `is sent even at the default scale so a host that forgot it stays distinguishable`() {
         assertTrue(withHostFontScale("https://e.com/s", 1f).contains("fontScale=1.0"))
     }
 
