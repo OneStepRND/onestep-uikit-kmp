@@ -15,7 +15,7 @@ group = "co.onestep.kmp"
 
 val versionMajor = 0
 val versionMinor = 6
-val versionPatch = 23
+val versionPatch = 24
 
 val baseVersionName = "$versionMajor.$versionMinor.$versionPatch"
 val githubSnapshot = (findProperty("githubSnapshot") as String?)?.toBoolean() == true
