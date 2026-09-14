@@ -4,6 +4,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import platform.AVFAudio.AVAudioPlayer
 import platform.AVFAudio.AVAudioSession
 import platform.AVFAudio.AVAudioSessionCategoryPlayback
+import platform.AVFAudio.AVSpeechBoundary
 import platform.AVFAudio.AVSpeechSynthesisVoice
 import platform.AVFAudio.AVSpeechSynthesizer
 import platform.AVFAudio.AVSpeechSynthesizerDelegateProtocol
@@ -51,8 +52,11 @@ actual class PlatformTTSPlayer {
 
     actual fun speak(text: String, languageTag: String) {
         if (synthesizer.isSpeaking()) {
-            @Suppress("UNCHECKED_CAST")
-            synthesizer.stopSpeakingAtBoundary(0 as platform.AVFAudio.AVSpeechBoundary)
+            // AVSpeechBoundary is an NS_ENUM, so cinterop exposes it as a Kotlin enum — the
+            // raw `0 as AVSpeechBoundary` this used to do threw ClassCastException on every
+            // call ("this cast can never succeed"), taking the app down whenever speech was
+            // cut short (Dual Task's "Start now" while the instructions are still read).
+            synthesizer.stopSpeakingAtBoundary(AVSpeechBoundary.AVSpeechBoundaryImmediate)
         }
         val utterance = AVSpeechUtterance.speechUtteranceWithString(text)
         // voiceWithLanguage returns null when the device has no voice for the tag; leaving
@@ -65,8 +69,7 @@ actual class PlatformTTSPlayer {
 
     actual fun stop() {
         if (synthesizer.isSpeaking()) {
-            @Suppress("UNCHECKED_CAST")
-            synthesizer.stopSpeakingAtBoundary(0 as platform.AVFAudio.AVSpeechBoundary)
+            synthesizer.stopSpeakingAtBoundary(AVSpeechBoundary.AVSpeechBoundaryImmediate)
         }
     }
 

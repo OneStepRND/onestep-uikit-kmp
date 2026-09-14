@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -63,6 +62,13 @@ import co.onestep.kmp.uikit_kmp.generated.resources.data_is_ready_for_analysis
 import co.onestep.kmp.uikit_kmp.generated.resources.slide_to_stop
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+
+/**
+ * Height of the colored area's bottom control — the "Start now" outline button and the
+ * slide-to-stop thumb share it, and the instructions column reserves it so text never ends up
+ * behind the control on short screens.
+ */
+private val BOTTOM_CONTROL_HEIGHT = 60.dp
 
 /**
  * Presentational recording screen. Takes only stable data + lambdas — all ViewModel
@@ -202,23 +208,35 @@ private fun RecordingColoredArea(
             )
         }
 
-            // Instructions and timer
+            // Instructions and timer. The bottom control (Start now / slide-to-stop) is an
+            // overlay in this Box, so the content column has to reserve its height — with a
+            // fixed 550dp cap the long protocol texts (Dual Task) ran underneath the button
+            // on short screens instead of scrolling.
+            val bottomControlReserve =
+                if (screenData.bottomButton != null || screenData.slideToStopButton != null) {
+                    BOTTOM_CONTROL_HEIGHT + Variables.GapXL + Variables.GapL
+                } else {
+                    0.dp
+                }
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .align(Alignment.TopCenter)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
                     .padding(horizontal = Variables.GapL)
-                    .padding(top = Variables.GapXXL),
+                    .padding(top = Variables.GapXXL, bottom = bottomControlReserve),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 AnimatedContent(
+                    // fill = false: take only what the text needs, but never more than the
+                    // space the timer/value rows leave — the inner scroll takes over there.
+                    modifier = Modifier.weight(1f, fill = false),
                     targetState = subtitle,
                     label = "recording screen instructions",
                 ) { instructionsText ->
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 550.dp)
                             .verticalScroll(rememberScrollState()),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -293,7 +311,7 @@ private fun RecordingColoredArea(
                     trackText = it.textData?.text ?: stringResource(Res.string.slide_to_stop),
                     trackColor = colors.error_p2,
                     trackTextColor = colors.neutral_m5,
-                    thumbSizeDp = 60.dp,
+                    thumbSizeDp = BOTTOM_CONTROL_HEIGHT,
                     thumbColor = colors.neutral_m5,
                 ) {
                     onStopped()
@@ -313,7 +331,7 @@ private fun RecordingColoredArea(
                         .fillMaxWidth()
                         .padding(horizontal = Variables.GapL)
                         .padding(bottom = Variables.GapXL)
-                        .height(60.dp)
+                        .height(BOTTOM_CONTROL_HEIGHT)
                         .test(OSTTestTags.RecordFlow.RECORDING_BOTTOM_BUTTON)
                         .clip(RoundedCornerShape(Variables.RadiusR4))
                         .border(
