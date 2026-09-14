@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.carlog.OSTCareLog
 import co.onestep.kmp.uikit.features.demo.OSTPushPopDemo
+import co.onestep.kmp.uikit.features.demo.OSTSelectableSectionsQaScreen
 import co.onestep.kmp.uikit.features.permissions.OSTPermissionFlow
 import co.onestep.kmp.uikit.features.permissions.OSTPermissionMode
 import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlow
@@ -204,6 +205,7 @@ private fun AuthenticatedContent(
             onClickMeasurementSummary = { screen = TestAppScreen.MeasurementPicker },
             onClickCareLog = { screen = TestAppScreen.CareLog },
             onClickPushPopDemo = { screen = TestAppScreen.PushPopDemo },
+            onClickMultiSelectQa = { screen = TestAppScreen.MultiSelectQa },
             onClickSettings = {
                 settingsError = null
                 screen = TestAppScreen.Settings
@@ -344,6 +346,10 @@ private fun AuthenticatedContent(
         is TestAppScreen.PushPopDemo -> OSTPushPopDemo(
             onDismiss = { screen = TestAppScreen.Home },
             forceInteractiveBackGesture = true,
+        )
+
+        is TestAppScreen.MultiSelectQa -> OSTSelectableSectionsQaScreen(
+            onDismiss = { screen = TestAppScreen.Home },
         )
     }
 }

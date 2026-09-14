@@ -46,6 +46,7 @@ fun HomeScreen(
     onClickMeasurementSummary: () -> Unit,
     onClickCareLog: () -> Unit,
     onClickPushPopDemo: () -> Unit,
+    onClickMultiSelectQa: () -> Unit,
     onClickSettings: () -> Unit,
 ) {
     Scaffold(
@@ -88,6 +89,7 @@ fun HomeScreen(
             NavRow("Measurement Summary", "home.measurementSummary", onClickMeasurementSummary)
             NavRow("Care Log", "home.careLog", onClickCareLog)
             NavRow("iOS Push/Pop Demo", "home.pushPopDemo", onClickPushPopDemo)
+            NavRow("Multi-select QA", "home.multiSelectQa", onClickMultiSelectQa)
 
             if (lastEvent != null) {
                 SectionHeader("Last Event")
@@ -180,6 +182,7 @@ private fun HomeScreenPreview() {
         onClickMeasurementSummary = {},
         onClickCareLog = {},
         onClickPushPopDemo = {},
+        onClickMultiSelectQa = {},
         onClickSettings = {},
     )
 }
