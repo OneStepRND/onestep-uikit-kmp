@@ -34,4 +34,11 @@ sealed class TestAppScreen {
     data object PermissionInApp : TestAppScreen()
     data object PermissionBackground : TestAppScreen()
     data object PushPopDemo : TestAppScreen()
+
+    /**
+     * Hand-QA harness for per-section multi-select (OS-17191). No measurement passes a
+     * multi-select section — Static Balance is single-select in every category — so this is
+     * the only way to exercise that path by hand.
+     */
+    data object MultiSelectQa : TestAppScreen()
 }
