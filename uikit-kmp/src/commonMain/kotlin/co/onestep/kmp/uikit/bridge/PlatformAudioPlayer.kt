@@ -4,7 +4,15 @@ package co.onestep.kmp.uikit.bridge
  * Platform audio player. Android: MediaPlayer, iOS: AVAudioPlayer
  */
 expect class PlatformAudioPlayer {
-    fun play(resourceKey: String)
+    /**
+     * Plays [bytes], the full contents of an audio file already read from compose resources.
+     *
+     * Bytes rather than a resource key on purpose: each platform used to resolve the key against
+     * a bundle the voice files are not packaged into (`res/raw` on Android, the main `NSBundle`
+     * on iOS), so both silently played nothing (OS-17410). Resolution belongs to compose
+     * resources, which is the one lookup that works on both platforms — see `AudioAssets`.
+     */
+    fun play(bytes: ByteArray)
     fun stop()
     fun isPlaying(): Boolean
 }
