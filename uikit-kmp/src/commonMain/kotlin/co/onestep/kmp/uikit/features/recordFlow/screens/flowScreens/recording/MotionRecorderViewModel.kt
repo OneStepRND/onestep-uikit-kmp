@@ -236,18 +236,30 @@ internal class MotionRecorderViewModel(
     private var uiTimeoutJob: Job? = null
 
     /**
-     * Latches the first terminal error of this analysis attempt so any later one is ignored.
+     * Latches the first terminal outcome of this analysis attempt — a result **or** an error — so
+     * any later one is ignored. One attempt produces one outcome.
      *
-     * The analyser-state collector and the Generic Recording upload path can both observe the same
-     * failure — a too-short recording, for instance, is published as
-     * [OSTAnalyserState.Failed] **and** returned as a null upload — and the collector's
-     * [clearJobs] resets the analyser, so "is the analyser already Failed?" cannot tell a duplicate
-     * report from a first one. Without the latch a too-short Generic Recording navigates to its
-     * error screen and is then covered by a second error screen pushed on top of it.
+     * Two failures share it:
      *
-     * Reset at the start of every [analyse].
+     * - **A duplicate error.** The analyser-state collector and the Generic Recording upload path
+     *   can both observe the same failure — a too-short recording, for instance, is published as
+     *   [OSTAnalyserState.Failed] **and** returned as a null upload — and the collector's
+     *   [clearJobs] resets the analyser, so "is the analyser already Failed?" cannot tell a
+     *   duplicate report from a first one. Without the latch a too-short Generic Recording
+     *   navigates to its error screen and is then covered by a second error screen pushed on top.
+     *
+     * - **A result that arrives after the attempt already failed (OS-16980).** The analyser state
+     *   belongs to the SDK and outlives one recording. A measurement saved offline is uploaded and
+     *   analysed later by the SDK's own sync layer, which publishes `Analyzed` long after this
+     *   attempt ended on the connectivity error screen — and on iOS the Swift bridge subscribes to
+     *   that state for the lifetime of the recorder, not of one attempt, so it reaches this
+     *   collector. Delivering it navigates the flow to the summary for a measurement the clinician
+     *   was just told had failed; on a blinded (research-partner) workspace that summary is the
+     *   "Thank you for completing this measurement" notice, which is what the ticket reports.
+     *
+     * Reset at the start of every [analyse], so `reload` on the error screen is unaffected.
      */
-    private var errorReported = false
+    private var attemptResolved = false
 
     private var ttsInstructionsJob: Job? = null
 
@@ -345,7 +357,12 @@ internal class MotionRecorderViewModel(
                             uiTimeoutJob?.cancel()
                             subtitle.value = resourceProvider.getString(Res.string.preparing_results)
                             delay(2000)
-                            onMeasurementResult(motionMeasurement.value)
+                            // Claimed after the delay, not before: an error reported while the
+                            // "preparing results" beat plays must still win, and the flow it
+                            // navigated to must not then be covered by a summary.
+                            if (claimAttemptOutcome()) {
+                                onMeasurementResult(motionMeasurement.value)
+                            }
                         }
 
                         is OSTAnalyserState.Failed -> {
@@ -623,10 +640,10 @@ internal class MotionRecorderViewModel(
             when (configuration.value.showSummaryScreen) {
                 OSTSummaryOptions.Full,
                 OSTSummaryOptions.WEB -> {
-                    onError(
-                        OSTAnalyserError.Timeout(null, "UI timeout"),
-                        configuration.value.activityType
-                    )
+                    // Through reportError, not onError: the timeout is this attempt's terminal
+                    // outcome like any other, so it must not cover a result already delivered and
+                    // must not be covered by one that arrives after it.
+                    reportError(OSTAnalyserError.Timeout(null, "UI timeout"))
                 }
 
                 OSTSummaryOptions.None -> {
@@ -636,10 +653,7 @@ internal class MotionRecorderViewModel(
                 }
 
                 OSTSummaryOptions.MINIMAL -> {
-                    onError(
-                        OSTAnalyserError.Timeout(null, "UI timeout"),
-                        configuration.value.activityType
-                    )
+                    reportError(OSTAnalyserError.Timeout(null, "UI timeout"))
                 }
             }
         }
@@ -903,7 +917,7 @@ internal class MotionRecorderViewModel(
     }
 
     fun analyse() {
-        errorReported = false
+        attemptResolved = false
         recorderBridge.reset()
         recordingJob?.cancel()
         recordingStateJob?.cancel()
@@ -946,17 +960,28 @@ internal class MotionRecorderViewModel(
         motionMeasurement.value = uploaded
         uiTimeoutJob?.cancel()
         if (uploaded != null) {
-            onMeasurementResult(uploaded)
+            if (claimAttemptOutcome()) {
+                onMeasurementResult(uploaded)
+            }
         } else {
             reportError(OSTAnalyserError.General(null, "Generic recording upload failed"))
         }
     }
 
-    /** Reports the first terminal error of this analysis attempt and ignores any later one. */
+    /** Reports this attempt's terminal error, unless an outcome already resolved it. */
     private fun reportError(error: OSTAnalyserError) {
-        if (errorReported) return
-        errorReported = true
+        if (!claimAttemptOutcome()) return
         onError(error, configuration.value.activityType)
+    }
+
+    /**
+     * Claims this attempt's single terminal outcome. Returns false when one was already claimed,
+     * in which case the caller must not navigate — see [attemptResolved].
+     */
+    private fun claimAttemptOutcome(): Boolean {
+        if (attemptResolved) return false
+        attemptResolved = true
+        return true
     }
 
     /**

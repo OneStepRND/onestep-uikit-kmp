@@ -230,6 +230,13 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
 
     override fun reset() {
         delegate.reset()
+        // The analyser state is this adapter's OWN flow, pushed from a Swift subscription that
+        // lives as long as the recorder rather than as long as one attempt — so it keeps the
+        // previous attempt's terminal state, and the record flow's collector (started inside
+        // `analyse()`, right after this call) would replay it as if it were this attempt's result.
+        // Android has no equivalent: its `analyserState` IS the SDK's, and `motionLab.reset()`
+        // clears it. Clearing here is what makes the two platforms behave the same (OS-16980).
+        _analyserState.value = OSTAnalyserState.Idle
     }
 
     override suspend fun analyze(timeout: Long): OSTMotionMeasurement? =

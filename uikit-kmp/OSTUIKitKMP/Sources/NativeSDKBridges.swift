@@ -307,6 +307,15 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
     }
 
     private func finishAnalyze(with measurement: KMPMotionMeasurement?) {
+        // Stop listening the moment this attempt is resolved. `analyzerState` belongs to the
+        // recorder, not to one analyze() call, and the SDK's sync layer publishes
+        // `.analyzedAndSavedSuccessfully` when it later uploads a measurement that was saved
+        // offline. With the subscription left open that lands on whatever attempt is in flight —
+        // resuming it with the WRONG measurement, and pushing ANALYZED into the KMP flow long
+        // after it ended on the connectivity screen (OS-16980). Android cannot do either: its
+        // `analyze()` returns its own call's result.
+        analyzerStateCancellable?.cancel()
+        analyzerStateCancellable = nil
         let continuation = analyzeContinuation
         analyzeContinuation = nil
         continuation?(measurement)
@@ -362,6 +371,10 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
 
     func reset() {
         recorder?.reset()
+        // Same reason as in finishAnalyze: no attempt is in flight after a reset, so nothing the
+        // recorder publishes from here on belongs to one. `analyze()` rebinds.
+        analyzerStateCancellable?.cancel()
+        analyzerStateCancellable = nil
         analyzeContinuation = nil
     }
 
