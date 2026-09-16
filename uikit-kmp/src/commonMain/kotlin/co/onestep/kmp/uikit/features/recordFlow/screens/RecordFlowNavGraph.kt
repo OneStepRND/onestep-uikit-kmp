@@ -632,6 +632,10 @@ internal fun RecordFlowNavGraph(
         // Start record screen (big "Start" button + "View instructions")
         startRecordScreen(
             activityType = activity,
+            // "Tap the start button" voice-over, gated by the configuration's playVoiceOver
+            // through the VM's audio player.
+            playAudio = { viewModel.playAudio(it) },
+            playAudioKey = viewModel.startRecordAudioKey,
             primaryAction = {
                 // Clicked: start_measurement — user tapped Start on the StartRecord screen.
                 recordFlowTracker?.trackStartMeasurementClicked(activity)

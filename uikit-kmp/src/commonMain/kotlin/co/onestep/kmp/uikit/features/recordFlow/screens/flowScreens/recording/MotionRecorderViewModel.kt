@@ -1092,6 +1092,24 @@ internal class MotionRecorderViewModel(
         else -> base
     }
 
+    /**
+     * Voice-over key for the Start screen ("tap the start button").
+     *
+     * The three assets do not share a suffix pattern — the base is `..._vo` while the localized
+     * ones are `..._ru_vo` / `..._iw_vo` — so both overrides are spelled out rather than derived.
+     */
+    val startRecordAudioKey: String
+        get() = localizedAudioKey(
+            "tap_the_start_button_vo",
+            ruKey = "tap_the_start_button_ru_vo",
+            iwKey = "tap_the_start_button_iw_vo",
+        )
+
+    /** Plays a screen-declared voice-over key (see `UiKitScreenData.playAudioKey`). */
+    fun playAudio(resourceKey: String) {
+        audioPlayer.playAudio(resourceKey)
+    }
+
     fun playReadyForAnalysisAudio() {
         // Note: the Russian asset is intentionally named "data_is_read_for_analysis_ru"
         // (matching the actual mp3 filename); Hebrew uses "_heb" instead of "_iw".

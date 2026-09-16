@@ -1,41 +1,66 @@
 package co.onestep.kmp.uikit.bridge
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import platform.AVFAudio.AVAudioPlayer
 import platform.AVFAudio.AVAudioSession
 import platform.AVFAudio.AVAudioSessionCategoryPlayback
+import platform.AVFAudio.AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation
 import platform.AVFAudio.AVSpeechBoundary
 import platform.AVFAudio.AVSpeechSynthesisVoice
 import platform.AVFAudio.AVSpeechSynthesizer
 import platform.AVFAudio.AVSpeechSynthesizerDelegateProtocol
 import platform.AVFAudio.AVSpeechUtterance
-import platform.Foundation.NSBundle
+import platform.AVFAudio.setActive
+import platform.Foundation.NSData
+import platform.Foundation.create
 import platform.darwin.NSObject
+
+/** Copies the array into an `NSData` — `dataWithBytes:length:` copies, so the pin can be released. */
+@OptIn(ExperimentalForeignApi::class)
+private fun ByteArray.toNSData(): NSData = usePinned { pinned ->
+    NSData.create(bytes = pinned.addressOf(0), length = size.toULong())
+}
 
 @OptIn(ExperimentalForeignApi::class)
 actual class PlatformAudioPlayer {
     private var player: AVAudioPlayer? = null
 
-    actual fun play(resourceKey: String) {
+    actual fun play(bytes: ByteArray) {
+        if (bytes.isEmpty()) return
         try {
             val session = AVAudioSession.sharedInstance()
             session.setCategory(AVAudioSessionCategoryPlayback, error = null)
+            // Without activating the session the first clip of a flow is dropped whenever the
+            // app is not already the active audio source.
+            session.setActive(true, error = null)
 
-            val url = NSBundle.mainBundle.URLForResource(resourceKey, withExtension = "mp3")
-                ?: NSBundle.mainBundle.URLForResource(resourceKey, withExtension = "wav")
-                ?: return
-
-            player = AVAudioPlayer(contentsOfURL = url, error = null)
+            player = AVAudioPlayer(data = bytes.toNSData(), error = null)
             player?.prepareToPlay()
             player?.play()
-        } catch (_: Exception) {
-            // Silently fail - audio is non-critical
+        } catch (e: Exception) {
+            // Audio is non-critical, but the failure is logged: silence used to be the only
+            // symptom of the voice files never being found at all (OS-17410).
+            println("PlatformAudioPlayer: cannot play audio: ${e.message}")
+            player = null
         }
     }
 
     actual fun stop() {
+        val wasPlaying = player != null
         player?.stop()
         player = null
+        // Hand the session back. The playback category suppresses whatever the host or another
+        // app was playing, so staying active past the last clip would leave a patient's music
+        // silenced for the rest of the session.
+        if (wasPlaying) {
+            AVAudioSession.sharedInstance().setActive(
+                false,
+                withOptions = AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation,
+                error = null,
+            )
+        }
     }
 
     actual fun isPlaying(): Boolean = player?.isPlaying() == true

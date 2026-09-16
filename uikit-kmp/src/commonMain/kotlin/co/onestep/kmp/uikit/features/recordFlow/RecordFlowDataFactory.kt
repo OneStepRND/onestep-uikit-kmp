@@ -502,7 +502,9 @@ internal object RecordFlowDataFactory {
         activityType: OSTActivityType,
         onMainButton: () -> Unit,
         onBottomButton: () -> Unit,
+        playAudioKey: String? = null,
     ) = UiKitScreenData(
+        playAudioKey = playAudioKey,
         noteBanner = NoteBannerData(
             icon = Res.drawable.ic_phone_orientation,
             title = stringResource(Res.string.static_balance_banner_title),

@@ -19,6 +19,7 @@ data object StartRecordDestination : UIktDestination
 fun EntryProviderScope<NavKey>.startRecordScreen(
     activityType: OSTActivityType,
     playAudio: ((String) -> Unit)? = null,
+    playAudioKey: String? = null,
     primaryAction: () -> Unit,
     secondaryAction: () -> Unit,
     onBackPress: (() -> Unit)? = null,
@@ -33,6 +34,7 @@ fun EntryProviderScope<NavKey>.startRecordScreen(
                 activityType = activityType,
                 onMainButton = primaryAction,
                 onBottomButton = secondaryAction,
+                playAudioKey = playAudioKey,
             ),
         )
     }
