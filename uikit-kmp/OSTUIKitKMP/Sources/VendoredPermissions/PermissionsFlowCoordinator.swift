@@ -16,6 +16,22 @@ class PermissionsFlowCoordinator: NSObject, ObservableObject {
     @Published private(set) var currentScreen: PermissionFlowScreens?
     @Published var flowCompleted: Bool = false
     @Published var criticalPermissionsDenied: Bool = false
+
+    /// Whether the screen on display may be closed with the nav-bar X.
+    ///
+    /// App Store guideline 5.1.1(iv): a priming screen must not let the user dismiss and defer
+    /// the system permission prompt — "the user should always proceed to the permission request
+    /// after the message". So first-time request screens set this `false`.
+    ///
+    /// The post-denial "Go to Settings" variants set it `true`, and that exception is not
+    /// optional: once a permission is denied the system prompt can never be shown again, so a
+    /// screen with no X and no reachable prompt would trap the user in the flow.
+    ///
+    /// Each screen owns its own value because whether it is showing the first-time or the
+    /// settings variant is view-local state (`showSettingsView`, `shouldShowSettingsButton`)
+    /// that the coordinator cannot re-derive without duplicating it. Defaults `false` so a
+    /// screen that forgets to set it fails closed (compliant) rather than open.
+    @Published var currentScreenAllowsDismiss: Bool = false
     private let motionManager = CMMotionActivityManager()
     private var locationManager = CLLocationManager()
     private let healthStore = HKHealthStore()
