@@ -78,6 +78,7 @@ import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.components.SecondaryButton
 import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.kmp.uikit.ui.components.PrimaryBrandButton
+import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
 import org.jetbrains.compose.resources.StringResource
@@ -93,6 +94,7 @@ import co.onestep.kmp.uikit_kmp.generated.resources.level_of_assistance
 import co.onestep.kmp.uikit_kmp.generated.resources.note_hint_text
 import co.onestep.kmp.uikit_kmp.generated.resources.review_the_following_tags
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Deprecated("Moved to the OSTTestTags catalog", ReplaceWith("OSTTestTags.Tagging.NOTE_TEXT_FIELD"))
 const val TAG_SCREEN_NOTE_TEXT_FIELD = OSTTestTags.Tagging.NOTE_TEXT_FIELD
@@ -307,6 +309,26 @@ internal fun PostSummaryTagScreen(
                 )
             }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun PostSummaryTagScreenPreview() {
+    PreviewTheme {
+        PostSummaryTagScreen(
+            postTaggingData = OSTPostTaggingData.OSTPostTaggingScreen(
+                questions = null,
+                assistiveDeviceTag = true,
+                levelOfAssistanceTag = true,
+                footwearTag = true,
+                note = true,
+            ),
+            assistiveDevice = OSTAssistiveDevice.WALKER,
+            levelOfAssistance = OSTLevelOfAssistance.INDEPENDENT,
+            footwear = Footwear.WITH_SHOES,
+            note = "Felt steady today.",
+        )
     }
 }
 
