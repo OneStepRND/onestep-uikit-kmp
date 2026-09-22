@@ -1,10 +1,16 @@
 package co.onestep.kmp.uikit.features.recordFlow.configurations
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
 import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit_kmp.generated.resources.*
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -68,6 +74,18 @@ data class OSTRecordingConfiguration(
      * not the patient — so a clinician host should pre-fill this value; edits are not persisted.
      */
     val hallwayLengthMeters: Float? = null,
+    /**
+     * Host-supplied colour for the activity's Get Ready screen (the pre-task screen with the
+     * Start button) — e.g. blue for Walk. Read only by that screen; the Recording and Analyzing
+     * stages that follow keep their own fixed colours regardless of this value.
+     *
+     * `null` (the default) leaves the Get Ready screen exactly as it renders today (orange). The
+     * same colour also paints the screen's title text against a light header background, so pick
+     * a colour dark/saturated enough to stay legible there — the same constraint the current
+     * orange already satisfies.
+     */
+    @Serializable(with = ColorArgbSerializer::class)
+    val activityColor: Color? = null,
     /**
      * Show the "Thank you for completing this measurement" notice
      * ([co.onestep.kmp.uikit.features.recordFlow.destinations.NoSummaryNoticeDestination]) instead
@@ -357,6 +375,28 @@ data class OSTRecordingConfiguration(
 }
 
 internal expect fun randomUUID(): String
+
+/**
+ * Serializes [Color] as its packed 32-bit ARGB value — the same `0xAARRGGBB` form the `Color(Long)`
+ * constructor takes and this module already uses for its fixed stage colours (see
+ * [co.onestep.kmp.uikit.features.recordFlow.screensData.RecordingScreenData.colorTheme]) — rather
+ * than Compose's internal colour-space-aware packed representation, so the encoded value stays a
+ * plain, stable ARGB int across platforms.
+ */
+internal object ColorArgbSerializer : KSerializer<Color> {
+    override val descriptor = PrimitiveSerialDescriptor("Color", PrimitiveKind.LONG)
+
+    override fun serialize(encoder: Encoder, value: Color) {
+        val argb =
+            (((value.alpha * 255f).toInt() and 0xFF).toLong() shl 24) or
+                (((value.red * 255f).toInt() and 0xFF).toLong() shl 16) or
+                (((value.green * 255f).toInt() and 0xFF).toLong() shl 8) or
+                ((value.blue * 255f).toInt() and 0xFF).toLong()
+        encoder.encodeLong(argb)
+    }
+
+    override fun deserialize(decoder: Decoder): Color = Color(decoder.decodeLong())
+}
 
 /**
  * [OSTPostTaggingData] adjusted so the footwear and assistive-device rows are not shown again on the

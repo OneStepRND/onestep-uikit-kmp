@@ -19,6 +19,12 @@ data class RecordingScreenData(
     val value: TextData? = null,
     val slideToStopButton: SlideToStopButtonData? = null,
     val bottomButton: SecondaryButtonData? = null,
+    /**
+     * Host-supplied colour for the GET_READY stage, from
+     * [co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration.activityColor].
+     * `null` keeps the default orange. Ignored for every other stage.
+     */
+    val activityColor: Color? = null,
 ) {
     enum class RecordScreenStage {
         GET_READY,
@@ -35,7 +41,7 @@ data class RecordingScreenData(
 
     val colorTheme: Color =
         when (recordScreenStage) {
-            RecordScreenStage.GET_READY -> Color(0xFFF5960B)
+            RecordScreenStage.GET_READY -> activityColor ?: Color(0xFFF5960B)
             RecordScreenStage.RECORDING -> Color(0xFF3E3D3B)
             RecordScreenStage.ANALYZING -> Color(0xFF0D5097)
         }
