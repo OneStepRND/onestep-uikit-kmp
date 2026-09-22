@@ -79,7 +79,10 @@ data class OSTRecordingConfiguration(
      * Start button) — e.g. blue for Walk. Read only by that screen; the Recording and Analyzing
      * stages that follow keep their own fixed colours regardless of this value.
      *
-     * `null` (the default) leaves the Get Ready screen exactly as it renders today (orange).
+     * `null` (the default) leaves the Get Ready screen exactly as it renders today (orange). The
+     * same colour also paints the screen's title text against a light header background, so pick
+     * a colour dark/saturated enough to stay legible there — the same constraint the current
+     * orange already satisfies.
      */
     @Serializable(with = ColorArgbSerializer::class)
     val activityColor: Color? = null,
