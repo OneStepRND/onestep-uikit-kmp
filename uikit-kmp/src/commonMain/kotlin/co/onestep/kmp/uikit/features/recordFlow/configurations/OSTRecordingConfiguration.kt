@@ -80,9 +80,12 @@ data class OSTRecordingConfiguration(
      * stages that follow keep their own fixed colours regardless of this value.
      *
      * `null` (the default) leaves the Get Ready screen exactly as it renders today (orange). The
-     * same colour also paints the screen's title text against a light header background, so pick
-     * a colour dark/saturated enough to stay legible there — the same constraint the current
-     * orange already satisfies.
+     * same colour also paints the screen's title text (60sp/48sp Bold — WCAG "large text", 3:1
+     * minimum) against a light header background, so pick a colour dark/saturated enough to stay
+     * legible there. Measured examples (see `RecordingScreenDataColorThemeTest`): `Color(0xFF0D5097)`
+     * (a dark brand blue) is ~7.76:1 against the header — clears even the stricter 4.5:1 normal-text
+     * bar; a mid-tone brand blue like `Color(0xFF1B81DC)` is ~3.89:1 — clears this title's 3:1
+     * large-text bar but would not clear 4.5:1.
      */
     @Serializable(with = ColorArgbSerializer::class)
     val activityColor: Color? = null,

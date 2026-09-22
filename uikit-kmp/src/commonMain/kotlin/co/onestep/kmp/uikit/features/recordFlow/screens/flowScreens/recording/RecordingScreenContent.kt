@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.bridge.RecorderBridge
 import co.onestep.kmp.uikit.features.recordFlow.previewGetReadyRecordingScreen
+import co.onestep.kmp.uikit.features.recordFlow.previewGetReadyRecordingScreenWithHostColor
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import co.onestep.kmp.uikit.features.recordFlow.screensData.RecordingScreenData
@@ -368,6 +369,22 @@ private fun RecordingScreenStatelessPreview() {
         RecordingScreenStateless(
             screenData = previewGetReadyRecordingScreen,
             subtitle = previewGetReadyRecordingScreen.instructions.text,
+            stepCount = 0,
+            timerValue = "10",
+            onStopped = {},
+        )
+    }
+}
+
+// Default (no activityColor) vs. host-supplied colour, side by side — see
+// [RecordingScreenData.activityColor].
+@Preview
+@Composable
+private fun RecordingScreenStatelessWithHostColorPreview() {
+    PreviewTheme {
+        RecordingScreenStateless(
+            screenData = previewGetReadyRecordingScreenWithHostColor,
+            subtitle = previewGetReadyRecordingScreenWithHostColor.instructions.text,
             stepCount = 0,
             timerValue = "10",
             onStopped = {},
