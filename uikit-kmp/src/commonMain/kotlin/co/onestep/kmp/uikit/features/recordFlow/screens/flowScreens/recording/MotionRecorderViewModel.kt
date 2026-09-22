@@ -523,6 +523,7 @@ internal class MotionRecorderViewModel(
         // use FontWeight.Bold to actually render bold on iOS. (Figma: title/subtitle Bold.)
         title = TextData(resourceProvider.getString(Res.string.get_ready), 60.sp, FontWeight.Bold),
         instructions = TextData(instructions, 28.sp, FontWeight.Bold),
+        activityColor = configuration.value.activityColor,
         bottomButton = SecondaryButtonData(
             text = TextData(resourceProvider.getString(Res.string.start_now), 24.sp, FontWeight.Bold),
             iconData = IconData(icon = Res.drawable.ic_play_button, tintColor = Color.White),
@@ -558,6 +559,7 @@ internal class MotionRecorderViewModel(
         title = TextData(resourceProvider.getString(Res.string.get_ready), 60.sp, FontWeight.Bold),
         instructions = TextData(getReadyInstructions(), 28.sp, FontWeight.Bold),
         timerValue = TimerData(TextData(timerValue.value, 115.sp, FontWeight.Bold), countdown = true),
+        activityColor = configuration.value.activityColor,
         bottomButton = SecondaryButtonData(
             text = TextData(resourceProvider.getString(Res.string.start_now), 24.sp, FontWeight.Bold),
             iconData = IconData(icon = Res.drawable.ic_play_button, tintColor = Color.White),
