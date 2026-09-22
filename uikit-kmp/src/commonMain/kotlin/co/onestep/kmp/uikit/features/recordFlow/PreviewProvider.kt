@@ -1,5 +1,6 @@
 package co.onestep.kmp.uikit.features.recordFlow
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,6 +49,11 @@ internal val previewGetReadyRecordingScreen =
             iconData = IconData(Res.drawable.ic_play_button) {},
         ) {},
     )
+
+// Same GET_READY screen with a host-supplied activity colour (Walk blue) instead of the
+// default orange — see [RecordingScreenStatelessWithHostColorPreview].
+internal val previewGetReadyRecordingScreenWithHostColor =
+    previewGetReadyRecordingScreen.copy(activityColor = Color(0xFF0D5097))
 
 // ── Hallway distance mock data ───────────────────────────────────────────────
 
