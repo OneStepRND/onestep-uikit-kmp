@@ -16,8 +16,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "OSTUIKit",
-            url: "https://github.com/OneStepRND/onestep-uikit-kmp/releases/download/uikit-kmp-0.6.27-SNAPSHOT/OSTUIKit.xcframework.zip",
-            checksum: "58eb5351a6c83a58b9e1fd6a04deb509cffbcd51c00bf9c9b5d7fa33ad5080b6"
+            url: "https://github.com/OneStepRND/onestep-uikit-kmp/releases/download/uikit-kmp-0.6.28-SNAPSHOT/OSTUIKit.xcframework.zip",
+            checksum: "965a12bba229a380b95a3999d21b48b4cad5cd33494c771c239417bfa8de5cff"
         ),
         .target(
             // Target name == Swift module name: must match the product so `import OSTUIKitKMP` works.
