@@ -63,7 +63,8 @@ struct MicPermissionsView: View {
     func getTheButtons() -> some View {
         VStack {
             if micStatus == .notDetermined {
-                regularButton(title: LocalizedStrings.allow)
+                // "Continue", not "Allow" — 5.1.1(iv).
+                regularButton(title: LocalizedStrings.continueText)
                     .onTapGesture {
                         PermissionsValidator.requestMicPermission { _ in
                             micStatus = AVCaptureDevice.authorizationStatus(for: .audio)

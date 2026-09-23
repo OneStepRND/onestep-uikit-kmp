@@ -34,7 +34,8 @@ struct HealthKitPermissionsView: View {
         PermissionBaseView(
             icon: .permHealthkit,
             title: LocalizedStrings.trackYourStepCount,
-            primaryButtonTitle: LocalizedStrings.allow,
+            // "Continue", not "Allow" — 5.1.1(iv).
+            primaryButtonTitle: LocalizedStrings.continueText,
             primaryAction: {
                 // Track allow button click
                 PermissionsFlowAnalytics.trackClick(
@@ -165,6 +166,8 @@ struct HealthKitPermissionsView: View {
             }
         }
         .onAppear {
+            // 5.1.1(iv): first-time screen has no X; the settings variant keeps one.
+            coordinator.currentScreenAllowsDismiss = showSettingsView
             // Track screen view
             PermissionsFlowAnalytics.trackScreen(
                 "permission_request",
@@ -173,6 +176,7 @@ struct HealthKitPermissionsView: View {
                 flowName: coordinator.getFlowName()
             )
         }
+        .onChange(of: showSettingsView) { coordinator.currentScreenAllowsDismiss = $0 }
         .task {
             // Check whether HealthKit permissions have already been requested
             let haveAsked = await PermissionsValidator.healthKitPermissionsRequested()
