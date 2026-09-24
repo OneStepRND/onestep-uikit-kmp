@@ -696,6 +696,7 @@ internal fun RecordFlowNavGraph(
             balance = @Suppress("DEPRECATION") config.balance ?: OSTBalance(),
             catalogFields = catalogConditionFields,
             onCatalogAnswers = viewModel::setTagMap,
+            conditionNumber = { viewModel.balanceConditionCount() },
             onScreenView = {
                 // screen: static_balance_condition_setup — condition_number is 1-based within
                 // the session (completed count + 1); session_uuid groups the session.
