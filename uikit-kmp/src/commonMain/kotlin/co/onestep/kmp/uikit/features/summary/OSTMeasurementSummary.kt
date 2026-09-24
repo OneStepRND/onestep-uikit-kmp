@@ -36,6 +36,32 @@ fun OSTMeasurementSummary(
     origin: OSTSummaryOrigin = OSTSummaryOrigin.CareLog,
     configuration: OSTRecordingConfiguration? = null,
     onDismiss: () -> Unit = {},
+) = MeasurementSummary(
+    measurement = measurement,
+    patientId = patientId,
+    options = options,
+    origin = origin,
+    configuration = configuration,
+    preRecordTagCodes = { null },
+    onDismiss = onDismiss,
+)
+
+/**
+ * [OSTMeasurementSummary] plus the SDK-internal plumbing a host never passes.
+ *
+ * @param preRecordTagCodes The option codes answered before the recording, which narrow the
+ *        post-recording tag-catalog options by `requiresAny`. Null when unknown — the summary was
+ *        opened some other way than from the recording flow — and then nothing is narrowed.
+ */
+@Composable
+internal fun MeasurementSummary(
+    measurement: OSTMotionMeasurement,
+    patientId: String?,
+    options: OSTSummaryOptions,
+    origin: OSTSummaryOrigin,
+    configuration: OSTRecordingConfiguration?,
+    preRecordTagCodes: () -> Set<String>?,
+    onDismiss: () -> Unit,
 ) {
     // Resolve the patient-bound bridge bundle once per launch. null patientId = current-user mode
     // (auth-bound singletons); non-null delegates to the registered PatientScopedBridgesFactory.
@@ -69,6 +95,7 @@ fun OSTMeasurementSummary(
             motionMeasurementId = measurement.id,
             origin = origin,
             configuration = configuration,
+            preRecordTagCodes = preRecordTagCodes,
             backAction = onDismiss,
         )
     }

@@ -361,6 +361,10 @@
     <string name="go_to_summary">Перейти к сводке</string>
     <string name="record_another_test">Записать ещё один тест</string>
     <string name="static_balance_observations_hint">Нажмите, чтобы добавить наблюдения об этом измерении…</string>
+    <string name="your_setup">Ваши настройки</string>
+    <string name="static_balance_outcomes_question">Произошло ли что-то из перечисленного во время записи?</string>
+    <string name="static_balance_outcomes_warning">Примечание: отметка любого из этих событий засчитает тест как проваленный и установит оценку 0</string>
+    <string name="static_balance_seconds_short">%1$d сек</string>
     <string name="static_balance_place_pocket_strap">Поместите телефон в карман или ремешок</string>
     <string name="static_balance_hold_chest">Держите телефон у центра груди</string>
     <string name="walker">Ходунки</string>
