@@ -1,6 +1,7 @@
 package co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
@@ -81,23 +82,29 @@ internal fun EntryProviderScope<NavKey>.conditionSetupScreen(
     onCatalogAnswers: (Map<String, OSTTagValue>) -> Unit,
     onScreenView: () -> Unit,
     onContinue: (OSTBalanceCondition) -> Unit,
+    conditionNumber: () -> Int = { 0 },
 ) {
     entry<ConditionSetupDestination> {
-        if (catalogFields != null) {
-            CatalogConditionSetupScreen(
-                fields = remember(catalogFields) { TagFields(catalogFields) },
-                onScreenView = onScreenView,
-                onContinue = { condition, tagMap ->
-                    onCatalogAnswers(tagMap)
-                    onContinue(condition)
-                },
-            )
-        } else {
-            ConditionSetupScreen(
-                balance = balance,
-                onScreenView = onScreenView,
-                onContinue = onContinue,
-            )
+        // "Record another test" re-adds this same key, so Navigation 3 would restore the previous
+        // condition's saved selections; keying the content by the condition number starts each
+        // condition fresh (OS-17546).
+        key(conditionNumber()) {
+            if (catalogFields != null) {
+                CatalogConditionSetupScreen(
+                    fields = remember(catalogFields) { TagFields(catalogFields) },
+                    onScreenView = onScreenView,
+                    onContinue = { condition, tagMap ->
+                        onCatalogAnswers(tagMap)
+                        onContinue(condition)
+                    },
+                )
+            } else {
+                ConditionSetupScreen(
+                    balance = balance,
+                    onScreenView = onScreenView,
+                    onContinue = onContinue,
+                )
+            }
         }
     }
 }
