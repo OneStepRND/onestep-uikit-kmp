@@ -99,6 +99,10 @@ private const val RETRY_LOADER_DELAY_MS = 100L
  * @param onNavigateBack invoked on a back gesture when the page has no history left to pop.
  * @param onCloseForm wires the `window.Android.closeForm()` bridge the OneStep web forms call.
  *   Leaving it `null` installs no JS bridge at all — only pass it for pages that need it.
+ * @param onHostMessage receives what the page posts to `window.OneStepHost.postMessage(json)` — a
+ *   mini-app's `onestep:*` host messages (e.g. `onestep:dirty`), delivered on the main thread. A
+ *   message that is not a JSON object with a string `type` is dropped. Leaving it `null` installs
+ *   no bridge, as with [onCloseForm]. See [OSTWebHostMessage] for how to treat the payload.
  * @param onPageCommitted reports the committed URL of each main-frame load.
  * @param injectedJavaScript extra script run after uikit's own host-context injection. This is the
  *   hook for host-specific concerns uikit has no business knowing about (the Patient app's Datadog
@@ -117,6 +121,7 @@ fun OSTWebView(
     urlRouter: OSTWebUrlRouter? = null,
     onNavigateBack: (() -> Unit)? = null,
     onCloseForm: (() -> Unit)? = null,
+    onHostMessage: ((OSTWebHostMessage) -> Unit)? = null,
     onPageCommitted: ((url: String) -> Unit)? = null,
     injectedJavaScript: String? = null,
     userAgentSuffix: String? = null,
@@ -159,6 +164,7 @@ fun OSTWebView(
                 urlRouter = urlRouter,
                 theme = theme,
                 onCloseForm = onCloseForm,
+                onHostMessage = onHostMessage,
                 onNavigateBack = onNavigateBack,
                 onPageCommitted = onPageCommitted,
                 injectedJavaScript = injectedJavaScript,
@@ -234,6 +240,7 @@ internal expect fun PlatformWebView(
     urlRouter: OSTWebUrlRouter?,
     theme: OSTWebColorConfig,
     onCloseForm: (() -> Unit)?,
+    onHostMessage: ((OSTWebHostMessage) -> Unit)?,
     onNavigateBack: (() -> Unit)?,
     onPageCommitted: ((url: String) -> Unit)?,
     injectedJavaScript: String?,

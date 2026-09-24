@@ -102,6 +102,7 @@ private fun hostContentController(
     fontScale: Float,
     safeAreaInsets: OSTWebSafeAreaInsets,
     onCloseForm: (() -> Unit)?,
+    onHostMessage: ((OSTWebHostMessage) -> Unit)?,
     injectedJavaScript: String?,
 ): WKUserContentController = WKUserContentController().apply {
     addUserScript(
@@ -133,6 +134,31 @@ private fun hostContentController(
         )
     }
 
+    if (onHostMessage != null) {
+        addUserScript(
+            WKUserScript(
+                source = hostMessagePolyfillJs,
+                injectionTime = WKUserScriptInjectionTime.WKUserScriptInjectionTimeAtDocumentStart,
+                forMainFrameOnly = true,
+            ),
+        )
+        addScriptMessageHandler(
+            object : NSObject(), WKScriptMessageHandlerProtocol {
+                override fun userContentController(
+                    userContentController: WKUserContentController,
+                    didReceiveScriptMessage: WKScriptMessage,
+                ) {
+                    // `webkit.messageHandlers` is reachable from every frame, not only the one the
+                    // shim was injected into, so a subframe's post is dropped here.
+                    if (!didReceiveScriptMessage.frameInfo.mainFrame) return
+                    val raw = didReceiveScriptMessage.body as? String ?: return
+                    parseHostMessage(raw)?.let(onHostMessage)
+                }
+            },
+            name = HOST_MESSAGE_HANDLER_NAME,
+        )
+    }
+
     // Host-specific script runs at document end so it can see the page's own globals.
     injectedJavaScript?.let {
         addUserScript(
@@ -155,6 +181,7 @@ internal actual fun PlatformWebView(
     urlRouter: OSTWebUrlRouter?,
     theme: OSTWebColorConfig,
     onCloseForm: (() -> Unit)?,
+    onHostMessage: ((OSTWebHostMessage) -> Unit)?,
     onNavigateBack: (() -> Unit)?,
     onPageCommitted: ((url: String) -> Unit)?,
     injectedJavaScript: String?,
@@ -187,6 +214,8 @@ internal actual fun PlatformWebView(
     routerHolder.value = urlRouter
     val pageCommittedHolder = remember { mutableStateOf(onPageCommitted) }
     pageCommittedHolder.value = onPageCommitted
+    val hostMessageHolder = remember { mutableStateOf(onHostMessage) }
+    hostMessageHolder.value = onHostMessage
 
     val navDelegate = remember {
         object : NSObject(), WKNavigationDelegateProtocol {
@@ -264,6 +293,11 @@ internal actual fun PlatformWebView(
                     fontScale = fontScale,
                     safeAreaInsets = insetsHolder.value,
                     onCloseForm = onCloseForm,
+                    // WebKit calls the handler on the main thread; the holder keeps it reading the
+                    // latest callback, since the web view outlives recompositions.
+                    onHostMessage = onHostMessage?.let {
+                        { message: OSTWebHostMessage -> hostMessageHolder.value?.invoke(message) }
+                    },
                     injectedJavaScript = injectedJavaScript,
                 )
                 userAgentSuffix?.let { applicationNameForUserAgent = it }
@@ -311,6 +345,10 @@ internal actual fun PlatformWebView(
             if (onCloseForm != null) {
                 webView.configuration.userContentController
                     .removeScriptMessageHandlerForName(CLOSE_FORM_MESSAGE_NAME)
+            }
+            if (onHostMessage != null) {
+                webView.configuration.userContentController
+                    .removeScriptMessageHandlerForName(HOST_MESSAGE_HANDLER_NAME)
             }
         }
     }

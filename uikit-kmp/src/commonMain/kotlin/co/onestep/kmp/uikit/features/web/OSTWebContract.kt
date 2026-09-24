@@ -4,7 +4,10 @@ import co.onestep.designsystem.theme.OSColors
 import co.onestep.designsystem.theme.toStringNoAlpha
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * The JavaScript contract between a native host and a OneStep web mini-app (web summary,
@@ -140,6 +143,70 @@ internal val closeFormPolyfillJs = """
         webkit.messageHandlers.$CLOSE_FORM_MESSAGE_NAME.postMessage(null);
     };
 """.trimIndent()
+
+/**
+ * A message the page sent its native host over the host-message bridge — the mobile half of
+ * `libs/mobile-adapter`'s `postToHost`, which an iframe host receives as a `postMessage` instead.
+ *
+ * [type] is the mini-app's message type (`onestep:dirty`, …); [payload] is the whole message object,
+ * `type` included, so a host reads whatever fields its type defines.
+ *
+ * ⚠️ **Untrusted input.** Anything the page runs can post here. A host acts only on the types it
+ * knows, validates their fields, and never logs [payload] — the contract says opaque ids and
+ * booleans only, but uikit cannot enforce what a page puts in it.
+ */
+data class OSTWebHostMessage(
+    val type: String,
+    val payload: JsonObject,
+)
+
+/**
+ * The page-side name of the host-message bridge: `window.OneStepHost.postMessage(JSON.stringify(m))`.
+ *
+ * Its own global rather than a field on `window.OneStep`, which carries values the host *pushes*;
+ * this is a function the page *calls*. On Android it is a `@JavascriptInterface` object, which only
+ * accepts a string — so the wire contract is a JSON **string** on both platforms (the iOS shim also
+ * tolerates a plain object, but a page must not rely on it).
+ */
+internal const val HOST_MESSAGE_BRIDGE_NAME = "OneStepHost"
+
+/** The iOS `WKScriptMessageHandler` behind [hostMessagePolyfillJs]. */
+internal const val HOST_MESSAGE_HANDLER_NAME = "oneStepHost"
+
+/**
+ * Upper bound on one message. Every message the contract defines is a type and a few scalars, so
+ * this is generous; it exists so a page cannot hand the main thread an arbitrarily large parse.
+ */
+internal const val MAX_HOST_MESSAGE_LENGTH = 4_096
+
+internal val hostMessagePolyfillJs = """
+    window.$HOST_MESSAGE_BRIDGE_NAME = window.$HOST_MESSAGE_BRIDGE_NAME ?? {
+        postMessage: function (message) {
+            webkit.messageHandlers.$HOST_MESSAGE_HANDLER_NAME.postMessage(
+                typeof message === 'string' ? message : JSON.stringify(message)
+            );
+        },
+    };
+""".trimIndent()
+
+/**
+ * Parses one raw bridge message, or `null` when it is not a JSON object with a non-blank string
+ * `type` — which the bridge then drops rather than guessing at.
+ */
+internal fun parseHostMessage(raw: String): OSTWebHostMessage? {
+    if (raw.length > MAX_HOST_MESSAGE_LENGTH) return null
+    val message = try {
+        contractJson.parseToJsonElement(raw) as? JsonObject
+    } catch (_: SerializationException) {
+        null
+    } ?: return null
+    val type = (message["type"] as? JsonPrimitive)
+        ?.takeIf { it.isString }
+        ?.content
+        ?.takeIf { it.isNotBlank() }
+        ?: return null
+    return OSTWebHostMessage(type = type, payload = message)
+}
 
 /**
  * Conservative "the page loaded but rendered nothing" probe (OS-16070).
