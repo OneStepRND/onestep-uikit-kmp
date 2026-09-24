@@ -34,7 +34,9 @@ import co.onestep.kmp.uikit.models.OSTAnalyserState
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.models.OSTRecorderState
 import co.onestep.kmp.uikit.models.OSTAssistiveDevice
+import co.onestep.kmp.uikit.models.OSTTagValue
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData
+import co.onestep.kmp.uikit.models.codes
 import co.onestep.kmp.uikit.models.OSTWalkCourseLength.Companion.getWalkCourseLength
 import co.onestep.kmp.sdk.currentTimeMillis
 import co.onestep.kmp.uikit.utils.Languages
@@ -193,6 +195,11 @@ internal class MotionRecorderViewModel(
     private var tags: MutableList<String> = mutableListOf()
 
     private var assistiveDevice: OSTAssistiveDevice? = null
+
+    // Tag-catalog answers from the pre-recording screen (or the catalog-driven Static Balance
+    // Condition Setup), uploaded as the measurement's tag_map. Plain state like note/tags: after
+    // process death the flow restarts at the first screen and asks again.
+    private var preRecordTagMap: Map<String, OSTTagValue> = emptyMap()
 
     private val customMetadata: MutableMap<String, Any> = mutableMapOf()
 
@@ -684,7 +691,8 @@ internal class MotionRecorderViewModel(
             currentBalanceCondition?.let {
                 customMetadata[OSTBalanceCondition.KEY_BALANCE_CONDITIONS] =
                     it.toConditionsMetadata(
-                        notesKey = configuration.value.balance?.notesKey
+                        // In catalog mode the condition carries no note, so the key is unused.
+                        notesKey = @Suppress("DEPRECATION") configuration.value.balance?.notesKey
                             ?: OSTBalance.DEFAULT_NOTES_KEY,
                     )
             }
@@ -703,6 +711,7 @@ internal class MotionRecorderViewModel(
                     note = note,
                     tags = tags,
                     assistiveDevice = assistiveDevice,
+                    tagMap = preRecordTagMap.ifEmpty { null },
                     walkCourseLength =
                         hallwayManager.hallwayLengthForCurrentTest?.let {
                             getWalkCourseLength(it, isImperialSystem())
@@ -780,6 +789,14 @@ internal class MotionRecorderViewModel(
         this.assistiveDevice = device
     }
 
+    /** Every option code answered before the recording, for the post-recording `requiresAny` check. */
+    val preRecordTagCodes: Set<String> get() = preRecordTagMap.codes()
+
+    /** Replaces the pre-recording tag-catalog answers; going back and re-answering must not merge. */
+    fun setTagMap(tagMap: Map<String, OSTTagValue>) {
+        preRecordTagMap = tagMap
+    }
+
     fun addTags(tagsToAdd: List<String>) {
         this.tags.addAll(tagsToAdd)
     }
@@ -826,6 +843,7 @@ internal class MotionRecorderViewModel(
         if (newNote.isNullOrBlank()) return
         val measurementId = motionMeasurement.value?.id ?: return
         val condition = currentBalanceCondition ?: return
+        @Suppress("DEPRECATION")
         val notesKey = configuration.value.balance?.notesKey ?: OSTBalance.DEFAULT_NOTES_KEY
         val conditionsMetadata = condition.copy(notes = newNote)
             .toConditionsMetadata(notesKey = notesKey)
@@ -838,6 +856,50 @@ internal class MotionRecorderViewModel(
             } catch (e: Exception) {
                 println("MotionRecorderViewModel: Failed to update static balance note for $measurementId: ${e.message}")
             }
+        }
+    }
+
+    /**
+     * Catalog-driven Static Balance: sends the "Recording saved" note and the chosen outcomes
+     * ([outcomes], a `$balance_result_states` tag map) in **one** update, as the Android SDK does
+     * (OS-17545). The note goes to the measurement's own `note` field; the condition already
+     * travelled at recorder start (in `tag_map` and in `onestep_balance_conditions`), so it is not
+     * re-sent. Nothing chosen and no note means no request at all.
+     *
+     * **Suspends until the update completes**, so the caller can await it before navigating away.
+     * The request itself runs in [viewModelScope], not the caller's: a screen that leaves
+     * composition mid-save (the toolbar's close button) cancels only the wait, not the update.
+     */
+    suspend fun updateBalanceConditionAnswers(
+        newNote: String?,
+        outcomes: Map<String, OSTTagValue>,
+    ) {
+        if (newNote.isNullOrBlank() && outcomes.isEmpty()) return
+        val measurementId = motionMeasurement.value?.id ?: return
+        viewModelScope.launch { sendBalanceConditionAnswers(measurementId, newNote, outcomes) }.join()
+    }
+
+    private suspend fun sendBalanceConditionAnswers(
+        measurementId: String,
+        newNote: String?,
+        outcomes: Map<String, OSTTagValue>,
+    ) {
+        try {
+            recorderBridge.updateMotionMeasurement(
+                uuid = measurementId,
+                metadata = OSTUserInputMetaData(
+                    note = newNote?.takeIf { it.isNotBlank() },
+                    tagMap = outcomes.ifEmpty { null },
+                ),
+            )
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
+            // Never log the note or the answers — log only what failed.
+            println(
+                "MotionRecorderViewModel: Failed to save the static balance answers for " +
+                    "$measurementId: ${failure::class.simpleName}",
+            )
         }
     }
 
@@ -882,6 +944,7 @@ internal class MotionRecorderViewModel(
         balanceManager.clearCurrentCondition()
         note = null
         tags.clear()
+        preRecordTagMap = emptyMap()
         // Drop the per-condition object but keep session_uuid so the next condition stays
         // in the same session.
         customMetadata.remove(OSTBalanceCondition.KEY_BALANCE_CONDITIONS)

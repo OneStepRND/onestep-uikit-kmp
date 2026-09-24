@@ -116,8 +116,15 @@ data class OSTBalance(
 
         /**
          * The full known option set, used when no server config is supplied (SDK
-         * defaults, previews, tests). The codes here are the cross-platform contract
-         * baseline that iOS must mirror; display names are English fallbacks.
+         * defaults, previews, tests) — including when a host passes a tag catalog with no
+         * Static Balance condition field, so it must record codes the engine accepts.
+         *
+         * The codes are exactly the engine's `CONDITION_CATALOG`
+         * (static_balance_engine/catalog.py), which the tag catalog's locked `$balance_*`
+         * fields also serve; `StaticBalanceCatalogTest` pins stance/vision/surface to the
+         * served catalog so drift fails CI instead of reaching a recording. They are the
+         * cross-platform contract baseline that iOS must mirror; display names are English
+         * fallbacks.
          */
         fun defaultCategories(): List<Category> =
             listOf(
@@ -126,8 +133,8 @@ data class OSTBalance(
                     displayName = "Stance",
                     required = true,
                     options = listOf(
+                        Option("shoulder_width", "Shoulder width"),
                         Option("feet_together", "Feet together"),
-                        Option("narrow_base", "Narrow base"),
                         Option("semi_tandem", "Semi-tandem"),
                         Option("tandem", "Tandem"),
                         Option("single_leg_left", "Single-leg L"),
@@ -151,8 +158,6 @@ data class OSTBalance(
                     options = listOf(
                         Option("firm", "Firm"),
                         Option("foam", "Foam"),
-                        Option("dome", "Dome"),
-                        Option("uneven", "Uneven"),
                     ),
                 ),
                 Category(
@@ -162,8 +167,6 @@ data class OSTBalance(
                     options = listOf(
                         Option("shoes", "Shoes"),
                         Option("barefoot", "Barefoot"),
-                        Option("socks", "Socks"),
-                        Option("orthotics", "Orthotics"),
                     ),
                 ),
             )
