@@ -1,6 +1,7 @@
 package co.onestep.kmp.uikit.features.recordFlow.configurations
 
 import androidx.compose.runtime.Immutable
+import co.onestep.kmp.uikit.models.OSTTagValue
 import kotlinx.serialization.Serializable
 
 /**
@@ -95,3 +96,46 @@ data class OSTBalanceCondition(
         const val KEY_BALANCE_CONDITIONS = "onestep_balance_conditions"
     }
 }
+
+/**
+ * The tag-catalog fields that carry a Static Balance condition, mapped to the engine's condition
+ * category. Mirrors the backend's `BALANCE_CONDITION_CATEGORIES` (models/perception/tag_catalog.py):
+ * the backend projects these `tag_map` keys onto the same `user_metadata.static_balance` object
+ * that `onestep_balance_conditions` writes, under these category names.
+ */
+internal val BALANCE_CONDITION_CATEGORIES: Map<String, String> =
+    mapOf(
+        "\$balance_stance" to "stance",
+        "\$balance_vision" to "vision",
+        "\$balance_surface" to "surface",
+    )
+
+/** The catalog field holding a Static Balance trial's observed outcomes (a checkbox field). */
+internal const val BALANCE_RESULT_STATES_FIELD = "\$balance_result_states"
+
+/** Whether [this] catalog carries a Static Balance condition field at all. */
+internal fun List<OSTTagField>.hasBalanceCondition(): Boolean = any { it.name in BALANCE_CONDITION_CATEGORIES }
+
+/**
+ * The condition answered on a catalog-driven Condition Setup screen, as an [OSTBalanceCondition].
+ *
+ * The same codes also travel in `tag_map`; this copy goes to `onestep_balance_conditions` too, so a
+ * `tag_map` the backend rejects — and the SDK then resends without — cannot cost the recording its
+ * condition. It also drives the "Recording saved" recap line and the analytics, as before.
+ * Selections follow catalog order; the label shown is the catalog's own, verbatim.
+ */
+internal fun balanceConditionOf(
+    fields: List<OSTTagField>,
+    tagMap: Map<String, OSTTagValue>,
+): OSTBalanceCondition =
+    OSTBalanceCondition(
+        selections = fields.mapNotNull { field ->
+            val category = BALANCE_CONDITION_CATEGORIES[field.name] ?: return@mapNotNull null
+            val code = (tagMap[field.name] as? OSTTagValue.Single)?.code ?: return@mapNotNull null
+            OSTBalanceCondition.Selection(
+                categoryKey = category,
+                code = code,
+                displayName = field.options.firstOrNull { it.value == code }?.label ?: code,
+            )
+        },
+    )

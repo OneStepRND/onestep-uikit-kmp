@@ -22,6 +22,7 @@ import co.onestep.android.core.motionLab.OSTOrder as CoreOrder
 import co.onestep.android.core.motionLab.OSTRecorderState as CoreRecorderState
 import co.onestep.android.core.motionLab.OSTResultState as CoreResultState
 import co.onestep.android.core.motionLab.OSTTimeRangedDataRequest as CoreTimeRangedDataRequest
+import co.onestep.android.core.motionLab.OSTTagValue as CoreTagValue
 import co.onestep.android.core.motionLab.OSTUserInputMetaData as CoreUserInputMetaData
 import co.onestep.android.core.motionLab.OSTWalkCourseLength as CoreWalkCourseLength
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement.MotionMeasurementStatus as KmpMeasurementStatus
@@ -49,7 +50,9 @@ import co.onestep.kmp.uikit.models.OSTRecorderState as KmpRecorderState
 import co.onestep.kmp.uikit.models.OSTResultState as KmpResultState
 import co.onestep.kmp.uikit.models.OSTState as KmpState
 import co.onestep.kmp.uikit.models.OSTTimeRangedDataRequest as KmpTimeRangedDataRequest
+import co.onestep.kmp.uikit.models.OSTTagValue as KmpTagValue
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData as KmpUserInputMetaData
+import co.onestep.kmp.uikit.models.submittable
 import co.onestep.kmp.uikit.models.OSTWalkCourseLength as KmpWalkCourseLength
 import java.util.Date
 
@@ -234,7 +237,16 @@ fun KmpUserInputMetaData.toCore(): CoreUserInputMetaData = CoreUserInputMetaData
             .firstOrNull { it.value == level.value }
     },
     walkCourseLength = walkCourseLength?.toCore(),
+    // Unanswered fields leave no key; core drops them too, but an all-empty map must not reach
+    // it as a present-but-empty `tag_map`.
+    tagMap = tagMap?.submittable()?.mapValues { (_, value) -> value.toCore() },
 )
+
+/** Codes pass through verbatim; the value's shape (string vs list) follows the field's type. */
+internal fun KmpTagValue.toCore(): CoreTagValue = when (this) {
+    is KmpTagValue.Single -> CoreTagValue.Single(code)
+    is KmpTagValue.Multiple -> CoreTagValue.Multiple(codes)
+}
 
 // ── TimeRangedDataRequest ────────────────────────────────────────────────────
 

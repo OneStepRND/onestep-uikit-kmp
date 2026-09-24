@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- From Figma "SDK - Ready for Dev", node ic_check_circle; path data verbatim. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="20"
+    android:viewportHeight="20">
+    <path
+        android:pathData="M10 0.833333C4.93739 0.833333 0.833333 4.93739 0.833333 10C0.833333 15.0626 4.93739 19.1667 10 19.1667C15.0626 19.1667 19.1667 15.0626 19.1667 10C19.1667 4.93739 15.0626 0.833333 10 0.833333ZM14.3393 8.08926C14.6647 7.76382 14.6647 7.23618 14.3393 6.91074C14.0138 6.58531 13.4862 6.58531 13.1607 6.91074L8.75 11.3215L6.83926 9.41074C6.51382 9.08531 5.98618 9.08531 5.66074 9.41074C5.33531 9.73618 5.33531 10.2638 5.66074 10.5893L8.16074 13.0893C8.48618 13.4147 9.01382 13.4147 9.33926 13.0893L14.3393 8.08926Z"
+        android:fillColor="#1B81DC"
+        android:fillType="evenOdd" />
+</vector>

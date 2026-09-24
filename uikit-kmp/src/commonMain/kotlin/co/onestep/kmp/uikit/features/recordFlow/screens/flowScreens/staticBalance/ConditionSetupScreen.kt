@@ -1,6 +1,7 @@
 package co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
@@ -12,6 +13,12 @@ import co.onestep.kmp.uikit.features.recordFlow.components.SelectableSectionsScr
 import co.onestep.kmp.uikit.features.recordFlow.configurations.BalanceIcons
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTBalance
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTBalanceCondition
+import co.onestep.kmp.uikit.features.recordFlow.configurations.BALANCE_CONDITION_CATEGORIES
+import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTTagField
+import co.onestep.kmp.uikit.features.recordFlow.configurations.balanceConditionOf
+import co.onestep.kmp.uikit.features.tagging.TagFields
+import co.onestep.kmp.uikit.features.tagging.TagFieldsScreen
+import co.onestep.kmp.uikit.models.OSTTagValue
 import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.kmp.uikit.utils.test
@@ -52,19 +59,83 @@ data object ConditionSetupDestination : UIktDestination
  * category's [OSTBalance.Category.required] flag drives whether Continue waits on it. No
  * note is collected here — the single per-condition note is entered post-recording on the
  * "Recording saved" screen. A category with an empty option list is hidden.
+ *
+ * When [catalogFields] is non-null the tag catalog drives the screen instead (see
+ * [CatalogConditionSetupScreen]): [onCatalogAnswers] receives its `tag_map` just before
+ * [onContinue] receives the condition derived from it, and [balance] is unused.
  */
 fun EntryProviderScope<NavKey>.conditionSetupScreen(
     balance: OSTBalance,
     onScreenView: () -> Unit,
     onContinue: (OSTBalanceCondition) -> Unit,
+) = conditionSetupScreen(
+    balance = balance,
+    catalogFields = null,
+    onCatalogAnswers = {},
+    onScreenView = onScreenView,
+    onContinue = onContinue,
+)
+
+internal fun EntryProviderScope<NavKey>.conditionSetupScreen(
+    balance: OSTBalance,
+    catalogFields: List<OSTTagField>?,
+    onCatalogAnswers: (Map<String, OSTTagValue>) -> Unit,
+    onScreenView: () -> Unit,
+    onContinue: (OSTBalanceCondition) -> Unit,
+    conditionNumber: () -> Int = { 0 },
 ) {
     entry<ConditionSetupDestination> {
-        ConditionSetupScreen(
-            balance = balance,
-            onScreenView = onScreenView,
-            onContinue = onContinue,
-        )
+        // "Record another test" re-adds this same key, so Navigation 3 would restore the previous
+        // condition's saved selections; keying the content by the condition number starts each
+        // condition fresh (OS-17546).
+        key(conditionNumber()) {
+            if (catalogFields != null) {
+                CatalogConditionSetupScreen(
+                    fields = remember(catalogFields) { TagFields(catalogFields) },
+                    onScreenView = onScreenView,
+                    onContinue = { condition, tagMap ->
+                        onCatalogAnswers(tagMap)
+                        onContinue(condition)
+                    },
+                )
+            } else {
+                ConditionSetupScreen(
+                    balance = balance,
+                    onScreenView = onScreenView,
+                    onContinue = onContinue,
+                )
+            }
+        }
     }
+}
+
+/**
+ * Condition Setup driven by the tag catalog: every Static Balance `pre_record` field, in catalog
+ * order, with no special case. The condition fields keep their icons — this is the one catalog
+ * screen that shows them — and every other field is text only. `required` (set on the condition
+ * fields) is the Continue gate. The answers leave as a `tag_map` plus the condition derived from it
+ * ([balanceConditionOf]).
+ */
+@Composable
+internal fun CatalogConditionSetupScreen(
+    fields: TagFields,
+    onContinue: (OSTBalanceCondition, Map<String, OSTTagValue>) -> Unit,
+    modifier: Modifier = Modifier,
+    onScreenView: () -> Unit = {},
+) {
+    TagFieldsScreen(
+        title = stringResource(Res.string.static_balance_choose_conditions),
+        fields = fields,
+        showNote = false,
+        modifier = modifier.test(OSTTestTags.StaticBalance.CONDITION_SETUP_SCREEN),
+        onScreenView = onScreenView,
+        continueButtonTestTag = OSTTestTags.StaticBalance.CONDITION_SETUP_CONTINUE_BUTTON,
+        clearButtonTestTag = OSTTestTags.StaticBalance.CONDITION_SETUP_CLEAR_ALL_BUTTON,
+        iconFor = { fieldName, value ->
+            if (fieldName in BALANCE_CONDITION_CATEGORIES) BalanceIcons.iconFor(value) else null
+        },
+        onContinue = { tagMap, _ -> onContinue(balanceConditionOf(fields.fields, tagMap), tagMap) },
+    )
 }
 
 @Composable
@@ -121,6 +192,38 @@ internal fun ConditionSetupScreen(
             onContinue(OSTBalanceCondition(selections = chosen, notes = note))
         },
     )
+}
+
+@Preview
+@Composable
+private fun CatalogConditionSetupScreenPreview() {
+    PreviewTheme {
+        CatalogConditionSetupScreen(
+            fields = TagFields(
+                listOf(
+                    OSTTagField(
+                        name = "\$clothing",
+                        label = "Clothing",
+                        type = OSTTagField.TYPE_SELECT,
+                        stage = OSTTagField.STAGE_PRE_RECORD,
+                        options = listOf(OSTTagField.Option("Shorts", "shorts")),
+                    ),
+                    OSTTagField(
+                        name = "\$balance_stance",
+                        label = "Stance",
+                        type = OSTTagField.TYPE_SELECT,
+                        stage = OSTTagField.STAGE_PRE_RECORD,
+                        required = true,
+                        options = listOf(
+                            OSTTagField.Option("Feet together", "feet_together"),
+                            OSTTagField.Option("Tandem", "tandem"),
+                        ),
+                    ),
+                ),
+            ),
+            onContinue = { _, _ -> },
+        )
+    }
 }
 
 @Preview

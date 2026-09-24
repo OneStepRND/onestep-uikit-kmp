@@ -339,10 +339,15 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
         let seconds = durationMs > 0 ? Int(durationMs / 1000) : nil
         recordingLimitMs = durationMs > 0 ? durationMs : 60_000
 
-        // KMP OSTUserInputMetaData -> native OSTUserInputMetaData (tags only for the walk E2E;
-        // assistiveDevice / levelOfAssistance / hallway length are set later via update paths).
+        // KMP OSTUserInputMetaData -> native OSTUserInputMetaData (note + tags; assistiveDevice /
+        // levelOfAssistance / hallway length are set later via update paths). The note is the
+        // clinician's own observation, stored in the measurement's `note` field as the Android
+        // bridge stores it (decided 2026-09-23, OS-17546) — it must never be logged.
+        // shortcut: `userInputMetadata.tagMap` (tag-catalog answers, OS-17546) is not forwarded: the
+        // native OSTUserInputMetaData has no `tag_map` until OS-17547. Upgrade path: map it to the
+        // native tag value type there, codes verbatim (select -> string, checkbox -> [string]).
         let nativeUserInput = OneStepSDK.OSTUserInputMetaData(
-            note: nil, // never carry free-text note (PHI)
+            note: userInputMetadata?.note,
             tags: userInputMetadata?.tags,
             assistiveDevice: nil,
             levelOfAssistance: nil
@@ -446,10 +451,14 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
 
     func updateMotionMeasurement(uuid: String, metadata: KMPUserInputMetaData, completion: @escaping () -> Void) {
         guard let id = UUID(uuidString: uuid), let motionLab else { completion(); return }
-        // KMP -> native metadata: tags only (note is PHI and never forwarded; device/assistance
-        // ride the same update path once the KMP flow sets them — extend when needed).
+        // KMP -> native metadata: note + tags (device/assistance ride the same update path once the
+        // KMP flow sets them — extend when needed). The note is forwarded as the Android bridge does
+        // (decided 2026-09-23, OS-17546): it is the clinician's observation on the measurement,
+        // stored in its `note` field, and it must never be logged. A blank note is "clear".
+        // shortcut: `metadata.tagMap` is not forwarded — the native SDK has no `tag_map` until
+        // OS-17547. Upgrade path: map it there, codes verbatim, omitting the key when null.
         let nativeMetadata = OneStepSDK.OSTUserInputMetaData(
-            note: nil,
+            note: metadata.note,
             tags: metadata.tags,
             assistiveDevice: nil,
             levelOfAssistance: nil

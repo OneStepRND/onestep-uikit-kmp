@@ -1,0 +1,7684 @@
+{
+ "walk.en_US": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "Footwear",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "With shoes",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "Barefoot",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "Slippers",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "Non-skid socks",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "Footwear adjustment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Insoles",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "Shoe adjustment",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "Phone placement",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "In the pocket",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Front pocket",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Back pocket",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Left pocket",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Right pocket",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "In the strap",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "Against the thigh",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "No pocket",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "Clothing",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Pants",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Tight pants",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Medium pants",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Loose pants",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Shorts",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$environment",
+   "label": "Environment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "dual_task_walk_subtract",
+    "long_walk",
+    "short_walk",
+    "walk"
+   ],
+   "locked": false,
+   "options": [
+    {
+     "label": "Indoors",
+     "value": "indoors",
+     "requiresAny": null
+    },
+    {
+     "label": "Outdoors",
+     "value": "outdoors",
+     "requiresAny": null
+    },
+    {
+     "label": "Snow",
+     "value": "snow",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "Assistive device",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "None",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "Poles",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "Cane",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "Single crutch",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "Two crutches",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "Walker",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "Rollator",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "Wheelchair",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "Level of assistance",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Independent",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Modified independent",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Standby assistance",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Minimal assistance",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Moderate assistance",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Maximal assistance",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Total assistance",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Unable to perform",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "Recording issues",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "No issue",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "Distracting background noise",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "The phone rang",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "The surface was uneven",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "The room was dark",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "Slipped or tripped",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "sts.en_US": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "Footwear",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "With shoes",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "Barefoot",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "Slippers",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "Non-skid socks",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "Footwear adjustment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Insoles",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "Shoe adjustment",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "Phone placement",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "In the pocket",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Front pocket",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Back pocket",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Left pocket",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Right pocket",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "In the strap",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "Against the thigh",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "No pocket",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "Clothing",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Pants",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Tight pants",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Medium pants",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Loose pants",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Shorts",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "Assistive device",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "None",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "Poles",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "Cane",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "Single crutch",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "Two crutches",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "Walker",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "Rollator",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "Wheelchair",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "Level of assistance",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Independent",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Modified independent",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Standby assistance",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Minimal assistance",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Moderate assistance",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Maximal assistance",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Total assistance",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Unable to perform",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$use_of_hands",
+   "label": "Use of hands",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "bool",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "sts",
+    "tug"
+   ],
+   "locked": false,
+   "options": [
+    {
+     "label": "Used hands",
+     "value": "true",
+     "requiresAny": null
+    },
+    {
+     "label": "Did not use hands",
+     "value": "false",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "Recording issues",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "No issue",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "Distracting background noise",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "The phone rang",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "The surface was uneven",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "The room was dark",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "Slipped or tripped",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "tug.en_US": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "Footwear",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "With shoes",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "Barefoot",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "Slippers",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "Non-skid socks",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "Footwear adjustment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Insoles",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "Shoe adjustment",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "Phone placement",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "In the pocket",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Front pocket",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Back pocket",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Left pocket",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Right pocket",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "In the strap",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "Against the thigh",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "No pocket",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "Clothing",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Pants",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Tight pants",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Medium pants",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Loose pants",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Shorts",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "Assistive device",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "None",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "Poles",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "Cane",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "Single crutch",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "Two crutches",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "Walker",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "Rollator",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "Wheelchair",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "Level of assistance",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Independent",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Modified independent",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Standby assistance",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Minimal assistance",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Moderate assistance",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Maximal assistance",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Total assistance",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Unable to perform",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$use_of_hands",
+   "label": "Use of hands",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "bool",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "sts",
+    "tug"
+   ],
+   "locked": false,
+   "options": [
+    {
+     "label": "Used hands",
+     "value": "true",
+     "requiresAny": null
+    },
+    {
+     "label": "Did not use hands",
+     "value": "false",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "Recording issues",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "No issue",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "Distracting background noise",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "The phone rang",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "The surface was uneven",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "The room was dark",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "Slipped or tripped",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "rom_knee_flexion_passive.en_US": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "Footwear",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "With shoes",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "Barefoot",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "Slippers",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "Non-skid socks",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "Footwear adjustment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Insoles",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "Shoe adjustment",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "Phone placement",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "In the pocket",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Front pocket",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Back pocket",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Left pocket",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Right pocket",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "In the strap",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "Against the thigh",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "No pocket",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "Clothing",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Pants",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Tight pants",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Medium pants",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Loose pants",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Shorts",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "Assistive device",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "None",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "Poles",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "Cane",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "Single crutch",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "Two crutches",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "Walker",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "Rollator",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "Wheelchair",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "Level of assistance",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Independent",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Modified independent",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Standby assistance",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Minimal assistance",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Moderate assistance",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Maximal assistance",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Total assistance",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Unable to perform",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "Recording issues",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "No issue",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "Distracting background noise",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "The phone rang",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "The surface was uneven",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "The room was dark",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "Slipped or tripped",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "rom_knee_ext.en_US": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "Footwear",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "With shoes",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "Barefoot",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "Slippers",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "Non-skid socks",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "Footwear adjustment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Insoles",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "Shoe adjustment",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "Phone placement",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "In the pocket",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Front pocket",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Back pocket",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Left pocket",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Right pocket",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "In the strap",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "Against the thigh",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "No pocket",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "Clothing",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Pants",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Tight pants",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Medium pants",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Loose pants",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Shorts",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "Assistive device",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "None",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "Poles",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "Cane",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "Single crutch",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "Two crutches",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "Walker",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "Rollator",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "Wheelchair",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "Level of assistance",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Independent",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Modified independent",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Standby assistance",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Minimal assistance",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Moderate assistance",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Maximal assistance",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Total assistance",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Unable to perform",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "Recording issues",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "No issue",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "Distracting background noise",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "The phone rang",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "The surface was uneven",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "The room was dark",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "Slipped or tripped",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "balance_test.en_US": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "Footwear",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "With shoes",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "Barefoot",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "Slippers",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "Non-skid socks",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "Footwear adjustment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Insoles",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "Shoe adjustment",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "Phone placement",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "In the pocket",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Front pocket",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Back pocket",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Left pocket",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Right pocket",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "In the strap",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "Against the thigh",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "No pocket",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "Clothing",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Pants",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Tight pants",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Medium pants",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Loose pants",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Shorts",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "Assistive device",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "None",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "Poles",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "Cane",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "Single crutch",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "Two crutches",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "Walker",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "Rollator",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "Wheelchair",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "Level of assistance",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Independent",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Modified independent",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Standby assistance",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Minimal assistance",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Moderate assistance",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Maximal assistance",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Total assistance",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Unable to perform",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "Recording issues",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "No issue",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "Distracting background noise",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "The phone rang",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "The surface was uneven",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "The room was dark",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "Slipped or tripped",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "dual_task_walk_subtract.en_US": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "Footwear",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "With shoes",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "Barefoot",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "Slippers",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "Non-skid socks",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "Footwear adjustment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Insoles",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "Shoe adjustment",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "Phone placement",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "In the pocket",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Front pocket",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Back pocket",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Left pocket",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Right pocket",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "In the strap",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "Against the thigh",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "No pocket",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "Clothing",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Pants",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Tight pants",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Medium pants",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Loose pants",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Shorts",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$environment",
+   "label": "Environment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "dual_task_walk_subtract",
+    "long_walk",
+    "short_walk",
+    "walk"
+   ],
+   "locked": false,
+   "options": [
+    {
+     "label": "Indoors",
+     "value": "indoors",
+     "requiresAny": null
+    },
+    {
+     "label": "Outdoors",
+     "value": "outdoors",
+     "requiresAny": null
+    },
+    {
+     "label": "Snow",
+     "value": "snow",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "Assistive device",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "None",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "Poles",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "Cane",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "Single crutch",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "Two crutches",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "Walker",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "Rollator",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "Wheelchair",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "Level of assistance",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Independent",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Modified independent",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Standby assistance",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Minimal assistance",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Moderate assistance",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Maximal assistance",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Total assistance",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Unable to perform",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "Recording issues",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "No issue",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "Distracting background noise",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "The phone rang",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "The surface was uneven",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "The room was dark",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "Slipped or tripped",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "walk_6_min_test.en_US": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "Footwear",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "With shoes",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "Barefoot",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "Slippers",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "Non-skid socks",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "Footwear adjustment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Insoles",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "Shoe adjustment",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "Phone placement",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "In the pocket",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Front pocket",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Back pocket",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Left pocket",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Right pocket",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "In the strap",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "Against the thigh",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "No pocket",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "Clothing",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Pants",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Tight pants",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Medium pants",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Loose pants",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Shorts",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "Assistive device",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "None",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "Poles",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "Cane",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "Single crutch",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "Two crutches",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "Walker",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "Rollator",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "Wheelchair",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "Level of assistance",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Independent",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Modified independent",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Standby assistance",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Minimal assistance",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Moderate assistance",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Maximal assistance",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Total assistance",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Unable to perform",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "Recording issues",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "No issue",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "Distracting background noise",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "The phone rang",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "The surface was uneven",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "The room was dark",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "Slipped or tripped",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "walk_2_min_test.en_US": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "Footwear",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "With shoes",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "Barefoot",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "Slippers",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "Non-skid socks",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "Footwear adjustment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Insoles",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "Shoe adjustment",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "Phone placement",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "In the pocket",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Front pocket",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Back pocket",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Left pocket",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Right pocket",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "In the strap",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "Against the thigh",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "No pocket",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "Clothing",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Pants",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Tight pants",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Medium pants",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Loose pants",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Shorts",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "Assistive device",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "None",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "Poles",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "Cane",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "Single crutch",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "Two crutches",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "Walker",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "Rollator",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "Wheelchair",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "Level of assistance",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Independent",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Modified independent",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Standby assistance",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Minimal assistance",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Moderate assistance",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Maximal assistance",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Total assistance",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Unable to perform",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "Recording issues",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "No issue",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "Distracting background noise",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "The phone rang",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "The surface was uneven",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "The room was dark",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "Slipped or tripped",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "stairs.en_US": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "Footwear",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "With shoes",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "Barefoot",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "Slippers",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "Non-skid socks",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "Footwear adjustment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Insoles",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "Shoe adjustment",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "Phone placement",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "In the pocket",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Front pocket",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Back pocket",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Left pocket",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Right pocket",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "In the strap",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "Against the thigh",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "No pocket",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "Clothing",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Pants",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Tight pants",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Medium pants",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Loose pants",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Shorts",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "Assistive device",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "None",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "Poles",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "Cane",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "Single crutch",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "Two crutches",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "Walker",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "Rollator",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "Wheelchair",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "Level of assistance",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Independent",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Modified independent",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Standby assistance",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Minimal assistance",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Moderate assistance",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Maximal assistance",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Total assistance",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Unable to perform",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "Recording issues",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "No issue",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "Distracting background noise",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "The phone rang",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "The surface was uneven",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "The room was dark",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "Slipped or tripped",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "static_balance_test.en_US": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "Footwear",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "With shoes",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "Barefoot",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "Slippers",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "Non-skid socks",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "Footwear adjustment",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Insoles",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "Shoe adjustment",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "Phone placement",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "In the pocket",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Front pocket",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Back pocket",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Left pocket",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "Right pocket",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "In the strap",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "Against the thigh",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "No pocket",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "Clothing",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Pants",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Tight pants",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Medium pants",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Loose pants",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "Shorts",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "Assistive device",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "None",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "Poles",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "Cane",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "Single crutch",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "Two crutches",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "Walker",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "Rollator",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "Wheelchair",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "Level of assistance",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "Independent",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Modified independent",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "Standby assistance",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Minimal assistance",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Moderate assistance",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Maximal assistance",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Total assistance",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "Unable to perform",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "Recording issues",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "No issue",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "Distracting background noise",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "The phone rang",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "The surface was uneven",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "The room was dark",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "Slipped or tripped",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$balance_stance",
+   "label": "Stance",
+   "required": true,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "static_balance_test"
+   ],
+   "locked": true,
+   "options": [
+    {
+     "label": "Shoulder-width",
+     "value": "shoulder_width",
+     "requiresAny": null
+    },
+    {
+     "label": "Feet together",
+     "value": "feet_together",
+     "requiresAny": null
+    },
+    {
+     "label": "Semi-tandem",
+     "value": "semi_tandem",
+     "requiresAny": null
+    },
+    {
+     "label": "Tandem",
+     "value": "tandem",
+     "requiresAny": null
+    },
+    {
+     "label": "Single-leg L",
+     "value": "single_leg_left",
+     "requiresAny": null
+    },
+    {
+     "label": "Single-leg R",
+     "value": "single_leg_right",
+     "requiresAny": null
+    },
+    {
+     "label": "Seated",
+     "value": "seated",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$balance_vision",
+   "label": "Vision",
+   "required": true,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "static_balance_test"
+   ],
+   "locked": true,
+   "options": [
+    {
+     "label": "Eyes open",
+     "value": "eyes_open",
+     "requiresAny": null
+    },
+    {
+     "label": "Eyes closed",
+     "value": "eyes_closed",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$balance_surface",
+   "label": "Surface",
+   "required": true,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "static_balance_test"
+   ],
+   "locked": true,
+   "options": [
+    {
+     "label": "Firm",
+     "value": "firm",
+     "requiresAny": null
+    },
+    {
+     "label": "Foam",
+     "value": "foam",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$balance_result_states",
+   "label": "What happened",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "static_balance_test"
+   ],
+   "locked": true,
+   "options": [
+    {
+     "label": "Completed",
+     "value": "completed",
+     "requiresAny": null
+    },
+    {
+     "label": "Raised arms from sides",
+     "value": "raised_arms",
+     "requiresAny": [
+      "feet_together",
+      "semi_tandem",
+      "shoulder_width",
+      "single_leg_left",
+      "single_leg_right",
+      "tandem"
+     ]
+    },
+    {
+     "label": "Stepped out",
+     "value": "stepped_out",
+     "requiresAny": [
+      "feet_together",
+      "semi_tandem",
+      "shoulder_width",
+      "single_leg_left",
+      "single_leg_right",
+      "tandem"
+     ]
+    },
+    {
+     "label": "Grabbed support",
+     "value": "grabbed_support",
+     "requiresAny": [
+      "feet_together",
+      "semi_tandem",
+      "shoulder_width",
+      "single_leg_left",
+      "single_leg_right",
+      "tandem"
+     ]
+    },
+    {
+     "label": "Fell",
+     "value": "fell",
+     "requiresAny": [
+      "feet_together",
+      "semi_tandem",
+      "shoulder_width",
+      "single_leg_left",
+      "single_leg_right",
+      "tandem"
+     ]
+    },
+    {
+     "label": "Foot touched down",
+     "value": "touched_down",
+     "requiresAny": [
+      "single_leg_left",
+      "single_leg_right",
+      "tandem"
+     ]
+    },
+    {
+     "label": "Opened eyes",
+     "value": "opened_eyes",
+     "requiresAny": [
+      "eyes_closed"
+     ]
+    },
+    {
+     "label": "Aborted early",
+     "value": "aborted_early",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "generic_recording.en_US": [],
+ "walk.he_IL": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עם נעליים",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים חשופות",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "נעלי בית",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "גרביים נגד החלקה",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "התאמת הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מדרסים",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "התאמת נעל",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "מיקום הטלפון",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "בכיס",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס קדמי",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס אחורי",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס שמאלי",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס ימני",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "ברצועה",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "צמוד לירך",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "ללא כיס",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "לבוש",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מכנסיים",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים צמודים",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים בגזרה בינונית",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים רחבים",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים קצרים",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$environment",
+   "label": "סביבה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "dual_task_walk_subtract",
+    "long_walk",
+    "short_walk",
+    "walk"
+   ],
+   "locked": false,
+   "options": [
+    {
+     "label": "בתוך מבנה",
+     "value": "indoors",
+     "requiresAny": null
+    },
+    {
+     "label": "בחוץ",
+     "value": "outdoors",
+     "requiresAny": null
+    },
+    {
+     "label": "שלג",
+     "value": "snow",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "אמצעי עזר",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "מקלות הליכה",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "מקל הליכה",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "קב אחד",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "שני קביים",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון גלגלים",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "כיסא גלגלים",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "רמת סיוע",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עצמאי",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "עצמאי בהתאמה",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "השגחה בלבד",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מינימלי",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע בינוני",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מקסימלי",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מלא",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "לא הצליח לבצע",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "בעיות בהקלטה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא בעיות",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "רעשי רקע מפריעים",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "הטלפון צלצל",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "משטח לא ישר",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "החדר היה חשוך",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "החלקה או מכשול",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "sts.he_IL": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עם נעליים",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים חשופות",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "נעלי בית",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "גרביים נגד החלקה",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "התאמת הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מדרסים",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "התאמת נעל",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "מיקום הטלפון",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "בכיס",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס קדמי",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס אחורי",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס שמאלי",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס ימני",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "ברצועה",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "צמוד לירך",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "ללא כיס",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "לבוש",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מכנסיים",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים צמודים",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים בגזרה בינונית",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים רחבים",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים קצרים",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "אמצעי עזר",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "מקלות הליכה",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "מקל הליכה",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "קב אחד",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "שני קביים",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון גלגלים",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "כיסא גלגלים",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "רמת סיוע",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עצמאי",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "עצמאי בהתאמה",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "השגחה בלבד",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מינימלי",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע בינוני",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מקסימלי",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מלא",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "לא הצליח לבצע",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$use_of_hands",
+   "label": "שימוש בידיים",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "bool",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "sts",
+    "tug"
+   ],
+   "locked": false,
+   "options": [
+    {
+     "label": "נעזר בידיים",
+     "value": "true",
+     "requiresAny": null
+    },
+    {
+     "label": "לא נעזר בידיים",
+     "value": "false",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "בעיות בהקלטה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא בעיות",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "רעשי רקע מפריעים",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "הטלפון צלצל",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "משטח לא ישר",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "החדר היה חשוך",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "החלקה או מכשול",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "tug.he_IL": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עם נעליים",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים חשופות",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "נעלי בית",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "גרביים נגד החלקה",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "התאמת הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מדרסים",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "התאמת נעל",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "מיקום הטלפון",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "בכיס",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס קדמי",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס אחורי",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס שמאלי",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס ימני",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "ברצועה",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "צמוד לירך",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "ללא כיס",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "לבוש",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מכנסיים",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים צמודים",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים בגזרה בינונית",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים רחבים",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים קצרים",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "אמצעי עזר",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "מקלות הליכה",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "מקל הליכה",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "קב אחד",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "שני קביים",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון גלגלים",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "כיסא גלגלים",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "רמת סיוע",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עצמאי",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "עצמאי בהתאמה",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "השגחה בלבד",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מינימלי",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע בינוני",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מקסימלי",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מלא",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "לא הצליח לבצע",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$use_of_hands",
+   "label": "שימוש בידיים",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "bool",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "sts",
+    "tug"
+   ],
+   "locked": false,
+   "options": [
+    {
+     "label": "נעזר בידיים",
+     "value": "true",
+     "requiresAny": null
+    },
+    {
+     "label": "לא נעזר בידיים",
+     "value": "false",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "בעיות בהקלטה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא בעיות",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "רעשי רקע מפריעים",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "הטלפון צלצל",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "משטח לא ישר",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "החדר היה חשוך",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "החלקה או מכשול",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "rom_knee_flexion_passive.he_IL": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עם נעליים",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים חשופות",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "נעלי בית",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "גרביים נגד החלקה",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "התאמת הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מדרסים",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "התאמת נעל",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "מיקום הטלפון",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "בכיס",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס קדמי",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס אחורי",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס שמאלי",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס ימני",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "ברצועה",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "צמוד לירך",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "ללא כיס",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "לבוש",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מכנסיים",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים צמודים",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים בגזרה בינונית",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים רחבים",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים קצרים",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "אמצעי עזר",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "מקלות הליכה",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "מקל הליכה",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "קב אחד",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "שני קביים",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון גלגלים",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "כיסא גלגלים",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "רמת סיוע",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עצמאי",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "עצמאי בהתאמה",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "השגחה בלבד",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מינימלי",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע בינוני",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מקסימלי",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מלא",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "לא הצליח לבצע",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "בעיות בהקלטה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא בעיות",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "רעשי רקע מפריעים",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "הטלפון צלצל",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "משטח לא ישר",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "החדר היה חשוך",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "החלקה או מכשול",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "rom_knee_ext.he_IL": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עם נעליים",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים חשופות",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "נעלי בית",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "גרביים נגד החלקה",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "התאמת הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מדרסים",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "התאמת נעל",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "מיקום הטלפון",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "בכיס",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס קדמי",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס אחורי",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס שמאלי",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס ימני",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "ברצועה",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "צמוד לירך",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "ללא כיס",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "לבוש",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מכנסיים",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים צמודים",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים בגזרה בינונית",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים רחבים",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים קצרים",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "אמצעי עזר",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "מקלות הליכה",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "מקל הליכה",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "קב אחד",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "שני קביים",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון גלגלים",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "כיסא גלגלים",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "רמת סיוע",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עצמאי",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "עצמאי בהתאמה",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "השגחה בלבד",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מינימלי",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע בינוני",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מקסימלי",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מלא",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "לא הצליח לבצע",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "בעיות בהקלטה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא בעיות",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "רעשי רקע מפריעים",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "הטלפון צלצל",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "משטח לא ישר",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "החדר היה חשוך",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "החלקה או מכשול",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "balance_test.he_IL": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עם נעליים",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים חשופות",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "נעלי בית",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "גרביים נגד החלקה",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "התאמת הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מדרסים",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "התאמת נעל",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "מיקום הטלפון",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "בכיס",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס קדמי",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס אחורי",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס שמאלי",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס ימני",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "ברצועה",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "צמוד לירך",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "ללא כיס",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "לבוש",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מכנסיים",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים צמודים",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים בגזרה בינונית",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים רחבים",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים קצרים",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "אמצעי עזר",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "מקלות הליכה",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "מקל הליכה",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "קב אחד",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "שני קביים",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון גלגלים",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "כיסא גלגלים",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "רמת סיוע",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עצמאי",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "עצמאי בהתאמה",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "השגחה בלבד",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מינימלי",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע בינוני",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מקסימלי",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מלא",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "לא הצליח לבצע",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "בעיות בהקלטה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא בעיות",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "רעשי רקע מפריעים",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "הטלפון צלצל",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "משטח לא ישר",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "החדר היה חשוך",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "החלקה או מכשול",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "dual_task_walk_subtract.he_IL": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עם נעליים",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים חשופות",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "נעלי בית",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "גרביים נגד החלקה",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "התאמת הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מדרסים",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "התאמת נעל",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "מיקום הטלפון",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "בכיס",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס קדמי",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס אחורי",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס שמאלי",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס ימני",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "ברצועה",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "צמוד לירך",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "ללא כיס",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "לבוש",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מכנסיים",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים צמודים",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים בגזרה בינונית",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים רחבים",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים קצרים",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$environment",
+   "label": "סביבה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "dual_task_walk_subtract",
+    "long_walk",
+    "short_walk",
+    "walk"
+   ],
+   "locked": false,
+   "options": [
+    {
+     "label": "בתוך מבנה",
+     "value": "indoors",
+     "requiresAny": null
+    },
+    {
+     "label": "בחוץ",
+     "value": "outdoors",
+     "requiresAny": null
+    },
+    {
+     "label": "שלג",
+     "value": "snow",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "אמצעי עזר",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "מקלות הליכה",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "מקל הליכה",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "קב אחד",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "שני קביים",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון גלגלים",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "כיסא גלגלים",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "רמת סיוע",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עצמאי",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "עצמאי בהתאמה",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "השגחה בלבד",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מינימלי",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע בינוני",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מקסימלי",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מלא",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "לא הצליח לבצע",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "בעיות בהקלטה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא בעיות",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "רעשי רקע מפריעים",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "הטלפון צלצל",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "משטח לא ישר",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "החדר היה חשוך",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "החלקה או מכשול",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "walk_6_min_test.he_IL": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עם נעליים",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים חשופות",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "נעלי בית",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "גרביים נגד החלקה",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "התאמת הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מדרסים",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "התאמת נעל",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "מיקום הטלפון",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "בכיס",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס קדמי",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס אחורי",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס שמאלי",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס ימני",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "ברצועה",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "צמוד לירך",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "ללא כיס",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "לבוש",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מכנסיים",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים צמודים",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים בגזרה בינונית",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים רחבים",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים קצרים",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "אמצעי עזר",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "מקלות הליכה",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "מקל הליכה",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "קב אחד",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "שני קביים",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון גלגלים",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "כיסא גלגלים",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "רמת סיוע",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עצמאי",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "עצמאי בהתאמה",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "השגחה בלבד",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מינימלי",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע בינוני",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מקסימלי",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מלא",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "לא הצליח לבצע",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "בעיות בהקלטה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא בעיות",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "רעשי רקע מפריעים",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "הטלפון צלצל",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "משטח לא ישר",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "החדר היה חשוך",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "החלקה או מכשול",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "walk_2_min_test.he_IL": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עם נעליים",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים חשופות",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "נעלי בית",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "גרביים נגד החלקה",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "התאמת הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מדרסים",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "התאמת נעל",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "מיקום הטלפון",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "בכיס",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס קדמי",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס אחורי",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס שמאלי",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס ימני",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "ברצועה",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "צמוד לירך",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "ללא כיס",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "לבוש",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מכנסיים",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים צמודים",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים בגזרה בינונית",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים רחבים",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים קצרים",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "אמצעי עזר",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "מקלות הליכה",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "מקל הליכה",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "קב אחד",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "שני קביים",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון גלגלים",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "כיסא גלגלים",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "רמת סיוע",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עצמאי",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "עצמאי בהתאמה",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "השגחה בלבד",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מינימלי",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע בינוני",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מקסימלי",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מלא",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "לא הצליח לבצע",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "בעיות בהקלטה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא בעיות",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "רעשי רקע מפריעים",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "הטלפון צלצל",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "משטח לא ישר",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "החדר היה חשוך",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "החלקה או מכשול",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "stairs.he_IL": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עם נעליים",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים חשופות",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "נעלי בית",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "גרביים נגד החלקה",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "התאמת הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מדרסים",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "התאמת נעל",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "מיקום הטלפון",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "בכיס",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס קדמי",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס אחורי",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס שמאלי",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס ימני",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "ברצועה",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "צמוד לירך",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "ללא כיס",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "לבוש",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מכנסיים",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים צמודים",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים בגזרה בינונית",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים רחבים",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים קצרים",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "אמצעי עזר",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "מקלות הליכה",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "מקל הליכה",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "קב אחד",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "שני קביים",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון גלגלים",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "כיסא גלגלים",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "רמת סיוע",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עצמאי",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "עצמאי בהתאמה",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "השגחה בלבד",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מינימלי",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע בינוני",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מקסימלי",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מלא",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "לא הצליח לבצע",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "בעיות בהקלטה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא בעיות",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "רעשי רקע מפריעים",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "הטלפון צלצל",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "משטח לא ישר",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "החדר היה חשוך",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "החלקה או מכשול",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "static_balance_test.he_IL": [
+  {
+   "type": "select",
+   "name": "$footwear",
+   "label": "הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עם נעליים",
+     "value": "with_shoes",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים חשופות",
+     "value": "barefoot",
+     "requiresAny": null
+    },
+    {
+     "label": "נעלי בית",
+     "value": "slippers",
+     "requiresAny": null
+    },
+    {
+     "label": "גרביים נגד החלקה",
+     "value": "non_skid_socks",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$footwear_adjustment",
+   "label": "התאמת הנעלה",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מדרסים",
+     "value": "insoles",
+     "requiresAny": null
+    },
+    {
+     "label": "התאמת נעל",
+     "value": "shoe_adjustment",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$phone_placement",
+   "label": "מיקום הטלפון",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "בכיס",
+     "value": "pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס קדמי",
+     "value": "front_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס אחורי",
+     "value": "back_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס שמאלי",
+     "value": "left_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "בכיס ימני",
+     "value": "right_pocket",
+     "requiresAny": null
+    },
+    {
+     "label": "ברצועה",
+     "value": "strap",
+     "requiresAny": null
+    },
+    {
+     "label": "צמוד לירך",
+     "value": "thigh",
+     "requiresAny": null
+    },
+    {
+     "label": "ללא כיס",
+     "value": "none",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$clothing",
+   "label": "לבוש",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "מכנסיים",
+     "value": "pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים צמודים",
+     "value": "tight_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים בגזרה בינונית",
+     "value": "medium_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים רחבים",
+     "value": "loose_pants",
+     "requiresAny": null
+    },
+    {
+     "label": "מכנסיים קצרים",
+     "value": "shorts",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$assistive_device",
+   "label": "אמצעי עזר",
+   "required": false,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא",
+     "value": "none",
+     "requiresAny": null
+    },
+    {
+     "label": "מקלות הליכה",
+     "value": "poles",
+     "requiresAny": null
+    },
+    {
+     "label": "מקל הליכה",
+     "value": "cane",
+     "requiresAny": null
+    },
+    {
+     "label": "קב אחד",
+     "value": "crutch_single",
+     "requiresAny": null
+    },
+    {
+     "label": "שני קביים",
+     "value": "crutch_double",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון",
+     "value": "walker",
+     "requiresAny": null
+    },
+    {
+     "label": "הליכון גלגלים",
+     "value": "rollator",
+     "requiresAny": null
+    },
+    {
+     "label": "כיסא גלגלים",
+     "value": "wheelchair",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$level_of_assistance",
+   "label": "רמת סיוע",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "עצמאי",
+     "value": "independent",
+     "requiresAny": null
+    },
+    {
+     "label": "עצמאי בהתאמה",
+     "value": "modified_independent",
+     "requiresAny": null
+    },
+    {
+     "label": "השגחה בלבד",
+     "value": "standby_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מינימלי",
+     "value": "min_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע בינוני",
+     "value": "moderate_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מקסימלי",
+     "value": "max_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "סיוע מלא",
+     "value": "total_assistance",
+     "requiresAny": null
+    },
+    {
+     "label": "לא הצליח לבצע",
+     "value": "unable_to_perform",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$recording_issues",
+   "label": "בעיות בהקלטה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": null,
+   "locked": false,
+   "options": [
+    {
+     "label": "ללא בעיות",
+     "value": "no_issue",
+     "requiresAny": null
+    },
+    {
+     "label": "רעשי רקע מפריעים",
+     "value": "background_noise",
+     "requiresAny": null
+    },
+    {
+     "label": "הטלפון צלצל",
+     "value": "phone_rang",
+     "requiresAny": null
+    },
+    {
+     "label": "משטח לא ישר",
+     "value": "uneven_surface",
+     "requiresAny": null
+    },
+    {
+     "label": "החדר היה חשוך",
+     "value": "dark_room",
+     "requiresAny": null
+    },
+    {
+     "label": "החלקה או מכשול",
+     "value": "slipped_or_tripped",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$balance_stance",
+   "label": "עמידה",
+   "required": true,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "static_balance_test"
+   ],
+   "locked": true,
+   "options": [
+    {
+     "label": "רוחב כתפיים",
+     "value": "shoulder_width",
+     "requiresAny": null
+    },
+    {
+     "label": "רגליים צמודות",
+     "value": "feet_together",
+     "requiresAny": null
+    },
+    {
+     "label": "חצי טנדם",
+     "value": "semi_tandem",
+     "requiresAny": null
+    },
+    {
+     "label": "טנדם",
+     "value": "tandem",
+     "requiresAny": null
+    },
+    {
+     "label": "רגל שמאל",
+     "value": "single_leg_left",
+     "requiresAny": null
+    },
+    {
+     "label": "רגל ימין",
+     "value": "single_leg_right",
+     "requiresAny": null
+    },
+    {
+     "label": "ישיבה",
+     "value": "seated",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$balance_vision",
+   "label": "ראייה",
+   "required": true,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "static_balance_test"
+   ],
+   "locked": true,
+   "options": [
+    {
+     "label": "עיניים פקוחות",
+     "value": "eyes_open",
+     "requiresAny": null
+    },
+    {
+     "label": "עיניים עצומות",
+     "value": "eyes_closed",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "select",
+   "name": "$balance_surface",
+   "label": "משטח",
+   "required": true,
+   "stage": "pre_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "static_balance_test"
+   ],
+   "locked": true,
+   "options": [
+    {
+     "label": "משטח קשיח",
+     "value": "firm",
+     "requiresAny": null
+    },
+    {
+     "label": "ספוג",
+     "value": "foam",
+     "requiresAny": null
+    }
+   ]
+  },
+  {
+   "type": "checkbox",
+   "name": "$balance_result_states",
+   "label": "מה קרה",
+   "required": false,
+   "stage": "post_record",
+   "valueType": "code",
+   "apps": [
+    "clinician",
+    "patient"
+   ],
+   "activities": [
+    "static_balance_test"
+   ],
+   "locked": true,
+   "options": [
+    {
+     "label": "הושלם",
+     "value": "completed",
+     "requiresAny": null
+    },
+    {
+     "label": "הרמת ידיים מהצדדים",
+     "value": "raised_arms",
+     "requiresAny": [
+      "feet_together",
+      "semi_tandem",
+      "shoulder_width",
+      "single_leg_left",
+      "single_leg_right",
+      "tandem"
+     ]
+    },
+    {
+     "label": "יציאה מהתנוחה",
+     "value": "stepped_out",
+     "requiresAny": [
+      "feet_together",
+      "semi_tandem",
+      "shoulder_width",
+      "single_leg_left",
+      "single_leg_right",
+      "tandem"
+     ]
+    },
+    {
+     "label": "אחיזה בתמיכה",
+     "value": "grabbed_support",
+     "requiresAny": [
+      "feet_together",
+      "semi_tandem",
+      "shoulder_width",
+      "single_leg_left",
+      "single_leg_right",
+      "tandem"
+     ]
+    },
+    {
+     "label": "נפילה",
+     "value": "fell",
+     "requiresAny": [
+      "feet_together",
+      "semi_tandem",
+      "shoulder_width",
+      "single_leg_left",
+      "single_leg_right",
+      "tandem"
+     ]
+    },
+    {
+     "label": "נגיעת רגל ברצפה",
+     "value": "touched_down",
+     "requiresAny": [
+      "single_leg_left",
+      "single_leg_right",
+      "tandem"
+     ]
+    },
+    {
+     "label": "פקיחת עיניים",
+     "value": "opened_eyes",
+     "requiresAny": [
+      "eyes_closed"
+     ]
+    },
+    {
+     "label": "הופסק מוקדם",
+     "value": "aborted_early",
+     "requiresAny": null
+    }
+   ]
+  }
+ ],
+ "generic_recording.he_IL": []
+}

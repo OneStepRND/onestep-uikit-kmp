@@ -82,10 +82,24 @@ instead of "Continue".
 `CONDITION_SETUP_SCREEN`, `CONDITION_SETUP_CONTINUE_BUTTON`, `CONDITION_SETUP_CLEAR_ALL_BUTTON`,
 `conditionSection(sectionId)`, `conditionOption(sectionId, index)`, `RECORDING_SAVED_SCREEN`,
 `RECORDING_SAVED_NOTE_FIELD`, `RECORDING_SAVED_GO_TO_SUMMARY_BUTTON`,
-`RECORDING_SAVED_RECORD_ANOTHER_BUTTON`.
+`RECORDING_SAVED_RECORD_ANOTHER_BUTTON`, `recordingSavedOutcome(code)`.
 
 The condition list is server-driven: its labels are workspace data, its section keys are not, which
-is why the option rows are addressed as `ost_condition_option_stance_0` rather than by label.
+is why the option rows are addressed as `ost_condition_option_stance_0` rather than by label. When
+the tag catalog drives Condition Setup, the section keys are the catalog field names
+(`ost_condition_option_$balance_stance_0`), and the "Recording saved" outcome chips are addressed
+by their catalog code (`ost_recording_saved_outcome_fell`).
+
+### `OSTTestTags.TagCatalog`
+
+`PRE_RECORD_SCREEN`, `PRE_RECORD_CONTINUE_BUTTON`, `PRE_RECORD_CLEAR_ALL_BUTTON`,
+`POST_RECORD_SCREEN`, `POST_RECORD_CONTINUE_BUTTON`, `POST_RECORD_CLEAR_ALL_BUTTON`,
+`POST_RECORD_NOTE_FIELD`.
+
+The question sections on these screens reuse `StaticBalance.conditionSection` /
+`conditionOption`, keyed by the catalog field's `name` — e.g. `ost_condition_option_$footwear_1`.
+Catalog field names start with `$`, which Maestro's `id:` (a regex) reads as an anchor: escape it
+(`id: "ost_condition_option_\\$footwear_1"`).
 
 ### `OSTTestTags.GenericRecording`
 

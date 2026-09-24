@@ -24,6 +24,8 @@ import co.onestep.kmp.uikit.features.recordFlow.screens.SummaryResultDestination
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.genericRecording.GenericRecordingNotesDestination
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.ConditionSetupDestination
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.RecordingSavedDestination
+import co.onestep.kmp.uikit.features.tagging.PostTagFieldsDestination
+import co.onestep.kmp.uikit.features.tagging.PreTagFieldsDestination
 import co.onestep.kmp.uikit.features.summary.screens.navigation.CustomQuestionDestination
 import co.onestep.kmp.uikit.features.summary.screens.navigation.EditAssistiveDeviceDestination
 import co.onestep.kmp.uikit.features.summary.screens.navigation.EditFootwearDestination
@@ -63,6 +65,9 @@ internal val UIktNavSavedStateConfiguration = SavedStateConfiguration {
             // Record flow — static balance
             subclass(ConditionSetupDestination::class)
             subclass(RecordingSavedDestination::class)
+            // Tag catalog (OS-17546)
+            subclass(PreTagFieldsDestination::class)
+            subclass(PostTagFieldsDestination::class)
             // Record flow — generic recording
             subclass(GenericRecordingNotesDestination::class)
             // Record flow — recording + results
