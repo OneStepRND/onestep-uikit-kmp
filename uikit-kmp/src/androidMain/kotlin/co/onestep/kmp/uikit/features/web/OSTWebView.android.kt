@@ -55,6 +55,7 @@ internal actual fun PlatformWebView(
     urlRouter: OSTWebUrlRouter?,
     theme: OSTWebColorConfig,
     onCloseForm: (() -> Unit)?,
+    onHostMessage: ((OSTWebHostMessage) -> Unit)?,
     onNavigateBack: (() -> Unit)?,
     onPageCommitted: ((url: String) -> Unit)?,
     injectedJavaScript: String?,
@@ -92,6 +93,8 @@ internal actual fun PlatformWebView(
     routerHolder.value = urlRouter
     val pageCommittedHolder = remember { mutableStateOf(onPageCommitted) }
     pageCommittedHolder.value = onPageCommitted
+    val hostMessageHolder = remember { mutableStateOf(onHostMessage) }
+    hostMessageHolder.value = onHostMessage
 
     val webViewClient = remember {
         object : WebViewClient() {
@@ -222,6 +225,23 @@ internal actual fun PlatformWebView(
                     "Android",
                 )
             }
+
+            // Same rule as closeForm: absent unless the host asked for it. The interface method runs
+            // on WebView's JavaBridge thread, so parsing happens there and only the parsed message
+            // crosses to the main thread.
+            if (onHostMessage != null) {
+                val mainHandler = Handler(Looper.getMainLooper())
+                addJavascriptInterface(
+                    object {
+                        @JavascriptInterface
+                        fun postMessage(message: String?) {
+                            val parsed = message?.let(::parseHostMessage) ?: return
+                            mainHandler.post { hostMessageHolder.value?.invoke(parsed) }
+                        }
+                    },
+                    HOST_MESSAGE_BRIDGE_NAME,
+                )
+            }
         }
     }
 
@@ -279,6 +299,7 @@ internal actual fun PlatformWebView(
         },
         onRelease = { view ->
             if (onCloseForm != null) view.removeJavascriptInterface("Android")
+            if (onHostMessage != null) view.removeJavascriptInterface(HOST_MESSAGE_BRIDGE_NAME)
             view.destroy()
         },
     )
