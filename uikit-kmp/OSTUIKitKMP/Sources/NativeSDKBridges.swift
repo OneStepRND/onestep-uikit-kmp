@@ -380,6 +380,11 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
 
     func analyze(uuid: String?, timeoutMs: Int64, completion: @escaping (KMPMotionMeasurement?) -> Void) {
         guard let recorder else { completion(nil); return }
+        // A by-uuid analyze is unsupported here (recorder.analyze() only handles the current recording), so it must complete instead of hanging.
+        guard uuid == nil else {
+            completion(nil)
+            return
+        }
         // Bind to analyzer state (result is delivered through .analyzedAndSavedSuccessfully / .error).
         analyzeContinuation = completion
         bindAnalyzerState()
