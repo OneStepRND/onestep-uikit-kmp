@@ -259,10 +259,6 @@ internal actual fun PlatformWebView(
         }
         onDispose {
             engine.value = null
-            // Stop in-flight work but do NOT touch the shared cookie jar (see the KDoc). The
-            // WebView itself is destroyed in AndroidView's onRelease, which is the point at which
-            // the view is guaranteed to be detached.
-            webView.stopLoading()
         }
     }
 
@@ -300,6 +296,10 @@ internal actual fun PlatformWebView(
         onRelease = { view ->
             if (onCloseForm != null) view.removeJavascriptInterface("Android")
             if (onHostMessage != null) view.removeJavascriptInterface(HOST_MESSAGE_BRIDGE_NAME)
+            // Stop in-flight work but do NOT touch the shared cookie jar (see the KDoc). Must run
+            // here, right before destroy(), not in DisposableEffect's onDispose — that fires after
+            // this onRelease already destroyed the view, calling stopLoading() on a destroyed WebView.
+            view.stopLoading()
             view.destroy()
         },
     )
