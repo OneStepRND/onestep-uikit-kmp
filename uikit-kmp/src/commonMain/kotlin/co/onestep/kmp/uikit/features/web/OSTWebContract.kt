@@ -96,6 +96,12 @@ internal fun injectedColorThemeJs(config: OSTWebColorConfig, fontScale: Float): 
  * Emits all three forms the two web apps read: the `window.OneStep.safeAreaInsets` object and the
  * Patient app's `--safe-*` CSS variables plus the Clinician app's `--safe-area-inset-*` ones. Both
  * name sets are cheap to set and dropping either would blank the insets for one of the pages.
+ *
+ * ⚠️ The CSS variables wait for the root element when there is none yet. Android evaluates this
+ * script whenever it likes — from `onPageStarted` and from the insets effect — and on a warm cache
+ * the new page's document can already be current before the parser has created `<html>`. Reading
+ * `document.documentElement.style` then threw `Cannot read properties of null (reading 'style')` in
+ * the page's console, on most repeat opens of the same mini-app in one process.
  */
 internal fun injectedSafeAreaJs(insets: OSTWebSafeAreaInsets): String = """
     window.OneStep = window.OneStep ?? {};
@@ -103,16 +109,23 @@ internal fun injectedSafeAreaJs(insets: OSTWebSafeAreaInsets): String = """
     contractJson.encodeToString(OSTWebSafeAreaInsets.serializer(), insets)
 };
     (function () {
-        var r = document.documentElement.style;
-        r.setProperty('--safe-top', '${insets.top}px');
-        r.setProperty('--safe-bottom', '${insets.bottom}px');
-        r.setProperty('--safe-left', '${insets.left}px');
-        r.setProperty('--safe-right', '${insets.right}px');
-        r.setProperty('--safe-area-inset-top', '${insets.top}px');
-        r.setProperty('--safe-area-inset-bottom', '${insets.bottom}px');
-        r.setProperty('--safe-area-inset-left', '${insets.left}px');
-        r.setProperty('--safe-area-inset-right', '${insets.right}px');
-        window.dispatchEvent(new Event('safeareachange'));
+        var apply = function () {
+            var r = document.documentElement.style;
+            r.setProperty('--safe-top', '${insets.top}px');
+            r.setProperty('--safe-bottom', '${insets.bottom}px');
+            r.setProperty('--safe-left', '${insets.left}px');
+            r.setProperty('--safe-right', '${insets.right}px');
+            r.setProperty('--safe-area-inset-top', '${insets.top}px');
+            r.setProperty('--safe-area-inset-bottom', '${insets.bottom}px');
+            r.setProperty('--safe-area-inset-left', '${insets.left}px');
+            r.setProperty('--safe-area-inset-right', '${insets.right}px');
+            window.dispatchEvent(new Event('safeareachange'));
+        };
+        if (document.documentElement) {
+            apply();
+        } else {
+            document.addEventListener('DOMContentLoaded', apply, { once: true });
+        }
     })();
 """.trimIndent()
 
