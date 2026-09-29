@@ -70,7 +70,8 @@ Global Compose rules apply (stable params, hoisted state, previews). KMP additio
 | What | Command |
 |---|---|
 | Compile gate (both platforms) | `./gradlew :uikit-kmp:compileAndroidMain :uikit-kmp:compileKotlinIosSimulatorArm64` |
-| Unit tests | `./gradlew :uikit-kmp:iosSimulatorArm64Test` (android host tests are not enabled) |
+| Unit tests (iOS) | `./gradlew :uikit-kmp:iosSimulatorArm64Test` |
+| Unit tests (Android host, JVM) | `./gradlew :uikit-kmp:testAndroidHostTest` — runs commonTest; `Log` is stubbed and merged assets are put on the test classpath in `uikit-kmp/build.gradle.kts` |
 | Android harness APK | `./gradlew :androidTestApp:assembleDebug` |
 | iOS harness (XCFramework + resources + xcodeproj) | `./iosTestApp/rebuild.sh` |
 | Publishing | see `README.md` / `scripts/publish*.sh` |

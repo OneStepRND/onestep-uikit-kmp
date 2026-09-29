@@ -55,7 +55,12 @@ kotlin {
         experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
 
         // Run the shared commonTest suite on the JVM: ./gradlew :uikit-kmp:testAndroidHostTest
-        withHostTest {}
+        // Stub android.util.Log (compose-resources reader logs through it) instead of throwing,
+        // and put the packaged assets on the host classpath so Res.readBytes can find them.
+        withHostTest {
+            isReturnDefaultValues = true
+            isIncludeAndroidResources = true
+        }
     }
 
     val xcf = XCFramework("OSTUIKit")
@@ -214,6 +219,15 @@ if (haveSigning) {
         enabled = false
     }
     logger.lifecycle("⚠️  Skipping signing: SIGNING_KEYID_PATH / SIGNING_PASSWORD not provided.")
+}
+
+// Host tests have no Android Context, so the compose-resources reader falls back to the JVM
+// classpath; expose the merged assets (composeResources/...) there so Res.readBytes resolves.
+tasks.withType<Test>().matching { it.name == "testAndroidHostTest" }.configureEach {
+    val hostTestAssets = tasks.named("mergeAndroidHostTestAssets")
+    dependsOn(hostTestAssets)
+    // Deferred: AGP assigns `classpath` after this block runs, which would drop an eager `+=`.
+    doFirst { classpath += files(hostTestAssets.get().outputs.files) }
 }
 
 // ── NMCP (Sonatype Central Portal) ─────────────────────────────────────────────
