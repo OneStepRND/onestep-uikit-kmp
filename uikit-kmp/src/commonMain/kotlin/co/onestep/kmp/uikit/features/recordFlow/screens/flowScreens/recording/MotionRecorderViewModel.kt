@@ -28,7 +28,6 @@ import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TimerData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.ToolBarData
 import co.onestep.kmp.uikit.models.OSTActivityType
-import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
 import co.onestep.kmp.uikit.models.OSTAnalyserError
 import co.onestep.kmp.uikit.models.OSTAnalyserState
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
@@ -65,6 +64,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -95,8 +95,10 @@ internal class MotionRecorderViewModel(
     private val _onInitializationError = Channel<Unit>(Channel.CONFLATED)
     val onInitializationError = _onInitializationError.receiveAsFlow()
 
-    private val _onUiTimeoutExit = Channel<Unit>(Channel.CONFLATED)
-    val onUiTimeoutExit = _onUiTimeoutExit.receiveAsFlow()
+    // The analyzing screen's give-up timer. For OSTSummaryOptions.None its expiry ends the flow
+    // instead of showing the Timeout error screen; the NavGraph collects [onUiTimeoutExit].
+    private val uiTimeout = AnalyzingUiTimeout(viewModelScope)
+    val onUiTimeoutExit: Flow<Unit> = uiTimeout.exit
 
     // Focused collaborators extracted from this ViewModel (OS God-class decomposition). The
     // ViewModel remains the single entry point the UI sees and delegates to these for their
@@ -240,8 +242,6 @@ internal class MotionRecorderViewModel(
 
     private var analyseStateJob: Job? = null
 
-    private var uiTimeoutJob: Job? = null
-
     /**
      * Latches the first terminal outcome of this analysis attempt — a result **or** an error — so
      * any later one is ignored. One attempt produces one outcome.
@@ -361,7 +361,7 @@ internal class MotionRecorderViewModel(
                         }
 
                         OSTAnalyserState.Analyzed -> {
-                            uiTimeoutJob?.cancel()
+                            uiTimeout.cancel()
                             subtitle.value = resourceProvider.getString(Res.string.preparing_results)
                             delay(2000)
                             // Claimed after the delay, not before: an error reported while the
@@ -373,7 +373,7 @@ internal class MotionRecorderViewModel(
                         }
 
                         is OSTAnalyserState.Failed -> {
-                            uiTimeoutJob?.cancel()
+                            uiTimeout.cancel()
                             clearJobs()
                             reportError(it.error)
                         }
@@ -635,37 +635,21 @@ internal class MotionRecorderViewModel(
     )
 
     private fun startUiTimeout() {
-        if (uiTimeoutJob != null) return  // Already running
-        uiTimeoutJob = viewModelScope.launch {
-            delay(60_000L)
-            println("MotionRecorderViewModel: UI timeout reached after 60 seconds")
-            // Cancel all in-flight work (upload continues via NonCancellable in analyze())
-            analyseStateJob?.cancel()
-            analyseStateJob = null
-            analysingJob?.cancel()
-            analysingJob = null
-            // Reset recorder AND analyser to clean state for re-entry
-            recorderBridge.reset()
-            when (configuration.value.showSummaryScreen) {
-                OSTSummaryOptions.Full,
-                OSTSummaryOptions.WEB -> {
-                    // Through reportError, not onError: the timeout is this attempt's terminal
-                    // outcome like any other, so it must not cover a result already delivered and
-                    // must not be covered by one that arrives after it.
-                    reportError(OSTAnalyserError.Timeout(null, "UI timeout"))
-                }
-
-                OSTSummaryOptions.None -> {
-                    viewModelScope.launch {
-                        _onUiTimeoutExit.send(Unit)
-                    }
-                }
-
-                OSTSummaryOptions.MINIMAL -> {
-                    reportError(OSTAnalyserError.Timeout(null, "UI timeout"))
-                }
-            }
-        }
+        uiTimeout.start(
+            summaryOption = { configuration.value.showSummaryScreen },
+            onExpired = {
+                println("MotionRecorderViewModel: UI timeout reached after 60 seconds")
+                // Cancel all in-flight work (upload continues via NonCancellable in analyze())
+                analyseStateJob?.cancel()
+                analyseStateJob = null
+                analysingJob?.cancel()
+                analysingJob = null
+                // Reset recorder AND analyser to clean state for re-entry
+                recorderBridge.reset()
+            },
+            claimOutcome = ::claimAttemptOutcome,
+            onError = { error -> onError(error, configuration.value.activityType) },
+        )
     }
 
     /** TUG/STS begin sensor capture on Get Ready; every other activity starts at "go". */
@@ -949,6 +933,10 @@ internal class MotionRecorderViewModel(
         // in the same session.
         customMetadata.remove(OSTBalanceCondition.KEY_BALANCE_CONDITIONS)
         session.resetForNextRecording()
+        // The previous condition's Analyzed cancelled the UI timeout but left it disarmed for the
+        // rest of that attempt; without a reset the next condition's analyzing screen would have
+        // no timeout at all and could hang forever.
+        uiTimeout.reset()
         recorderBridge.reset()
         timerValue.value = ""
         recodingScreenState.value = getReadyState()
@@ -1023,7 +1011,7 @@ internal class MotionRecorderViewModel(
     private suspend fun uploadWithoutAnalysing() {
         val uploaded = recorderBridge.uploadWithoutAnalysis()
         motionMeasurement.value = uploaded
-        uiTimeoutJob?.cancel()
+        uiTimeout.cancel()
         if (uploaded != null) {
             if (claimAttemptOutcome()) {
                 onMeasurementResult(uploaded)
@@ -1117,8 +1105,7 @@ internal class MotionRecorderViewModel(
         analysingJob = null
         analyseStateJob?.cancel()
         analyseStateJob = null
-        uiTimeoutJob?.cancel()
-        uiTimeoutJob = null
+        uiTimeout.reset()
 
         viewModelScope.launch {
             // Gracefully stop the recorder and wait for DONE, if a start was initiated
