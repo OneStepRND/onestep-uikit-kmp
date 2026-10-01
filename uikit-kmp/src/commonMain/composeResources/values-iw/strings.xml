@@ -386,6 +386,8 @@
     <string name="your_setup">ההגדרות שלך</string>
     <string name="static_balance_outcomes_question">האם אחד מהדברים הבאים קרה במהלך ההקלטה?</string>
     <string name="static_balance_outcomes_warning">שימו לב: תיוג אחד מהאירועים האלה יסמן את הבדיקה כנכשלה ויקבע את הציון ל-0</string>
+    <string name="static_balance_score_not_saved_title">הציון לא נשמר</string>
+    <string name="static_balance_score_not_saved_text">ההקלטה נשמרה, אבל לא ניתן היה לשלוח את הציון שלה. נסו שוב, או המשיכו בלעדיו.</string>
     <string name="static_balance_seconds_short">&#x2068;%1$d&#x2069; שנ׳</string>
     <string name="static_balance_place_pocket_strap">הניחו את הטלפון בכיס או ברצועה</string>
     <string name="static_balance_hold_chest">החזיקו את הטלפון במרכז החזה</string>

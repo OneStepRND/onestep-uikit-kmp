@@ -194,21 +194,40 @@ class AndroidRecorderBridge private constructor(
      * conditions replaced, as the Android UI kit's `updateBalanceConditionResult` does.
      *
      * When the stored measurement cannot be read the update is skipped rather than sent: it would
-     * wipe that metadata, and the note it carries is the lesser loss.
+     * wipe that metadata, and the note it carries is the lesser loss. [additionalMetadata] (the
+     * "Recording saved" result states) is merged in the same way, on top of the stored map.
      */
-    override suspend fun updateBalanceConditionMetadata(uuid: String, conditions: Map<String, String>) {
+    override suspend fun updateBalanceConditionMetadata(
+        uuid: String,
+        conditions: Map<String, String>,
+        additionalMetadata: Map<String, Any>,
+    ) {
         val stored = motionLab.readSingleMotionMeasurement(uuid).getOr(null as CoreMeasurement?)
         if (stored == null) {
             println("AndroidRecorderBridge: Skipped the static balance note update for $uuid: measurement unreadable")
             return
         }
         motionLab.updateMotionMeasurement(uuid) {
-            customMetadata(stored.customMetadata + (OSTBalanceCondition.KEY_BALANCE_CONDITIONS to conditions))
+            customMetadata(
+                stored.customMetadata +
+                    (OSTBalanceCondition.KEY_BALANCE_CONDITIONS to conditions) +
+                    additionalMetadata,
+            )
         }
     }
 
-    override suspend fun selfReportMotionMeasurement(uuid: String, stsRepetitions: Int): SelfReportResult {
-        val result = motionLab.selfReportMotionMeasurement(uuid = uuid, stsRepetitions = stsRepetitions)
+    override val supportsBalanceScoreSelfReport: Boolean get() = true
+
+    override suspend fun selfReportMotionMeasurement(
+        uuid: String,
+        stsRepetitions: Int?,
+        balanceScore: Int?,
+    ): SelfReportResult {
+        val result = motionLab.selfReportMotionMeasurement(
+            uuid = uuid,
+            stsRepetitions = stsRepetitions,
+            balanceScore = balanceScore,
+        )
         return when (result) {
             is OSTResult.Success -> SelfReportResult.Success
             // Retryable only for actual transport-level connectivity issues (NetworkError);

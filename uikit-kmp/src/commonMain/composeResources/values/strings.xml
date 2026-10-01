@@ -382,6 +382,8 @@
     <string name="your_setup">Your setup</string>
     <string name="static_balance_outcomes_question">Did any of the following happen during the recording?</string>
     <string name="static_balance_outcomes_warning">Note: Tagging any of these events will mark the test as failed and set the score to 0</string>
+    <string name="static_balance_score_not_saved_title">The score wasn't saved</string>
+    <string name="static_balance_score_not_saved_text">The recording is saved, but its score couldn't be sent. Try again, or continue without it.</string>
     <string name="static_balance_seconds_short">%1$d sec</string>
     <string name="static_balance_place_pocket_strap">Place the phone in the pocket or strap</string>
     <string name="static_balance_hold_chest">Hold the phone at the center of your chest</string>

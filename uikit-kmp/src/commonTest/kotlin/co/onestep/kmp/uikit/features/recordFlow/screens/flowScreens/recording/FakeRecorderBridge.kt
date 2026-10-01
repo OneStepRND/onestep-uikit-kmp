@@ -134,8 +134,29 @@ internal class FakeRecorderBridge : RecorderBridge {
 
     override suspend fun updateMotionMeasurement(uuid: String, metadata: OSTUserInputMetaData) = Unit
 
-    override suspend fun updateBalanceConditionMetadata(uuid: String, conditions: Map<String, String>) = Unit
+    override suspend fun updateBalanceConditionMetadata(
+        uuid: String,
+        conditions: Map<String, String>,
+        additionalMetadata: Map<String, Any>,
+    ) = Unit
 
-    override suspend fun selfReportMotionMeasurement(uuid: String, stsRepetitions: Int): SelfReportResult =
-        SelfReportResult.Success
+    /** Mimics Android (true) or iOS (false, the default) for the Static Balance score. */
+    override var supportsBalanceScoreSelfReport: Boolean = false
+
+    data class SelfReportCall(val uuid: String, val stsRepetitions: Int?, val balanceScore: Int?)
+
+    /** Every self-report, in order. */
+    val selfReportCalls = mutableListOf<SelfReportCall>()
+
+    /** What the next self-reports return, in order; [SelfReportResult.Success] once used up. */
+    val selfReportResults = ArrayDeque<SelfReportResult>()
+
+    override suspend fun selfReportMotionMeasurement(
+        uuid: String,
+        stsRepetitions: Int?,
+        balanceScore: Int?,
+    ): SelfReportResult {
+        selfReportCalls += SelfReportCall(uuid, stsRepetitions, balanceScore)
+        return selfReportResults.removeFirstOrNull() ?: SelfReportResult.Success
+    }
 }

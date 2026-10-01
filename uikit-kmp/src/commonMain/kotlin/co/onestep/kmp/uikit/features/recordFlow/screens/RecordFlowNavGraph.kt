@@ -87,6 +87,10 @@ import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.genericRecor
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.RecordingSavedDestination
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.conditionSetupScreen
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.recordingSavedScreen
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.BalanceScoreNotSavedDialog
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.BalanceScoreSaveGate
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.legacyOutcomesField
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.saveBalanceConditionResult
 import co.onestep.kmp.uikit.features.recordFlow.screens.instructions.InstructionsContent
 import co.onestep.kmp.uikit.features.recordFlow.screensData.EmptyAnalysisScreenData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.IconData
@@ -98,6 +102,7 @@ import co.onestep.kmp.uikit.navigation.UIktNavSavedStateConfiguration
 import co.onestep.kmp.uikit.navigation.pop
 import co.onestep.kmp.uikit.navigation.popUpToInclusive
 import co.onestep.kmp.uikit.ui.components.BottomSheet
+import co.onestep.kmp.uikit.ui.components.TaggedPopup
 import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.MotionRecorderViewModel
@@ -141,7 +146,6 @@ import co.onestep.kmp.uikit_kmp.generated.resources.yes
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import co.onestep.designsystem.components.ButtonVariant
-import co.onestep.designsystem.components.OSPopup
 import co.onestep.designsystem.theme.LocalOSColors
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
@@ -357,6 +361,16 @@ internal fun RecordFlowNavGraph(
 
     // Catalog-driven Condition Setup fields (Static Balance); null keeps the legacy screen.
     val catalogConditionFields = remember(config) { config.catalogConditionSetupFields() }
+
+    // The legacy Static Balance configuration, as Condition Setup reads it; null when the catalog
+    // drives Condition Setup. Its result states are the legacy "Recording saved" outcome chips.
+    @Suppress("DEPRECATION")
+    val legacyBalance: OSTBalance? =
+        if (catalogConditionFields == null) config.balance ?: OSTBalance() else null
+
+    // Static Balance: a failed score self-report on "Recording saved" holds the tapped button until
+    // the clinician retries or continues (the "score wasn't saved" dialog, OS-17571).
+    val balanceScoreGate = remember { BalanceScoreSaveGate() }
 
     // Navigation 3 back stack owned by this flow. The uikit serializers module makes it
     // saveable across config changes and process death on every platform (iOS has no
@@ -780,9 +794,15 @@ internal fun RecordFlowNavGraph(
                     ?: viewModel.configuration.value.duration
                     ?: 0
             },
-            // The catalog's outcomes that fit the condition just recorded; null on the legacy
-            // Condition Setup, which asks none.
-            outcomes = { config.staticBalanceOutcomes(viewModel.preRecordTagCodes) },
+            // The outcomes that fit the condition just recorded: the catalog's, or on the legacy
+            // Condition Setup the host's `OSTBalance.resultStates` (null when none fit).
+            outcomes = {
+                if (legacyBalance == null) {
+                    config.staticBalanceOutcomes(viewModel.preRecordTagCodes)
+                } else {
+                    legacyBalance.legacyOutcomesField(viewModel.currentBalanceCondition)
+                }
+            },
             onRecordAnother = { note, outcomes ->
                 // static_balance_note_added — only the session uuid is sent, NEVER the
                 // free-text note (HIPAA). static_balance_another_test carries condition_count.
@@ -794,7 +814,9 @@ internal fun RecordFlowNavGraph(
                     conditionCount = viewModel.balanceConditionCount(),
                     sessionUuid = viewModel.sessionUuid,
                 )
-                saveBalanceConditionAnswers(viewModel, catalogConditionFields != null, note, outcomes)
+                balanceScoreGate.saveThen {
+                    saveBalanceConditionResult(viewModel, bridges.recorderBridge, legacyBalance, note, outcomes)
+                }
                 viewModel.prepareForNextBalanceCondition()
                 // Nav2 popped to the start destination (inclusive) and re-launched Condition
                 // Setup as a fresh single-top entry; in Nav3 that is simply "reset the stack".
@@ -812,7 +834,9 @@ internal fun RecordFlowNavGraph(
                     conditionCount = viewModel.balanceConditionCount(),
                     sessionUuid = viewModel.sessionUuid,
                 )
-                saveBalanceConditionAnswers(viewModel, catalogConditionFields != null, note, outcomes)
+                balanceScoreGate.saveThen {
+                    saveBalanceConditionResult(viewModel, bridges.recorderBridge, legacyBalance, note, outcomes)
+                }
                 finishStaticBalance(
                     viewModel.motionMeasurement.value,
                     viewModel.sessionUuid,
@@ -1293,6 +1317,15 @@ internal fun RecordFlowNavGraph(
             )
         }
 
+        // Static Balance "score wasn't saved" — non-dismissable; the tapped button waits on it.
+        if (balanceScoreGate.pending != null) {
+            BalanceScoreNotSavedDialog(
+                retrying = balanceScoreGate.retrying,
+                onTryAgain = { balanceScoreGate.tryAgain(scope) },
+                onContinue = balanceScoreGate::continueWithoutScore,
+            )
+        }
+
         // Exit confirmation dialog shown when user presses back on StartRecord screen
         if (showExitConfirmationDialog) {
             ExitConfirmationDialog(
@@ -1373,7 +1406,8 @@ private fun HallwayWarningDialog(
     onEdit: () -> Unit,
 ) {
     LaunchedEffect(Unit) { onShown() }
-    OSPopup(
+    // TaggedPopup, not OSPopup: OSPopup's buttons and checkbox cannot carry test tags.
+    TaggedPopup(
         // A dialog composes in its own window, so the tag goes on the popup itself.
         modifier = Modifier.test(OSTTestTags.RecordFlow.HALLWAY_WARNING_DIALOG),
         onDismissRequest = onDismiss,
@@ -1384,16 +1418,20 @@ private fun HallwayWarningDialog(
             unitText,
         ),
         closeIcon = vectorResource(Res.drawable.ic_close),
+        closeButtonTestTag = OSTTestTags.RecordFlow.HALLWAY_WARNING_CLOSE_BUTTON,
         // Start Test proceeds with the short length (secondary/outline per design).
         confirmButtonText = stringResource(Res.string.short_hallway_start_test),
         confirmButtonVariant = ButtonVariant.Secondary,
+        confirmButtonTestTag = OSTTestTags.RecordFlow.HALLWAY_WARNING_START_BUTTON,
         onConfirm = onStartTest,
         // Edit Hallway Length is the primary (filled) action.
         cancelButtonText = stringResource(Res.string.short_hallway_edit_hallway_length),
         cancelButtonVariant = ButtonVariant.Primary,
+        cancelButtonTestTag = OSTTestTags.RecordFlow.HALLWAY_WARNING_EDIT_BUTTON,
         onCancel = onEdit,
         checkboxText = stringResource(Res.string.short_hallway_dont_show_again),
         checkboxChecked = dontShowAgainChecked,
+        checkboxTestTag = OSTTestTags.RecordFlow.HALLWAY_WARNING_DONT_SHOW_CHECKBOX,
         onCheckboxCheckedChange = onSuppressChange,
     )
 }
@@ -1403,18 +1441,21 @@ private fun ExitConfirmationDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    OSPopup(
+    // TaggedPopup, not OSPopup: OSPopup's buttons cannot carry test tags.
+    TaggedPopup(
         modifier = Modifier.test(OSTTestTags.RecordFlow.EXIT_DIALOG),
         onDismissRequest = onDismissRequest,
         title = stringResource(Res.string.stop_recording_dialog_text),
         confirmButtonText = stringResource(Res.string.yes),
         confirmButtonVariant = ButtonVariant.Primary,
+        confirmButtonTestTag = OSTTestTags.RecordFlow.EXIT_DIALOG_CONFIRM_BUTTON,
         onConfirm = {
             onDismissRequest()
             onConfirm()
         },
         cancelButtonText = stringResource(Res.string.no),
         cancelButtonVariant = ButtonVariant.Secondary,
+        cancelButtonTestTag = OSTTestTags.RecordFlow.EXIT_DIALOG_CANCEL_BUTTON,
         onCancel = onDismissRequest,
     )
 }
@@ -1605,24 +1646,6 @@ internal fun finishOnUiTimeout(
         ),
     )
     onDismiss()
-}
-
-/**
- * Saves what the clinician entered on Static Balance's "Recording saved" screen. With the tag
- * catalog the note and the chosen outcomes go up together in one awaited update; the legacy
- * Condition Setup keeps its note in `onestep_balance_conditions`, as before, and asks no outcomes.
- */
-private suspend fun saveBalanceConditionAnswers(
-    viewModel: MotionRecorderViewModel,
-    catalogDriven: Boolean,
-    note: String?,
-    outcomes: Map<String, OSTTagValue>,
-) {
-    if (catalogDriven) {
-        viewModel.updateBalanceConditionAnswers(note, outcomes)
-    } else {
-        viewModel.updateBalanceConditionNote(note)
-    }
 }
 
 /**
