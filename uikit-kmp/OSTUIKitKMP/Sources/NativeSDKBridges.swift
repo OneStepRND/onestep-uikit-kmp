@@ -324,7 +324,13 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
     // MARK: IosRecorderDelegate
 
     func prepareForRecording(activityType: String, completion: @escaping (KotlinBoolean) -> Void) {
-        // Native recorder has no explicit prepare step; report ready.
+        // The KMP flow calls this as Get Ready appears: the last moment it is sure to be in the
+        // foreground. The SDK (2.3.1+) arms the measurement keep-alive there (OS-16992) and, for
+        // Dual Task, takes the microphone and opens the capture (OS-17543) — iOS refuses both
+        // from the background, which is where `start()` lands once a ~19s spoken prepare has let
+        // the participant pocket the phone. It is a protocol requirement, idempotent, synchronous
+        // and hops to the main thread itself; `reset()` releases it if the flow is abandoned.
+        recorder?.prepareForRecording(for: nativeActivityType(fromKmpName: activityType))
         completion(KotlinBoolean(bool: true))
     }
 
