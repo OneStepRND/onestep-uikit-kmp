@@ -167,6 +167,27 @@ object OSTUIKitIos {
     }
 
     /**
+     * Same as the overload taking `onInstructionsRequested`, with the SDK's own instructions sheet.
+     *
+     * Kept as its own function, not a default argument: Swift sees no Kotlin defaults, so adding
+     * the parameter to this signature would break every existing Swift call site.
+     */
+    fun createRecordingFlowViewController(
+        config: OSTRecordingConfiguration,
+        patientId: String? = null,
+        onResult: (OSTEvent) -> Unit,
+        onFinished: (OSTRecordingFlowResult) -> Unit,
+        onDismiss: () -> Unit,
+    ): UIViewController = createRecordingFlowViewController(
+        config = config,
+        patientId = patientId,
+        onResult = onResult,
+        onFinished = onFinished,
+        onDismiss = onDismiss,
+        onInstructionsRequested = null,
+    )
+
+    /**
      * Create a UIViewController for the recording flow that delivers the typed terminal result.
      *
      * This is the iOS counterpart of the Swift uikit's `onDismissResult`: [onFinished] fires with
@@ -182,8 +203,7 @@ object OSTUIKitIos {
      * @param onInstructionsRequested Host-supplied "View instructions": when non-null, tapping
      *        "View instructions" (Start screen and analysis-error screens) calls it with the
      *        activity type instead of opening the SDK's sheet, so the host can present its own
-     *        instructions over the flow. `null` keeps the SDK's sheet. Swift sees no default here,
-     *        so pass `nil` to keep it.
+     *        instructions over the flow. `null` keeps the SDK's sheet.
      */
     fun createRecordingFlowViewController(
         config: OSTRecordingConfiguration,
@@ -191,7 +211,7 @@ object OSTUIKitIos {
         onResult: (OSTEvent) -> Unit,
         onFinished: (OSTRecordingFlowResult) -> Unit,
         onDismiss: () -> Unit,
-        onInstructionsRequested: ((OSTActivityType) -> Unit)? = null,
+        onInstructionsRequested: ((OSTActivityType) -> Unit)?,
     ): UIViewController {
         checkConfigured()
         return ComposeUIViewController {
