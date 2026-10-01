@@ -101,7 +101,8 @@ data object RecordingSavedDestination : UIktDestination
  * for Dev" 14259:18939).
  *
  * Shown after a condition's recording uploads: confirms the save and recaps the condition with its
- * recorded length. When the tag catalog drives this recording it then asks which events happened
+ * recorded length. When there are outcomes to offer — the tag catalog's `$balance_result_states`,
+ * or on the legacy configuration its `OSTBalance.resultStates` — it then asks which events happened
  * during the trial — the outcome chips, already narrowed to the condition — with a warning that
  * tagging any of them fails the test. Last, an optional free-text observation note. The clinician
  * then either records another condition (same session) or goes to the web summary (flow finishes;
@@ -131,11 +132,12 @@ fun EntryProviderScope<NavKey>.recordingSavedScreen(
 )
 
 /**
- * The catalog-aware entry. [outcomes] is the `$balance_result_states` field narrowed to the
- * condition just recorded, or null on the legacy Condition Setup, which asks none. Both actions
- * suspend and receive the note and the chosen outcomes as a `tag_map` (empty when none were
- * chosen): the update is awaited before the flow navigates away, otherwise finishing the flow
- * cancels it and they are lost.
+ * The outcome-aware entry. [outcomes] is the field of outcome chips narrowed to the condition just
+ * recorded — the catalog's `$balance_result_states`, or the legacy result states shaped as one
+ * (`legacyOutcomesField`) — or null when none fit. Both actions suspend and receive the note and the
+ * chosen outcomes as an answer map keyed by that field's name (empty when none were chosen): the
+ * save, and the score self-report after it, are awaited before the flow navigates away, otherwise
+ * finishing the flow cancels them and they are lost.
  */
 internal fun EntryProviderScope<NavKey>.recordingSavedScreen(
     conditionLine: () -> String,
@@ -172,8 +174,10 @@ internal fun RecordingSavedScreen(
     // The chosen outcome codes; a List<String> is saveable as-is.
     var chosen by rememberSaveable { mutableStateOf(emptyList<String>()) }
     val scope = rememberCoroutineScope()
-    // Guards both actions while the update is in flight, so a second tap cannot start a
-    // duplicate save or a second navigation.
+    // Guards both actions while the save (update, then the score self-report, and the "score
+    // wasn't saved" dialog when that fails) is in flight, so a second tap cannot start a
+    // duplicate save or a second navigation. Both buttons only disable: the design-system
+    // buttons have no loading state to show on the tapped one.
     var saving by remember { mutableStateOf(false) }
 
     fun submit(action: suspend (String?, Map<String, OSTTagValue>) -> Unit) {
@@ -421,7 +425,7 @@ private fun RecordingSavedScreenPreview() {
     }
 }
 
-/** The legacy Condition Setup: no outcomes are asked. */
+/** No outcomes to offer: none configured, or none fit the condition. */
 @Preview
 @Composable
 private fun RecordingSavedScreenNoOutcomesPreview() {

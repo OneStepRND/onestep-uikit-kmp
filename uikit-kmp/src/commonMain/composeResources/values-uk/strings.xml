@@ -366,6 +366,8 @@
     <string name="your_setup">Ваши настройки</string>
     <string name="static_balance_outcomes_question">Произошло ли что-то из перечисленного во время записи?</string>
     <string name="static_balance_outcomes_warning">Примечание: отметка любого из этих событий засчитает тест как проваленный и установит оценку 0</string>
+    <string name="static_balance_score_not_saved_title">Не удалось сохранить оценку</string>
+    <string name="static_balance_score_not_saved_text">Запись сохранена, но её оценку не удалось отправить. Попробуйте снова или продолжите без неё.</string>
     <string name="static_balance_seconds_short">%1$d сек</string>
     <string name="static_balance_place_pocket_strap">Поместите телефон в карман или ремешок</string>
     <string name="static_balance_hold_chest">Держите телефон у центра груди</string>
