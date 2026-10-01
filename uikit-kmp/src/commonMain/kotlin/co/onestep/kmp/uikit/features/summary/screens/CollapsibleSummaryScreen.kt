@@ -71,11 +71,15 @@ import co.onestep.kmp.uikit.ui.components.BottomSheet
 import co.onestep.kmp.uikit.ui.components.BottomSheetData
 import co.onestep.kmp.uikit.ui.components.FadingSurfaceToTransparent
 import co.onestep.kmp.uikit.ui.components.PrimaryBrandButton
+import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.designsystem.components.SecondaryButton
 import co.onestep.designsystem.components.OSButtonSize
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
 import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.mainParamItem
+import co.onestep.kmp.uikit.utils.summaryItems
+import co.onestep.kmp.uikit.utils.gaitLabItems
 import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.discard
@@ -84,6 +88,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 val MinToolbarHeight = 108.dp
 val MaxToolbarHeight = 355.dp
@@ -104,7 +109,6 @@ private fun rememberToolbarState(toolbarHeightRange: IntRange): ToolbarState =
         ScrollState(toolbarHeightRange)
     }
 
-// Preview skipped: requires ViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun Summary(
@@ -344,6 +348,22 @@ internal fun Summary(
             }
         },
     )
+}
+
+@Preview
+@Composable
+private fun SummaryPreview() {
+    PreviewTheme {
+        Summary(
+            insightsScreenState = SummaryListState.Insights.Success(summaryItems),
+            gaitLabScreenState = SummaryListState.GaitLab.Success(gaitLabItems),
+            mainParamItem = mainParamItem,
+            toolBarData = ToolBarData(title = TextData("Walk summary", 20.sp, FontWeight.W700)),
+            continueAction = SummaryAction(text = "Continue") {},
+            secondaryAction = {},
+            isLoading = false,
+        )
+    }
 }
 
 @Composable

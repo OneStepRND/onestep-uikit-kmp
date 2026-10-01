@@ -35,16 +35,21 @@ import co.onestep.kmp.uikit.features.carlog.components.NoticeCard
 import co.onestep.kmp.uikit.features.carlog.models.BackgroundScreenState
 import co.onestep.kmp.uikit.features.carlog.models.CarLogScreenState
 import co.onestep.kmp.uikit.features.carlog.models.InAppScreenState
+import co.onestep.kmp.uikit.features.carlog.models.MeasurementItemData
 import co.onestep.kmp.uikit.features.carlog.models.NoticeCardType
+import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit.ui.components.BottomSheet
+import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_info_circle
+import co.onestep.kmp.uikit_kmp.generated.resources.ic_walks
 import co.onestep.kmp.uikit_kmp.generated.resources.walk_score_daily_average
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,6 +130,30 @@ private fun ColumnScope.NoticeCards(carLogScreenState: CarLogScreenState) {
                 }
             }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun CareLogContentScreenPreview() {
+    PreviewTheme {
+        CareLogContentScreen(
+            carLogScreenState = InAppScreenState.Content(
+                carLogItems = listOf(
+                    MeasurementItemData(
+                        id = "1",
+                        day = "Monday",
+                        type = OSTActivityType.WALK,
+                        title = "Walk",
+                        time = "10:30 AM",
+                        icon = Res.drawable.ic_walks,
+                        mainParam = "Score: 85",
+                        duration = "2 min 30 sec",
+                    ),
+                ),
+                noticeCards = mutableListOf(),
+            ),
+        )
     }
 }
 

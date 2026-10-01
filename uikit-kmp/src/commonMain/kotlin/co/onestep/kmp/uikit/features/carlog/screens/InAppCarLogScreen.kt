@@ -21,9 +21,14 @@ import co.onestep.kmp.uikit.features.carlog.components.PendingMeasurementLogItem
 import co.onestep.kmp.uikit.features.carlog.models.CarLogItemData
 import co.onestep.kmp.uikit.features.carlog.models.MeasurementItemData
 import co.onestep.kmp.uikit.features.carlog.models.PendingMeasurementItemData
+import co.onestep.kmp.uikit.models.OSTActivityType
+import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
+import co.onestep.kmp.uikit_kmp.generated.resources.Res
+import co.onestep.kmp.uikit_kmp.generated.resources.ic_walks
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -76,5 +81,35 @@ internal fun InAppCarLogScreen(
                 }
             }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun InAppCarLogScreenPreview() {
+    PreviewTheme {
+        InAppCarLogScreen(
+            items = listOf(
+                MeasurementItemData(
+                    id = "1",
+                    day = "Monday",
+                    type = OSTActivityType.WALK,
+                    title = "Walk",
+                    time = "10:30 AM",
+                    icon = Res.drawable.ic_walks,
+                    mainParam = "Score: 85",
+                    duration = "2 min 30 sec",
+                ),
+                PendingMeasurementItemData(
+                    id = "2",
+                    day = "Monday",
+                    type = OSTActivityType.WALK,
+                    title = "Walk",
+                    icon = Res.drawable.ic_walks,
+                    time = "11:00 AM",
+                    duration = "1 min 45 sec",
+                ),
+            ),
+        )
     }
 }

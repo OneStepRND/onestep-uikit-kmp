@@ -16,8 +16,10 @@ import androidx.compose.ui.text.font.FontWeight.Companion.W500
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import co.onestep.kmp.uikit.features.carlog.components.BackgroundRecordsList
 import co.onestep.kmp.uikit.features.carlog.models.BackgroundLogItemData
+import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.designsystem.components.OSText
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
@@ -26,6 +28,7 @@ import co.onestep.kmp.uikit_kmp.generated.resources._100
 import co.onestep.kmp.uikit_kmp.generated.resources.date
 import co.onestep.kmp.uikit_kmp.generated.resources.score
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun BackgroundScreen(
@@ -78,6 +81,21 @@ internal fun BackgroundScreen(
         BackgroundRecordsList(
             modifier = Modifier.fillMaxWidth(),
             backgroundRecords = backgroundRecords,
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun BackgroundScreenPreview() {
+    PreviewTheme {
+        BackgroundScreen(
+            backgroundRecords = mapOf(
+                "Monday" to listOf(
+                    BackgroundLogItemData(day = "Mon", value = 70f, color = Color.Green),
+                    BackgroundLogItemData(day = "Mon", value = 40f, color = Color.Yellow),
+                ),
+            ),
         )
     }
 }
