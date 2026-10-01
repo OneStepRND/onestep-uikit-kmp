@@ -102,6 +102,7 @@ import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.MotionRecorderViewModel
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.RecordingScreenContent
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.genericRecordingSavedSeconds
 import co.onestep.kmp.uikit.features.recordFlow.screensData.RecordingScreenData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.isSixOrTwoMinWalk
 import co.onestep.kmp.uikit.features.tagging.models.Footwear
@@ -794,10 +795,12 @@ internal fun RecordFlowNavGraph(
         // Generic Recording notes (OS-16861) — shown once the raw recording is banked. Continue is
         // awaited so the note update lands before the flow finishes and the host tears it down.
         genericRecordingNotesScreen(
+            // What the timer showed at the stop, not the SDK's rounded span (iOS `6690111`).
             durationSeconds = {
-                viewModel.motionMeasurement.value?.metadata?.seconds
-                    ?: viewModel.configuration.value.duration
-                    ?: 0
+                genericRecordingSavedSeconds(
+                    stoppedAtElapsedSeconds = viewModel.stoppedAtElapsedSeconds,
+                    measuredSeconds = viewModel.motionMeasurement.value?.metadata?.seconds,
+                )
             },
             onContinue = { note ->
                 viewModel.updateGenericRecordingNote(note)

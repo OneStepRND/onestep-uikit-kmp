@@ -154,6 +154,20 @@ internal class MotionRecorderViewModel(
 
     var motionMeasurement = mutableStateOf<OSTMotionMeasurement?>(null)
 
+    /**
+     * The elapsed whole seconds the count-up timer was showing when this recording stopped, for
+     * the Generic Recording "Recording saved" card (port of iOS UI kit `6690111`).
+     *
+     * The SDK's `metadata.seconds` rounds the captured span while the timer floors (it must read
+     * 00:00 at "go"), so a slide-to-stop at 20.6s ran under 00:20 and was then reported as 00:21.
+     * First writer wins: the slide and the recorder's FINALIZING/DONE arrive for the same stop a
+     * few hundred ms apart, and the earlier one is what was on screen; an auto-stop has no slide
+     * and captures the full window. Display only — the persisted length stays the SDK's. Null
+     * until a recording stops; cleared by [initState].
+     */
+    var stoppedAtElapsedSeconds: Int? = null
+        private set
+
     val language: String = resourceProvider.getLocaleLanguageTag().substringBefore("-")
 
     /**
@@ -306,6 +320,7 @@ internal class MotionRecorderViewModel(
                         OSTRecorderState.RECORDING -> Unit
 
                         OSTRecorderState.FINALIZING -> {
+                            captureStoppedElapsedSeconds()
                             // This event could be skipped if the RecorderState.DONE is dispatched very quickly
                             if (!recodingScreenState.value.recordScreenStage.isAnalyzing()) {
                                 updateState(RecordingScreenData.RecordScreenStage.ANALYZING)
@@ -314,6 +329,7 @@ internal class MotionRecorderViewModel(
                         }
 
                         OSTRecorderState.DONE -> {
+                            captureStoppedElapsedSeconds()
                             // In case the FINALIZING event is skipped
                             if (!recodingScreenState.value.recordScreenStage.isAnalyzing()) {
                                 updateState(RecordingScreenData.RecordScreenStage.ANALYZING)
@@ -391,6 +407,8 @@ internal class MotionRecorderViewModel(
 
     fun initState() {
         subtitle.value = null
+        // The previous recording's stop instant is not this one's.
+        stoppedAtElapsedSeconds = null
         hasPlayedReadyForAnalysisAudio = false
 
         // Safety net: ensure recorder is in clean state before starting new flow
@@ -944,6 +962,8 @@ internal class MotionRecorderViewModel(
 
     fun stopRecording() {
         if (!session.isRecording) return
+        // Before the clock is stopped: the value on the timer as the participant finished the slide.
+        captureStoppedElapsedSeconds()
         // Clicked: measurement_stop — user slid to stop. elapsed_seconds is the wall-clock
         // recording duration with ms precision, matching uikit.
         session.goTimeMs?.let { startedAt ->
@@ -954,6 +974,13 @@ internal class MotionRecorderViewModel(
         }
         viewModelScope.launch {
             stopMeasurementAndAwaitDone()
+        }
+    }
+
+    /** See [stoppedAtElapsedSeconds]; a later signal for the same stop is ignored. */
+    private fun captureStoppedElapsedSeconds() {
+        if (stoppedAtElapsedSeconds == null) {
+            stoppedAtElapsedSeconds = floorElapsedSeconds(session.elapsedMillis.value)
         }
     }
 
@@ -1235,3 +1262,17 @@ internal class MotionRecorderViewModel(
         const val DEFAULT_RECORDING_DURATION_MS = 60 * MILLIS_PER_SECOND
     }
 }
+
+/**
+ * The whole seconds the count-up recording timer reads after [elapsedMillis]: floored, as
+ * [MotionRecorderViewModel]'s clock mirror renders it, so it reads 00:00 for the first second.
+ */
+internal fun floorElapsedSeconds(elapsedMillis: Long): Int = (elapsedMillis / 1_000L).toInt()
+
+/**
+ * The Generic Recording "Recording saved" length: what the timer showed at the stop, else the
+ * SDK's measured span. Never the configured duration — that is a 30-minute auto-stop ceiling, not
+ * the time recorded — so an unknown length reads 00:00 (matching the iOS UI kit).
+ */
+internal fun genericRecordingSavedSeconds(stoppedAtElapsedSeconds: Int?, measuredSeconds: Int?): Int =
+    stoppedAtElapsedSeconds ?: measuredSeconds ?: 0
