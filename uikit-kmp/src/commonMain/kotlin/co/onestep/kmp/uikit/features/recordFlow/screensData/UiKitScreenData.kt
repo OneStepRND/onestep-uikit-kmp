@@ -111,6 +111,12 @@ data class MainButtonData(
     val text: TextData,
     val buttonSize: Dp = 260.dp,
     val topSpace: Dp = 56.dp,
+    /**
+     * Host-supplied fill, from
+     * [co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration.activityColor].
+     * `null` keeps the brand navy.
+     */
+    val color: Color? = null,
     val action: () -> Unit,
 )
 

@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,12 +55,14 @@ fun RoundCtaButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed = interactionSource.collectIsPressedAsState().value
     val scale = animateFloatAsState(targetValue = if (isPressed) 0.95f else 1.0f, label = "")
+    val containerColor = mainButtonData.color ?: LocalOSColors.current.primary_p3_main
+    val labelColor = labelColorOn(containerColor)
 
     Card(
         colors =
             CardDefaults.cardColors(
-                containerColor = LocalOSColors.current.primary_p3_main,
-                contentColor = Color.White,
+                containerColor = containerColor,
+                contentColor = labelColor,
             ),
         border = BorderStroke(10.dp, Color.White),
         elevation =
@@ -89,12 +92,28 @@ fun RoundCtaButton(
                 lineHeight = 30.sp,
                 text = mainButtonData.text.text,
                 fontSize = mainButtonData.text.textSize,
-                color = Color.White,
+                color = labelColor,
                 fontWeight = mainButtonData.text.fontWeight,
             )
         }
     }
 }
+
+// `neutral_p3`'s light-theme value, fixed rather than read from the theme: the fill is the host's
+// colour whatever the theme, so the label must not flip with it.
+private val DarkLabel = Color(0xFF3E3D3B)
+
+private fun contrast(a: Color, b: Color): Float {
+    val (hi, lo) = listOf(a.luminance(), b.luminance()).sortedDescending()
+    return (hi + 0.05f) / (lo + 0.05f)
+}
+
+/**
+ * White unless a light host colour would leave it unreadable — e.g. teal `#1CA8B0` is 2.9:1 against
+ * white but 3.7:1 against [DarkLabel]. Whichever has the higher contrast wins.
+ */
+internal fun labelColorOn(fill: Color): Color =
+    if (contrast(Color.White, fill) >= contrast(DarkLabel, fill)) Color.White else DarkLabel
 
 @Preview
 @Composable
@@ -112,5 +131,23 @@ private fun RoundCtaButtonPreview() {
 private fun RoundCtaButtonWithPulsePreview() {
     PreviewTheme {
         RoundCtaButtonWithPulse(mainButtonData = previewMainButtonData)
+    }
+}
+
+// Host-supplied activity colour — see [MainButtonData.color].
+@Preview
+@Composable
+private fun RoundCtaButtonWithHostColorPreview() {
+    PreviewTheme {
+        RoundCtaButtonWithPulse(mainButtonData = previewMainButtonData.copy(color = Color(0xFF0D5097)))
+    }
+}
+
+// A light host colour, which flips the label to dark — see [labelColorOn].
+@Preview
+@Composable
+private fun RoundCtaButtonWithLightHostColorPreview() {
+    PreviewTheme {
+        RoundCtaButtonWithPulse(mainButtonData = previewMainButtonData.copy(color = Color(0xFF1CA8B0)))
     }
 }

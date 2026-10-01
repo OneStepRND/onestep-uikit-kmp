@@ -2,6 +2,7 @@ package co.onestep.kmp.uikit.features.recordFlow.destinations
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
@@ -18,6 +19,7 @@ data object StartRecordDestination : UIktDestination
 
 fun EntryProviderScope<NavKey>.startRecordScreen(
     activityType: OSTActivityType,
+    activityColor: Color? = null,
     playAudio: ((String) -> Unit)? = null,
     playAudioKey: String? = null,
     primaryAction: () -> Unit,
@@ -32,6 +34,7 @@ fun EntryProviderScope<NavKey>.startRecordScreen(
             onBackPress = onBackPress,
             screenData = RecordFlowDataFactory.startRecordData(
                 activityType = activityType,
+                activityColor = activityColor,
                 onMainButton = primaryAction,
                 onBottomButton = secondaryAction,
                 playAudioKey = playAudioKey,
