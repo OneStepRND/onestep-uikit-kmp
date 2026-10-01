@@ -183,9 +183,23 @@ class AndroidRecorderBridge private constructor(
         }
     }
 
+    /**
+     * The update endpoint replaces `custom_metadata` as a whole, so sending only the conditions
+     * object dropped everything stored at recorder start (`session_uuid`, which groups the web
+     * summary's conditions, and `$ost_uikit_version`). The stored map is re-sent with the
+     * conditions replaced, as the Android UI kit's `updateBalanceConditionResult` does.
+     *
+     * When the stored measurement cannot be read the update is skipped rather than sent: it would
+     * wipe that metadata, and the note it carries is the lesser loss.
+     */
     override suspend fun updateBalanceConditionMetadata(uuid: String, conditions: Map<String, String>) {
+        val stored = motionLab.readSingleMotionMeasurement(uuid).getOr(null as CoreMeasurement?)
+        if (stored == null) {
+            println("AndroidRecorderBridge: Skipped the static balance note update for $uuid: measurement unreadable")
+            return
+        }
         motionLab.updateMotionMeasurement(uuid) {
-            customMetadata(OSTBalanceCondition.KEY_BALANCE_CONDITIONS to conditions)
+            customMetadata(stored.customMetadata + (OSTBalanceCondition.KEY_BALANCE_CONDITIONS to conditions))
         }
     }
 
