@@ -25,6 +25,8 @@ import co.onestep.kmp.uikit.features.recordFlow.components.Toolbar
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTPostTaggingData
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingQuestionData
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
+import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTTagField
+import co.onestep.kmp.uikit.features.recordFlow.configurations.tagFieldsFor
 import co.onestep.kmp.uikit.features.recordFlow.configurations.addSelectedAnswers
 import co.onestep.kmp.uikit.features.recordFlow.configurations.effectivePostTaggingData
 import co.onestep.kmp.uikit.features.recordFlow.configurations.removeSelectedAnswers
@@ -60,13 +62,16 @@ import co.onestep.kmp.uikit.features.summary.screens.navigation.editFootwearDest
 import co.onestep.kmp.uikit.features.summary.screens.navigation.editLevelOfAssistanceScreen
 import co.onestep.kmp.uikit.features.summary.screens.navigation.summaryScreen
 import co.onestep.kmp.uikit.features.summary.screens.navigation.taggingScreen
+import co.onestep.kmp.uikit.features.tagging.PostTagFieldsDestination
 import co.onestep.kmp.uikit.features.tagging.models.Footwear
+import co.onestep.kmp.uikit.features.tagging.postTagFieldsScreen
 import co.onestep.kmp.uikit.features.tagging.models.Footwear.Companion.isFootwear
 import co.onestep.kmp.uikit.features.tagging.models.Footwear.Companion.toFootwear
 import co.onestep.kmp.uikit.models.OSTAssistiveDevice
 import co.onestep.kmp.uikit.models.OSTAssistiveDevice.Companion.toAssistiveDevice
 import co.onestep.kmp.uikit.models.OSTLevelOfAssistance
 import co.onestep.kmp.uikit.models.OSTLevelOfAssistance.Companion.toLevelOfAssistance
+import co.onestep.kmp.uikit.models.OSTTagValue
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData
 import co.onestep.kmp.uikit.navigation.UIktNavDisplay
 import co.onestep.kmp.uikit.navigation.UIktNavSavedStateConfiguration
@@ -84,6 +89,7 @@ import co.onestep.kmp.uikit_kmp.generated.resources.ic_close
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_trash
 import co.onestep.kmp.uikit_kmp.generated.resources.save_result
 import co.onestep.kmp.uikit_kmp.generated.resources.summary
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
@@ -98,6 +104,9 @@ internal fun SummaryMainFlow(
     motionMeasurementId: String,
     configuration: OSTRecordingConfiguration? = null,
     origin: OSTSummaryOrigin,
+    // Option codes answered before the recording; narrows the post-recording options. Null when
+    // they are unknown (the summary was opened some other way), and then nothing is narrowed.
+    preRecordTagCodes: () -> Set<String>? = { null },
     backAction: () -> Unit,
 ) {
     val resourceProvider = UIKitServiceLocator.resourceProvider
@@ -140,6 +149,14 @@ internal fun SummaryMainFlow(
         mutableStateOf<OSTPostTaggingData?>(configuration?.effectivePostTaggingData())
     }
     val postTaggingQuestions = postTaggingData?.questions
+    // The legacy tagging path, kept for one release; read once here.
+    @Suppress("DEPRECATION")
+    val legacyPostTaggingData = configuration?.postTaggingData
+    // Non-null when this recording uses the tag catalog, which replaces postTaggingData.
+    val postRecordTagFields = remember {
+        configuration?.tagFieldsFor(OSTTagField.STAGE_POST_RECORD, preRecordTagCodes())
+    }
+    var submittingTagFields by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf<String?>(null) }
     var currentQuestion by remember { mutableStateOf<OSTRecordingQuestionData?>(null) }
     val toolbarText = stringResource(Res.string.summary)
@@ -239,7 +256,11 @@ internal fun SummaryMainFlow(
     // screen: measurement_add_tags — fired when the post-measurement tagging screen or the
     // post-tag questions flow becomes current, matching uikit's post-measurement tag screen.
     LaunchedEffect(currentKey) {
-        if (currentKey == TaggingScreenDestination || currentKey == CustomTagsDestination) {
+        if (
+            currentKey == TaggingScreenDestination ||
+            currentKey == CustomTagsDestination ||
+            currentKey == PostTagFieldsDestination
+        ) {
             motionMeasurement?.type?.let { type ->
                 recordFlowTracker?.trackAddTagsScreen(type, motionMeasurement.id)
             }
@@ -275,21 +296,34 @@ internal fun SummaryMainFlow(
                             )
                         }
 
-                        configuration?.postTaggingData is OSTPostTaggingData.None -> {
+                        postRecordTagFields != null ->
+                            if (postRecordTagFields.isEmpty()) {
+                                SummaryAction(
+                                    text = resourceProvider.getString(Res.string.finish),
+                                    action = backAction,
+                                )
+                            } else {
+                                SummaryAction(
+                                    text = resourceProvider.getString(Res.string.continue_camel_case),
+                                    action = { backStack.addPostTagFields() },
+                                )
+                            }
+
+                        legacyPostTaggingData is OSTPostTaggingData.None -> {
                             SummaryAction(
                                 text = resourceProvider.getString(Res.string.finish),
                                 action = backAction,
                             )
                         }
 
-                        configuration?.postTaggingData is OSTPostTaggingData.OSTPostTaggingQuestionsFlow -> {
+                        legacyPostTaggingData is OSTPostTaggingData.OSTPostTaggingQuestionsFlow -> {
                             SummaryAction(
                                 text = resourceProvider.getString(Res.string.continue_camel_case),
                                 action = { backStack.add(CustomTagsDestination) },
                             )
                         }
 
-                        configuration?.postTaggingData is OSTPostTaggingData.OSTPostTaggingScreen -> {
+                        legacyPostTaggingData is OSTPostTaggingData.OSTPostTaggingScreen -> {
                             SummaryAction(
                                 text = resourceProvider.getString(Res.string.continue_camel_case),
                                 action = { backStack.add(TaggingScreenDestination) },
@@ -433,9 +467,30 @@ internal fun SummaryMainFlow(
                 },
                 onBackPress = { backStack.pop() },
             )
+            postTagFieldsScreen(
+                fields = postRecordTagFields.orEmpty(),
+                // Seeded from the measurement, so an existing note can be seen and edited.
+                initialNote = { note },
+                submitting = { submittingTagFields },
+                onContinue = { tagMap, newNote ->
+                    // Continue is disabled while the update is in flight; this guards the tap
+                    // that lands before that recomposition.
+                    if (submittingTagFields) return@postTagFieldsScreen
+                    submittingTagFields = true
+                    coroutineScope.launch {
+                        // A blank note is "no change" on the way up, so a saved note the user
+                        // emptied must be sent as "" to actually clear it.
+                        val noteToSend = newNote ?: "".takeIf { !note.isNullOrBlank() }
+                        submitTagFields(recorderBridge, motionMeasurementId, tagMap, noteToSend)
+                        summaryViewModel.updateMotionMeasurement()
+                        backAction()
+                    }
+                },
+            )
             customTagsScreen(
                 topBarPadding = ToolBarHeight,
-                preRecordingQuestions = configuration?.postTaggingData?.questions,
+                // The legacy tagging path, kept for one release.
+                preRecordingQuestions = legacyPostTaggingData?.questions,
                 onAddTags = { tags ->
                     postTaggingQuestions?.addSelectedAnswers(tags)
                 },
@@ -478,13 +533,20 @@ internal fun SummaryMainFlow(
             )
             noSummaryNoticeScreen {
                 when {
-                    configuration?.postTaggingData == null -> backAction()
-                    configuration.postTaggingData is OSTPostTaggingData.None -> backAction()
-                    configuration.postTaggingData is OSTPostTaggingData.OSTPostTaggingQuestionsFlow -> {
+                    postRecordTagFields != null ->
+                        if (postRecordTagFields.isEmpty()) {
+                            backAction()
+                        } else {
+                            backStack.addPostTagFields()
+                        }
+
+                    legacyPostTaggingData == null -> backAction()
+                    legacyPostTaggingData is OSTPostTaggingData.None -> backAction()
+                    legacyPostTaggingData is OSTPostTaggingData.OSTPostTaggingQuestionsFlow -> {
                         backStack.add(CustomTagsDestination)
                     }
 
-                    configuration.postTaggingData is OSTPostTaggingData.OSTPostTaggingScreen -> {
+                    legacyPostTaggingData is OSTPostTaggingData.OSTPostTaggingScreen -> {
                         backStack.add(TaggingScreenDestination)
                     }
                 }
@@ -610,6 +672,34 @@ private fun updateMetaData(
         )
         summaryViewModel.updateMotionMeasurement()
         backAction()
+    }
+}
+
+/** Opens the post-recording questions once, however many times Continue is tapped. */
+private fun MutableList<NavKey>.addPostTagFields() {
+    if (lastOrNull() != PostTagFieldsDestination) add(PostTagFieldsDestination)
+}
+
+/**
+ * Uploads the post-recording tag-catalog answers and note, suspending until the update completes:
+ * the caller leaves the flow afterwards, and leaving first would cancel the request and lose them.
+ */
+private suspend fun submitTagFields(
+    recorderBridge: co.onestep.kmp.uikit.bridge.RecorderBridge,
+    motionMeasurementId: String,
+    tagMap: Map<String, OSTTagValue>,
+    note: String?,
+) {
+    try {
+        recorderBridge.updateMotionMeasurement(
+            motionMeasurementId,
+            OSTUserInputMetaData(note = note, tagMap = tagMap.ifEmpty { null }),
+        )
+    } catch (cancellation: CancellationException) {
+        throw cancellation
+    } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
+        // Never log the note or the answers — only what failed.
+        println("SummaryMainFlow: Failed to submit tag fields for $motionMeasurementId: ${failure::class.simpleName}")
     }
 }
 

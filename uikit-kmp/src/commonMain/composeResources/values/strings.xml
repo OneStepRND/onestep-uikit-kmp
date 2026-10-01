@@ -379,6 +379,10 @@
     <string name="go_to_summary">Go to summary</string>
     <string name="record_another_test">Record another test</string>
     <string name="static_balance_observations_hint">Tap to add observations about this measurement…</string>
+    <string name="your_setup">Your setup</string>
+    <string name="static_balance_outcomes_question">Did any of the following happen during the recording?</string>
+    <string name="static_balance_outcomes_warning">Note: Tagging any of these events will mark the test as failed and set the score to 0</string>
+    <string name="static_balance_seconds_short">%1$d sec</string>
     <string name="static_balance_place_pocket_strap">Place the phone in the pocket or strap</string>
     <string name="static_balance_hold_chest">Hold the phone at the center of your chest</string>
     <string name="static_balance_banner_title">Important note!</string>

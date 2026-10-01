@@ -383,6 +383,10 @@
     <string name="go_to_summary">לסיכום</string>
     <string name="record_another_test">הקליטו בדיקה נוספת</string>
     <string name="static_balance_observations_hint">הקישו להוספת הערות על המדידה…</string>
+    <string name="your_setup">ההגדרות שלך</string>
+    <string name="static_balance_outcomes_question">האם אחד מהדברים הבאים קרה במהלך ההקלטה?</string>
+    <string name="static_balance_outcomes_warning">שימו לב: תיוג אחד מהאירועים האלה יסמן את הבדיקה כנכשלה ויקבע את הציון ל-0</string>
+    <string name="static_balance_seconds_short">&#x2068;%1$d&#x2069; שנ׳</string>
     <string name="static_balance_place_pocket_strap">הניחו את הטלפון בכיס או ברצועה</string>
     <string name="static_balance_hold_chest">החזיקו את הטלפון במרכז החזה</string>
     <string name="static_balance_banner_title">הערה חשובה!</string>

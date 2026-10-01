@@ -36,6 +36,17 @@ import org.jetbrains.compose.resources.stringResource
  *        starts. The selection is attached to the resulting measurement as a tag and pre-fills the
  *        post-tagging footwear row if that screen is also enabled. The user must pick a footwear
  *        option (including `NONE`) to proceed; `NONE` does not add a tag.
+ * @param tagFields The backend tag catalog's fields for this activity, fetched and filtered by the
+ *        host. When non-null the UIKit renders its `pre_record` fields on one screen before the
+ *        recording and its `post_record` fields after the native summary, and submits the answers as
+ *        the measurement's `tag_map` (option codes, never labels); the legacy [preRecordingQuestions],
+ *        [postTaggingData], [showPreRecordingAssistiveDeviceSelection] and
+ *        [showPreRecordingFootwearSelection] are then ignored. An empty list means "ask nothing".
+ *        For [OSTActivityType.STATIC_BALANCE] the `pre_record` fields are the Condition Setup screen,
+ *        replacing [balance], and the `$balance_result_states` outcomes — narrowed by `requiresAny`
+ *        to the condition just recorded — are asked on "Recording saved". A catalog without any
+ *        `$balance_*` condition field falls back to [balance], so a recording is never made without
+ *        a condition.
  */
 @Serializable
 data class OSTRecordingConfiguration(
@@ -46,20 +57,45 @@ data class OSTRecordingConfiguration(
     val isCountingDown: Boolean,
     val prepareScreenData: OSTPrepareData? = null,
     val playVoiceOver: Boolean,
+    @Deprecated(
+        "Replaced by tagFields, the backend tag catalog. Ignored when tagFields is set; " +
+            "removed in the next release.",
+        ReplaceWith("tagFields"),
+    )
     val preRecordingQuestions: List<OSTRecordingQuestionData>? = null,
     var shouldRecordGeoLocation: Boolean = false,
     var showSummaryScreen: OSTSummaryOptions = OSTSummaryOptions.Full,
     val showPermissionExplanationScreen: Boolean = true,
     val readyForAnalysisUiAssist: Boolean = false,
     val sensorEnhancedMode: Boolean = false,
+    @Deprecated(
+        "Replaced by tagFields, the backend tag catalog. Ignored when tagFields is set; " +
+            "removed in the next release.",
+        ReplaceWith("tagFields"),
+    )
     val postTaggingData: OSTPostTaggingData = OSTPostTaggingData.default(),
+    @Deprecated(
+        "Replaced by tagFields, the backend tag catalog. Ignored when tagFields is set; " +
+            "removed in the next release.",
+        ReplaceWith("tagFields"),
+    )
     val showPreRecordingAssistiveDeviceSelection: Boolean = false,
+    @Deprecated(
+        "Replaced by tagFields, the backend tag catalog. Ignored when tagFields is set; " +
+            "removed in the next release.",
+        ReplaceWith("tagFields"),
+    )
     val showPreRecordingFootwearSelection: Boolean = false,
     /**
      * Static Balance Test condition schema (OS-15960). Non-null only for the
      * [OSTActivityType.STATIC_BALANCE] flow, where it drives the Condition Setup screen;
      * defaults to all options when the host supplies none. Ignored by every other activity.
      */
+    @Deprecated(
+        "Replaced by tagFields, the backend tag catalog. Ignored when tagFields carries the " +
+            "Static Balance condition fields; removed in the next release.",
+        ReplaceWith("tagFields"),
+    )
     val balance: OSTBalance? = null,
     /**
      * Host-supplied hallway/walkway length, in meters, for the 6-minute and 2-minute walk flows.
@@ -111,7 +147,10 @@ data class OSTRecordingConfiguration(
      * (the error screens).
      */
     val showCompletionNotice: Boolean = false,
+    val tagFields: List<OSTTagField>? = null,
 ) {
+    // The factories below still build the legacy tagging configuration, kept for one release.
+    @Suppress("DEPRECATION")
     companion object {
         fun defaultWalk(
             walkInstructions: OSTMeasurementInstructionsData? = null,
@@ -420,9 +459,11 @@ internal object ColorArgbSerializer : KSerializer<Color> {
  * analysed, so its note is the only description of what was captured, and `genericRecording()`
  * ships `note = false` on a `postTaggingData` its own screen was never meant to read.
  */
+@Suppress("DEPRECATION")
 fun OSTRecordingConfiguration.collectsPostRecordingNote(): Boolean =
     (postTaggingData as? OSTPostTaggingData.OSTPostTaggingScreen)?.note == true
 
+@Suppress("DEPRECATION")
 fun OSTRecordingConfiguration.effectivePostTaggingData(): OSTPostTaggingData {
     val screen =
         postTaggingData as? OSTPostTaggingData.OSTPostTaggingScreen ?: return postTaggingData

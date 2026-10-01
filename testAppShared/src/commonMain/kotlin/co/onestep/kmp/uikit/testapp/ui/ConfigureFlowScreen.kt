@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
+import co.onestep.kmp.uikit.testapp.SampleTagCatalog
 
 /**
  * A selectable recording preset. [key] doubles as the testTag suffix (`activity.WALK`, …), matching
@@ -78,6 +79,9 @@ fun ConfigureFlowScreen(
     // Defaults to the first option (the platform's "successful" mock) so the flow completes on a
     // stationary device/emulator out of the box.
     var selectedMock by remember { mutableStateOf(mockOptions.firstOrNull() ?: "") }
+    // Kept apart from `config`, which a preset change replaces: applied when the flow starts.
+    var useSampleCatalog by remember { mutableStateOf(false) }
+    var sampleCatalogHebrew by remember { mutableStateOf(false) }
 
     // The START FLOW CTA is pinned below the scrollable content (not inside it): XCUITest's
     // scroll-to-visible cannot drive a Compose/Skia scroll container, so the primary action must
@@ -151,6 +155,22 @@ fun ConfigureFlowScreen(
                 },
             )
 
+            // The bundled backend tag catalog replaces the legacy tagging screens (OS-17546).
+            ToggleRow(
+                label = "Tag catalog: sample",
+                testTag = "toggle.tagCatalogSample",
+                checked = useSampleCatalog,
+                onCheckedChange = { useSampleCatalog = it },
+            )
+            if (useSampleCatalog) {
+                ToggleRow(
+                    label = "Tag catalog in Hebrew (he_IL)",
+                    testTag = "toggle.tagCatalogHebrew",
+                    checked = sampleCatalogHebrew,
+                    onCheckedChange = { sampleCatalogHebrew = it },
+                )
+            }
+
             Spacer(Modifier.height(24.dp))
 
             // MARK: Mock recording
@@ -170,7 +190,15 @@ fun ConfigureFlowScreen(
                 .padding(vertical = 16.dp)
                 .height(56.dp)
                 .testTag("configure.start"),
-            onClick = { onStartFlow(config, selectedMock) },
+            onClick = {
+                val started = if (useSampleCatalog) {
+                    val locale = if (sampleCatalogHebrew) "he_IL" else "en_US"
+                    config.copy(tagFields = SampleTagCatalog.fieldsFor(config.activityType, locale))
+                } else {
+                    config
+                }
+                onStartFlow(started, selectedMock)
+            },
         ) {
             Text("START FLOW", fontSize = 18.sp)
         }

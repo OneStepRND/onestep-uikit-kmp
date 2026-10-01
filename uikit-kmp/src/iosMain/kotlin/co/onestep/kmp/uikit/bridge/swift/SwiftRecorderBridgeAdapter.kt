@@ -15,6 +15,7 @@ import co.onestep.kmp.uikit.models.OSTRecordingWindow
 import co.onestep.kmp.uikit.models.OSTTimeRangedDataRequest
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData
 import co.onestep.kmp.uikit.models.OSTWalkCourseLength
+import co.onestep.kmp.uikit.models.submittable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -206,7 +207,7 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
                 activityType = activityType.toIosString(),
                 durationMs = duration ?: 0L,
                 sensorEnhancedMode = sensorEnhancedMode,
-                userInputMetadata = userInputMetadata,
+                userInputMetadata = userInputMetadata?.withSubmittableTagMap(),
                 customMetadata = stringMetadata,
             ) { continuation.resume(Unit) }
         }
@@ -320,7 +321,7 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
 
     override suspend fun updateMotionMeasurement(uuid: String, metadata: OSTUserInputMetaData) {
         suspendCancellableCoroutine { continuation ->
-            delegate.updateMotionMeasurement(uuid, metadata) { continuation.resume(Unit) }
+            delegate.updateMotionMeasurement(uuid, metadata.withSubmittableTagMap()) { continuation.resume(Unit) }
         }
     }
 
@@ -352,3 +353,10 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
         const val SELF_REPORT_SERVER_FAILURE = 2
     }
 }
+
+/**
+ * [this] with unanswered tag-catalog fields dropped, so Swift only ever sees a `tagMap` that may be
+ * submitted as-is (null when nothing is left), as the Android bridge sends it.
+ */
+private fun OSTUserInputMetaData.withSubmittableTagMap(): OSTUserInputMetaData =
+    copy(tagMap = tagMap?.submittable())
