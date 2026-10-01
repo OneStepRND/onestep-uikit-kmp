@@ -11,6 +11,7 @@ import co.onestep.kmp.uikit.features.permissions.hasRequiredInAppPermissions
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
 import co.onestep.kmp.uikit.features.recordFlow.screens.RecordFlowNavGraph
 import co.onestep.kmp.sdk.OSTEvent
+import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit.ui.theme.OneStepUiKitTheme
 
 private enum class FlowPhase { PERMISSION_FLOW, RECORDING_FLOW }
@@ -44,6 +45,12 @@ private enum class FlowPhase { PERMISSION_FLOW, RECORDING_FLOW }
  * @param onGoToSettings Platform callback: opens device settings for microphone permission.
  * @param customMetadata Host-app metadata attached verbatim to every measurement recorded by
  *        this flow (e.g. RTM exclusion, medical devices). Flow-internal keys take precedence.
+ * @param onInstructionsRequested Host-supplied "View instructions". `null` (default) keeps the
+ *        SDK's instructions sheet. Non-null: tapping "View instructions" — on the Start screen and
+ *        on the analysis-error screens — calls this with the flow's activity type instead of
+ *        opening the sheet, so the host can present its own instructions over the flow. The SDK
+ *        still stops the voice-over and still sends `screen: measurement_instructions` with its
+ *        `prior_screen`. Read at tap time, so the latest lambda is the one called.
  */
 @Composable
 fun OSTRecordingFlow(
@@ -56,6 +63,7 @@ fun OSTRecordingFlow(
     onAskMicrophonePermission: () -> Unit = {},
     onGoToSettings: () -> Unit = {},
     customMetadata: Map<String, Any> = emptyMap(),
+    onInstructionsRequested: ((OSTActivityType) -> Unit)? = null,
 ) {
     var phase by remember {
         mutableStateOf(
@@ -96,6 +104,7 @@ fun OSTRecordingFlow(
                     onAskMicrophonePermission = onAskMicrophonePermission,
                     onGoToSettings = onGoToSettings,
                     customMetadata = customMetadata,
+                    onInstructionsRequested = onInstructionsRequested,
                 )
             }
         }

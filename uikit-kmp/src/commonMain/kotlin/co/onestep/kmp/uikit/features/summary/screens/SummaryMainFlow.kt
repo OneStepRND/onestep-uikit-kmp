@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -89,6 +90,8 @@ import co.onestep.kmp.uikit_kmp.generated.resources.ic_close
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_trash
 import co.onestep.kmp.uikit_kmp.generated.resources.save_result
 import co.onestep.kmp.uikit_kmp.generated.resources.summary
+import co.onestep.kmp.uikit_kmp.generated.resources.did_not_used_hands
+import co.onestep.kmp.uikit_kmp.generated.resources.used_hands
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -264,18 +267,38 @@ internal fun SummaryMainFlow(
 
     val recordFlowTracker = UIKitServiceLocator.recordFlowAnalyticsTracker
 
-    // screen: measurement_add_tags — fired when the post-measurement tagging screen or the
-    // post-tag questions flow becomes current, matching uikit's post-measurement tag screen.
+    // screen: measurement_add_tags — fired once per visit to the post-measurement tagging screen
+    // or the post-tag questions flow, matching uikit. Returning from an Edit / CustomQuestion
+    // screen is the same visit and must not fire it again (OS-17656); only going back to the
+    // summary ends the visit. Saveable so a configuration change does not count as a new visit.
+    var addTagsScreenTracked by rememberSaveable(motionMeasurementId) { mutableStateOf(false) }
     LaunchedEffect(currentKey) {
-        if (
-            currentKey == TaggingScreenDestination ||
-            currentKey == CustomTagsDestination ||
-            currentKey == PostTagFieldsDestination
-        ) {
-            motionMeasurement?.type?.let { type ->
-                recordFlowTracker?.trackAddTagsScreen(type, motionMeasurement.id)
-            }
+        when (currentKey) {
+            TaggingScreenDestination,
+            CustomTagsDestination,
+            PostTagFieldsDestination ->
+                if (!addTagsScreenTracked) {
+                    motionMeasurement?.type?.let { type ->
+                        recordFlowTracker?.trackAddTagsScreen(type, motionMeasurement.id)
+                        addTagsScreenTracked = true
+                    }
+                }
+
+            SummaryScreenDestination,
+            NoSummaryNoticeDestination -> addTagsScreenTracked = false
+
+            else -> Unit
         }
+    }
+
+    // tags_hands_used_for_support for measurement_submit_tags: the answer rides in the tags as the
+    // localized option text, resolved back to the spec's "Yes"/"No" (null when not asked).
+    val handsUsedForSupport: (List<String>) -> String? = { tags ->
+        RecordFlowAnalyticsTracker.handsUsedForSupport(
+            tags = tags,
+            usedHands = resourceProvider.getString(Res.string.used_hands),
+            didNotUseHands = resourceProvider.getString(Res.string.did_not_used_hands),
+        )
     }
 
     PlatformBackHandler {
@@ -429,6 +452,7 @@ internal fun SummaryMainFlow(
                             perceptionUuid = motionMeasurement.id,
                             assistiveDevice = kmpUserInputMetaData.assistiveDevice ?: assistiveDevice,
                             footwear = footwear,
+                            handsUsedForSupport = handsUsedForSupport(kmpUserInputMetaData.tags.orEmpty()),
                         )
                     }
                     // The screen's own tag list re-submits the seeded footwear and every
@@ -531,6 +555,9 @@ internal fun SummaryMainFlow(
                             perceptionUuid = motionMeasurement.id,
                             assistiveDevice = assistiveDevice,
                             footwear = footwear,
+                            handsUsedForSupport = handsUsedForSupport(
+                                postTaggingQuestions.orEmpty().flatMap { it.selectedAnswers.orEmpty() },
+                            ),
                         )
                     }
                     // No footwear row on this flow: any footwear tag is kept as it is.

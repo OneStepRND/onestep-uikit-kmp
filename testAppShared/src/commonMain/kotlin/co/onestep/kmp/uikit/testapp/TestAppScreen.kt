@@ -12,10 +12,13 @@ sealed class TestAppScreen {
     /**
      * @param returnToCareLog where to land after the recording result: CareLog when launched from
      *   the Care Log, else Home (so the Home "Last Event" label reflects the outcome).
+     * @param hostInstructions whether "View instructions" goes to the harness (standing in for a
+     *   host's own instructions screen) instead of the SDK's sheet.
      */
     data class Recording(
         val config: OSTRecordingConfiguration,
         val returnToCareLog: Boolean = false,
+        val hostInstructions: Boolean = false,
     ) : TestAppScreen()
     data class SummaryLoading(val measurementId: String) : TestAppScreen()
     data class Summary(val measurement: OSTMotionMeasurement) : TestAppScreen()

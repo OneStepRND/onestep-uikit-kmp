@@ -3,6 +3,7 @@ package co.onestep.kmp.uikit.features.summary.analytics
 import co.onestep.kmp.uikit.OSTUIKitAnalyticsHandler
 import co.onestep.kmp.uikit.features.recordFlow.analytics.AnalyticsProps
 import co.onestep.kmp.uikit.features.recordFlow.analytics.analyticsName
+import co.onestep.kmp.uikit.features.recordFlow.analytics.withLowercasePerceptionUuid
 import co.onestep.kmp.uikit.features.summary.analytics.SummaryAnalyticsEvents.ScreenNames
 import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.sdk.OSTEvent
@@ -31,14 +32,12 @@ internal class SummaryAnalyticsTracker(
         original: Int,
         updated: Int,
     ) {
-        analytics.onEvent(
-            OSTEvent(
-                name = SummaryAnalyticsEvents.SUMMARY_EDIT_HALLWAY,
-                properties = mapOf(
-                    AnalyticsProps.ACTIVITY_NAME to activity.analyticsName,
-                    AnalyticsProps.ORIGINAL_HALLWAY_VALUE to original.toString(),
-                    AnalyticsProps.UPDATED_HALLWAY_VALUE to updated.toString(),
-                ),
+        emit(
+            SummaryAnalyticsEvents.SUMMARY_EDIT_HALLWAY,
+            mapOf(
+                AnalyticsProps.ACTIVITY_NAME to activity.analyticsName,
+                AnalyticsProps.ORIGINAL_HALLWAY_VALUE to original.toString(),
+                AnalyticsProps.UPDATED_HALLWAY_VALUE to updated.toString(),
             ),
         )
     }
@@ -128,16 +127,14 @@ internal class SummaryAnalyticsTracker(
      * point closest to the spec screen. `screen_name` is reported as "measurement".
      */
     fun trackMeasurementDeleted(measurement: OSTMotionMeasurement) {
-        analytics.onEvent(
-            OSTEvent(
-                name = SummaryAnalyticsEvents.SCREEN_MEASUREMENT_DELETED,
-                properties = buildMap {
-                    put(AnalyticsProps.SCREEN_NAME, ScreenNames.MEASUREMENT)
-                    put(AnalyticsProps.ACTIVITY_NAME, measurement.type.analyticsName)
-                    put(AnalyticsProps.PERCEPTION_UUID, measurement.id)
-                    put(AnalyticsProps.ACTIVITY_DATE, measurement.timestamp.toAnalyticsDeviceTimestamp())
-                },
-            ),
+        emit(
+            SummaryAnalyticsEvents.SCREEN_MEASUREMENT_DELETED,
+            buildMap {
+                put(AnalyticsProps.SCREEN_NAME, ScreenNames.MEASUREMENT)
+                put(AnalyticsProps.ACTIVITY_NAME, measurement.type.analyticsName)
+                put(AnalyticsProps.PERCEPTION_UUID, measurement.id)
+                put(AnalyticsProps.ACTIVITY_DATE, measurement.timestamp.toAnalyticsDeviceTimestamp())
+            },
         )
     }
 
@@ -171,6 +168,11 @@ internal class SummaryAnalyticsTracker(
             put(AnalyticsProps.ACTIVITY_DATE, measurement.timestamp.toAnalyticsDeviceTimestamp())
             if (extra != null) extra()
         }
-        analytics.onEvent(OSTEvent(name = event, properties = props))
+        emit(event, props)
+    }
+
+    // Every event leaves through here, so this is the one place perception_uuid is lowercased.
+    private fun emit(event: String, properties: Map<String, String>) {
+        analytics.onEvent(OSTEvent(name = event, properties = properties.withLowercasePerceptionUuid()))
     }
 }

@@ -195,7 +195,12 @@ class NativeRecorderDelegate: NSObject, IosRecorderDelegate {
                 let name: String
                 switch state {
                 case .idle: name = "INITIALIZED"
-                case .recording: name = "RECORDING"
+                case .recording(let uuid):
+                    // The perception uuid, for analytics that outlive the recorder's reset (a UI
+                    // timeout's still-analyzing / error screens). Pushed before RECORDING so an
+                    // observer of that state reads it; kept when the recorder goes idle.
+                    self.adapter?.onSessionIdChanged(sessionId: uuid.uuidString)
+                    name = "RECORDING"
                 case .finishedRecording: name = "DONE"
                 case .error: name = "DONE"
                 @unknown default: name = "INITIALIZED"
