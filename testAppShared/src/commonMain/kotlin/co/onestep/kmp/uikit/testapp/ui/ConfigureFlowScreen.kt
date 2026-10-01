@@ -70,7 +70,7 @@ private fun presetConfigurations(): List<ActivityPreset> = listOf(
 @Composable
 fun ConfigureFlowScreen(
     mockOptions: List<String>,
-    onStartFlow: (config: OSTRecordingConfiguration, mock: String) -> Unit,
+    onStartFlow: (config: OSTRecordingConfiguration, mock: String, hostInstructions: Boolean) -> Unit,
     onBack: () -> Unit,
 ) {
     val configs = remember { presetConfigurations() }
@@ -82,6 +82,8 @@ fun ConfigureFlowScreen(
     // Kept apart from `config`, which a preset change replaces: applied when the flow starts.
     var useSampleCatalog by remember { mutableStateOf(false) }
     var sampleCatalogHebrew by remember { mutableStateOf(false) }
+    // A flow parameter, not a configuration field, so it rides beside `config` (OS-16743).
+    var hostInstructions by remember { mutableStateOf(false) }
 
     // The START FLOW CTA is pinned below the scrollable content (not inside it): XCUITest's
     // scroll-to-visible cannot drive a Compose/Skia scroll container, so the primary action must
@@ -155,6 +157,14 @@ fun ConfigureFlowScreen(
                 },
             )
 
+            // "View instructions" calls the host's onInstructionsRequested instead of the SDK sheet.
+            ToggleRow(
+                label = "Host instructions (onInstructionsRequested)",
+                testTag = "toggle.hostInstructions",
+                checked = hostInstructions,
+                onCheckedChange = { hostInstructions = it },
+            )
+
             // The bundled backend tag catalog replaces the legacy tagging screens (OS-17546).
             ToggleRow(
                 label = "Tag catalog: sample",
@@ -197,7 +207,7 @@ fun ConfigureFlowScreen(
                 } else {
                     config
                 }
-                onStartFlow(started, selectedMock)
+                onStartFlow(started, selectedMock, hostInstructions)
             },
         ) {
             Text("START FLOW", fontSize = 18.sp)
@@ -308,7 +318,7 @@ private fun MockRecordingDropdown(
 private fun ConfigureFlowScreenPreview() {
     ConfigureFlowScreen(
         mockOptions = listOf("SUCCESSFUL"),
-        onStartFlow = { _, _ -> },
+        onStartFlow = { _, _, _ -> },
         onBack = {},
     )
 }

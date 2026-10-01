@@ -1225,6 +1225,15 @@ internal class MotionRecorderViewModel(
         audioPlayer.playAudio(resourceKey)
     }
 
+    /**
+     * Silences the voice-over currently playing, e.g. the Start screen's "tap the start button"
+     * once the instructions are opened (the SDK's sheet or the host's own). Mirrors uikit's
+     * `stopAudio`.
+     */
+    fun stopAudio() {
+        audioPlayer.stopCurrentAudio()
+    }
+
     fun playReadyForAnalysisAudio() {
         // Note: the Russian asset is intentionally named "data_is_read_for_analysis_ru"
         // (matching the actual mp3 filename); Hebrew uses "_heb" instead of "_iw".

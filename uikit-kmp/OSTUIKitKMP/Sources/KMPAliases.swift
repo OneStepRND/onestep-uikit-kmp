@@ -33,4 +33,6 @@ typealias KMPUserAttributes = OSTUserAttributes
 // Public aliases for host apps that import both OSTUIKitKMP and the native OneStepUIKit
 // (whose type names overlap, e.g. OSTRecordingConfiguration).
 public typealias KMPRecordingConfiguration = OSTRecordingConfiguration
+// The activity type `OSTRecordingFlowView`'s `onInstructionsRequested` is called with.
+public typealias KMPActivityType = OSTActivityType
 public typealias KMPPermissionMode = OSTPermissionMode

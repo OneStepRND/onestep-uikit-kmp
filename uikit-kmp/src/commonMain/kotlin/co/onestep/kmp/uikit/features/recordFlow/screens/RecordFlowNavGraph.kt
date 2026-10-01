@@ -308,6 +308,7 @@ internal fun RecordFlowNavGraph(
     onAskMicrophonePermission: () -> Unit = {},
     onGoToSettings: () -> Unit = {},
     customMetadata: Map<String, Any> = emptyMap(),
+    onInstructionsRequested: ((OSTActivityType) -> Unit)? = null,
 ) {
     // Resolve the patient-bound bridge bundle once per launch. null patientId = current-user mode
     // (today's auth-bound singletons). Non-null = clinician mode: build a patient-scoped bundle via
@@ -397,6 +398,23 @@ internal fun RecordFlowNavGraph(
     var currentErrorCode by remember { mutableStateOf<String?>(null) }
     var currentErrorTitle by remember { mutableStateOf<String?>(null) }
     var showInstructionsSheet by remember { mutableStateOf(false) }
+    // Read at tap time, so a host that swaps its handler (or clears it) between recompositions is
+    // honoured without restarting the flow.
+    val currentOnInstructionsRequested by rememberUpdatedState(onInstructionsRequested)
+
+    // "View instructions" (Start screen and error screens). screen: measurement_instructions is
+    // sent with [priorScreen] and the voice-over stopped either way; a host-supplied handler then
+    // shows the host's own instructions instead of the SDK's sheet (OS-16743).
+    fun openInstructions(priorScreen: String) {
+        recordFlowTracker?.trackMeasurementInstructionsScreen(activity, priorScreen)
+        viewModel.stopAudio()
+        val hostInstructions = currentOnInstructionsRequested
+        if (hostInstructions != null) {
+            hostInstructions(activity)
+        } else {
+            showInstructionsSheet = true
+        }
+    }
     var showExitConfirmationDialog by remember { mutableStateOf(false) }
     var showRecordingExitDialog by remember { mutableStateOf(false) }
 
@@ -698,11 +716,7 @@ internal fun RecordFlowNavGraph(
             },
             secondaryAction = {
                 // screen: measurement_instructions — opened from the StartRecord ("GO") screen.
-                recordFlowTracker?.trackMeasurementInstructionsScreen(
-                    activity,
-                    RecordFlowAnalyticsTracker.PRIOR_SCREEN_MEASUREMENT_START,
-                )
-                showInstructionsSheet = true
+                openInstructions(RecordFlowAnalyticsTracker.PRIOR_SCREEN_MEASUREMENT_START)
             },
             onBackPress = {
                 showExitConfirmationDialog = true
@@ -1126,9 +1140,10 @@ internal fun RecordFlowNavGraph(
                     // itself for Generic Recording, which has none.
                     backStack.add(recordEntryDestination)
                 },
-                // Secondary CTA: "View instructions" opens the instructions sheet on analysis
-                // errors; for the Static Balance short error it is "Finish" — resume to the
-                // web summary if a prior condition completed this session, else exit.
+                // Secondary CTA: "View instructions" opens the instructions (the SDK's sheet, or
+                // the host's via onInstructionsRequested) on analysis errors; for the Static
+                // Balance short error it is "Finish" — resume to the web summary if a prior
+                // condition completed this session, else exit.
                 onSecondaryAction =
                     if (error == RecordFlowError.StaticBalanceShort) {
                         {
@@ -1143,11 +1158,7 @@ internal fun RecordFlowNavGraph(
                     } else {
                         {
                             // screen: measurement_instructions — opened from an error screen.
-                            recordFlowTracker?.trackMeasurementInstructionsScreen(
-                                activity,
-                                RecordFlowAnalyticsTracker.PRIOR_SCREEN_MEASUREMENT_ERROR,
-                            )
-                            showInstructionsSheet = true
+                            openInstructions(RecordFlowAnalyticsTracker.PRIOR_SCREEN_MEASUREMENT_ERROR)
                         }
                     },
                 screenDataFactory = { retry, secondary ->

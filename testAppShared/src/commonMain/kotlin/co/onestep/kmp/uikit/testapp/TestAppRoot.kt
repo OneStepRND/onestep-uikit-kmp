@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -18,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -32,6 +35,7 @@ import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfi
 import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
 import co.onestep.kmp.uikit.features.web.OSTWebScreen
 import co.onestep.kmp.uikit.features.web.enhanceOSTSummaryUrl
+import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit.testapp.ui.ClinicianLoginResultScreen
 import co.onestep.kmp.uikit.testapp.ui.ConfigureFlowScreen
 import co.onestep.kmp.uikit.testapp.ui.HomeScreen
@@ -236,9 +240,9 @@ private fun AuthenticatedContent(
 
         is TestAppScreen.ConfigureFlow -> ConfigureFlowScreen(
             mockOptions = shell.mockOptions,
-            onStartFlow = { config, mock ->
+            onStartFlow = { config, mock, hostInstructions ->
                 shell.setMock(mock)
-                screen = TestAppScreen.Recording(config)
+                screen = TestAppScreen.Recording(config, hostInstructions = hostInstructions)
             },
             onBack = { screen = TestAppScreen.Home },
         )
@@ -263,6 +267,7 @@ private fun AuthenticatedContent(
         )
 
         is TestAppScreen.Recording -> {
+            var hostInstructionsFor by remember { mutableStateOf<OSTActivityType?>(null) }
             // Where a finished recording lands. A `WEB` flow stages an enhanced summaryUrl in
             // onFinished (which fires just before onDismiss), and then the harness opens it in
             // uikit's own OSTWebScreen — which is exactly what a host app does with that URL.
@@ -310,7 +315,30 @@ private fun AuthenticatedContent(
                     }
                 },
                 onDismiss = leaveRecording,
+                onInstructionsRequested =
+                    if (current.hostInstructions) {
+                        { activityType -> hostInstructionsFor = activityType }
+                    } else {
+                        null
+                    },
             )
+
+            // Stands in for a host's own instructions screen, presented over the flow.
+            hostInstructionsFor?.let { activityType ->
+                AlertDialog(
+                    onDismissRequest = { hostInstructionsFor = null },
+                    title = { Text("Host instructions") },
+                    text = { Text("onInstructionsRequested(${activityType.name})") },
+                    confirmButton = {
+                        TextButton(
+                            modifier = Modifier.testTag("hostInstructions.close"),
+                            onClick = { hostInstructionsFor = null },
+                        ) {
+                            Text("Close")
+                        }
+                    },
+                )
+            }
         }
 
         is TestAppScreen.WebSummary -> OSTWebScreen(

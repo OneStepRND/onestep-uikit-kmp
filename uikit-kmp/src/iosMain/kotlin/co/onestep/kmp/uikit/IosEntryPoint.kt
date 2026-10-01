@@ -27,6 +27,7 @@ import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
 import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
 import co.onestep.kmp.uikit.features.web.OSTWebScreen
 import co.onestep.kmp.sdk.OSTEvent
+import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.utils.ResourceProvider
 import platform.UIKit.UIColor
@@ -178,6 +179,11 @@ object OSTUIKitIos {
      * @param onFinished Callback invoked with the terminal [OSTRecordingFlowResult]. Fires only
      *        when the flow produced an analyzed measurement.
      * @param onDismiss Callback invoked when the flow should be dismissed.
+     * @param onInstructionsRequested Host-supplied "View instructions": when non-null, tapping
+     *        "View instructions" (Start screen and analysis-error screens) calls it with the
+     *        activity type instead of opening the SDK's sheet, so the host can present its own
+     *        instructions over the flow. `null` keeps the SDK's sheet. Swift sees no default here,
+     *        so pass `nil` to keep it.
      */
     fun createRecordingFlowViewController(
         config: OSTRecordingConfiguration,
@@ -185,6 +191,7 @@ object OSTUIKitIos {
         onResult: (OSTEvent) -> Unit,
         onFinished: (OSTRecordingFlowResult) -> Unit,
         onDismiss: () -> Unit,
+        onInstructionsRequested: ((OSTActivityType) -> Unit)? = null,
     ): UIViewController {
         checkConfigured()
         return ComposeUIViewController {
@@ -194,6 +201,7 @@ object OSTUIKitIos {
                 onResult = onResult,
                 onFinished = onFinished,
                 onDismiss = onDismiss,
+                onInstructionsRequested = onInstructionsRequested,
             )
         }.applyDefaultStyle()
     }
