@@ -642,11 +642,14 @@ final class NativeSDKDelegate: NSObject, IosSDKDelegate {
     func sync(completion: @escaping (KotlinBoolean) -> Void) {
         guard case .success(let onestep) = OneStepSDK.OneStep.shared() else { completion(KotlinBoolean(bool: false)); return }
         guard case .identified(let patientId) = onestep.authStateValue else { completion(KotlinBoolean(bool: false)); return }
-        let scope = OneStepSDK.OneStep.withPatient(patientId) { $0 }
-        Task {
-            switch await scope.sync() {
-            case .success: completion(KotlinBoolean(bool: true))
-            case .failure: completion(KotlinBoolean(bool: false))
+        // Task created INSIDE the binding — see the @TaskLocal warning on
+        // NativePatientScopeDelegate.
+        _ = OneStepSDK.OneStep.withPatient(patientId) { scope in
+            Task {
+                switch await scope.sync() {
+                case .success: completion(KotlinBoolean(bool: true))
+                case .failure: completion(KotlinBoolean(bool: false))
+                }
             }
         }
     }
@@ -1234,17 +1237,26 @@ final class NativeOneStepDelegate: NSObject, IosOneStepDelegate {
 }
 
 /// Bridges the KMP patient-scoped facade (`IosPatientScopeDelegate`, reached via
-/// `OneStep.withPatient`) to the native `OneStepSDK.OneStep.withPatient(_:)` scope. Each op resolves
-/// the `Sendable` patient scope inside the `withPatient` block and awaits the scope's async call.
+/// `OneStep.withPatient`) to the native `OneStepSDK.OneStep.withPatient(_:)` scope.
 /// `patientId` is never logged (HIPAA).
+///
+/// ⚠️ **Every op must create its `Task` INSIDE the `withPatient` block.** `withPatient` binds the
+/// patient through a `@TaskLocal` (`ScopedPatientContext.patientId`) for the dynamic extent of the
+/// block, and a `Task` captures task-local values *at creation*. Resolving the scope with
+/// `withPatient { $0 }` and awaiting it afterwards therefore runs the call with **no patient bound**,
+/// and the SDK rejects it as `OSTError.notIdentified` — which is what `sync` did, leaving
+/// `IosOneStepSdkController.initialize()` permanently failed, `OneStepSdkState` never `Connected`,
+/// and the Measure screen's Start button disabled for every activity on iOS.
+/// Same defect and same fix as `PatientScopedRecorderDelegate.analyze` above.
 final class NativePatientScopeDelegate: NSObject, IosPatientScopeDelegate {
 
     func sync(patientId: String, completion: @escaping (KotlinInt, String?) -> Void) {
-        let scope = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { $0 }
-        Task {
-            switch await scope.sync() {
-            case .success: completion(KotlinInt(int: 0), nil)
-            case .failure(let error): completion(KotlinInt(int: 0), "\(error)")
+        _ = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { scope in
+            Task {
+                switch await scope.sync() {
+                case .success: completion(KotlinInt(int: 0), nil)
+                case .failure(let error): completion(KotlinInt(int: 0), "\(error)")
+                }
             }
         }
     }
@@ -1253,15 +1265,20 @@ final class NativePatientScopeDelegate: NSObject, IosPatientScopeDelegate {
         patientId: String,
         completion: @escaping (KMPUserAttributes?, KotlinInt, String?) -> Void
     ) {
-        let scope = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { $0 }
-        Task {
-            switch await scope.getUserAttributes() {
-            case .success(let attributes):
-                var custom: [String: Any] = [:]
-                for (key, value) in attributes.customAttributes { custom[key] = kmpAny(fromMixed: value) }
-                completion(OSTOneStepIos.shared.createUserAttributes(customAttributes: custom), KotlinInt(int: 0), nil)
-            case .failure(let error):
-                completion(nil, KotlinInt(int: 0), "\(error)")
+        _ = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { scope in
+            Task {
+                switch await scope.getUserAttributes() {
+                case .success(let attributes):
+                    var custom: [String: Any] = [:]
+                    for (key, value) in attributes.customAttributes { custom[key] = kmpAny(fromMixed: value) }
+                    completion(
+                        OSTOneStepIos.shared.createUserAttributes(customAttributes: custom),
+                        KotlinInt(int: 0),
+                        nil
+                    )
+                case .failure(let error):
+                    completion(nil, KotlinInt(int: 0), "\(error)")
+                }
             }
         }
     }
@@ -1271,17 +1288,18 @@ final class NativePatientScopeDelegate: NSObject, IosPatientScopeDelegate {
         metadata: [String: Any],
         completion: @escaping ([String: Any]?, KotlinInt, String?) -> Void
     ) {
-        let scope = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { $0 }
         var native: [String: OSTMixedType] = [:]
         for (key, value) in metadata { native[key] = mixed(fromKmpAny: value) }
-        Task {
-            switch await scope.updateCustomMetadata(native) {
-            case .success(let merged):
-                var out: [String: Any] = [:]
-                for (key, value) in merged { out[key] = kmpAny(fromMixed: value) }
-                completion(out, KotlinInt(int: 0), nil)
-            case .failure(let error):
-                completion(nil, KotlinInt(int: 0), "\(error)")
+        _ = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { scope in
+            Task {
+                switch await scope.updateCustomMetadata(native) {
+                case .success(let merged):
+                    var out: [String: Any] = [:]
+                    for (key, value) in merged { out[key] = kmpAny(fromMixed: value) }
+                    completion(out, KotlinInt(int: 0), nil)
+                case .failure(let error):
+                    completion(nil, KotlinInt(int: 0), "\(error)")
+                }
             }
         }
     }
@@ -1325,11 +1343,13 @@ final class NativePatientScopeDelegate: NSObject, IosPatientScopeDelegate {
         // Resolve the patient-bound MotionLab inside `withPatient` and map the native measurement
         // (incl. summaryUrl) to KMP. Patient-scoped counterpart of `fetchPatientScopedKmpMeasurement`.
         // A nil result with a nil error message is treated as not-found by the facade adapter.
-        let motionLab = OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { $0.getMotionLab() }
-        Task {
-            // `getMeasurement(id:)` is `async` as of iOS SDK 2.1.5 (was `throws`).
-            let native = await motionLab.getMeasurement(id: uuid)
-            completion(native.map(toKmp), KotlinInt(int: 0), nil)
+        OneStepSDK.OneStep.withPatient(OneStepSDK.OSTPatientId(rawValue: patientId)) { scope in
+            let motionLab = scope.getMotionLab()
+            Task {
+                // `getMeasurement(id:)` is `async` as of iOS SDK 2.1.5 (was `throws`).
+                let native = await motionLab.getMeasurement(id: uuid)
+                completion(native.map(toKmp), KotlinInt(int: 0), nil)
+            }
         }
     }
 }
