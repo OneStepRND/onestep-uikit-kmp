@@ -7,6 +7,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingQuestionData
+import co.onestep.kmp.uikit.features.recordFlow.configurations.RecordingQuestionIcons
 import co.onestep.kmp.uikit.features.tagging.models.Footwear
 import co.onestep.kmp.uikit.models.OSTAssistiveDevice
 import co.onestep.kmp.uikit.models.displayName
@@ -126,6 +127,8 @@ internal object RecordFlowDataFactory {
                         20.sp,
                         FontWeight.W400,
                     ),
+                    // Null for any answer with no artwork, which leaves the row text-only.
+                    icon = RecordingQuestionIcons.iconFor(it)?.let { image -> IconData(image) },
                 )
             },
             isMultiSelect = tagsData.isMultiSelect,
