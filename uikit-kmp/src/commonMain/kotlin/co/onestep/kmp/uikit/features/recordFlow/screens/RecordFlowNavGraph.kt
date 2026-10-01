@@ -123,6 +123,8 @@ import co.onestep.kmp.uikit.models.displayNameRes
 import co.onestep.kmp.uikit.utils.UIktDestination
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.continue_camel_case
+import co.onestep.kmp.uikit_kmp.generated.resources.did_not_used_hands
+import co.onestep.kmp.uikit_kmp.generated.resources.used_hands
 import co.onestep.kmp.uikit_kmp.generated.resources.great_job_on_completing_a_walk
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_chevron_left
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_close
@@ -648,6 +650,7 @@ internal fun RecordFlowNavGraph(
                 // Clicked: pre_recording_footwear_selected — the typed footwear selection
                 // (enum name), never PII.
                 recordFlowTracker?.trackPreRecordingFootwearSelected(activity, footwear)
+                viewModel.setFootwear(footwear)
                 if (footwear != Footwear.NONE) {
                     viewModel.addTags(listOf(displayName))
                 }
@@ -664,6 +667,24 @@ internal fun RecordFlowNavGraph(
             currentIndex = currentScreenIndex,
             onBack = { backStack.pop() },
             onDone = {
+                // Clicked: measurement_submit_tags (pre-tag step). Carries the assistive-device and
+                // footwear picks from the screens just before this one and the hands-for-support
+                // answer, as fixed labels only; no perception uuid, nothing is recorded yet. The
+                // answers themselves and any note are not sent (HIPAA).
+                @Suppress("DEPRECATION")
+                val answers = config.preRecordingQuestions.orEmpty().flatMap { it.selectedAnswers.orEmpty() }
+                recordFlowTracker?.trackSubmitTagsClicked(
+                    activity = activity,
+                    source = RecordFlowAnalyticsEvents.TagSource.PRE_TAG,
+                    perceptionUuid = null,
+                    assistiveDevice = viewModel.assistiveDevice,
+                    footwear = viewModel.footwear,
+                    handsUsedForSupport = RecordFlowAnalyticsTracker.handsUsedForSupport(
+                        tags = answers,
+                        usedHands = resourceProvider.getString(Res.string.used_hands),
+                        didNotUseHands = resourceProvider.getString(Res.string.did_not_used_hands),
+                    ),
+                )
                 navigateToNext(CustomTagsDestination)
             },
         )

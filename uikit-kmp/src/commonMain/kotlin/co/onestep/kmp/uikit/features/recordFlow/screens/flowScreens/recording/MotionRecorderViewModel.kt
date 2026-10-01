@@ -27,6 +27,7 @@ import co.onestep.kmp.uikit.features.recordFlow.screensData.SlideToStopButtonDat
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TimerData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.ToolBarData
+import co.onestep.kmp.uikit.features.tagging.models.Footwear
 import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit.models.OSTAnalyserError
 import co.onestep.kmp.uikit.models.OSTAnalyserState
@@ -75,7 +76,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import org.jetbrains.compose.resources.StringResource
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.DurationUnit
+import kotlin.time.TimeSource
 
 internal class MotionRecorderViewModel(
     private val resourceProvider: ResourceProvider,
@@ -210,7 +214,16 @@ internal class MotionRecorderViewModel(
 
     private var tags: MutableList<String> = mutableListOf()
 
-    private var assistiveDevice: OSTAssistiveDevice? = null
+    /** The pre-recording assistive-device pick; null when not asked. */
+    var assistiveDevice: OSTAssistiveDevice? = null
+        private set
+
+    /**
+     * The pre-recording footwear pick, for `measurement_submit_tags` only — the measurement gets
+     * the pick as a tag ([addTags]); null when not asked.
+     */
+    var footwear: Footwear? = null
+        private set
 
     // Tag-catalog answers from the pre-recording screen (or the catalog-driven Static Balance
     // Condition Setup), uploaded as the measurement's tag_map. Plain state like note/tags: after
@@ -247,6 +260,11 @@ internal class MotionRecorderViewModel(
     val currentBalanceCondition: OSTBalanceCondition? get() = balanceManager.currentBalanceCondition
 
     private var readyTimeJob: Job? = null
+
+    // Get Ready countdown timing, for the true `time_remaining` on "Start now". Null until a
+    // countdown runs (a spoken prepare has none).
+    private var countdownStartedAt: TimeSource.Monotonic.ValueTimeMark? = null
+    private var countdownTotalSeconds: Int = 0
 
     private var recordingJob: Job? = null
 
@@ -606,13 +624,21 @@ internal class MotionRecorderViewModel(
             text = TextData(resourceProvider.getString(Res.string.start_now), 24.sp, FontWeight.Bold),
             iconData = IconData(icon = Res.drawable.ic_play_button, tintColor = Color.White),
             action = {
-                // Clicked: start_measurement_now — user skipped the remaining countdown.
-                // time_remaining is the seconds still shown on the countdown at tap time.
-                analyticsTracker?.trackStartMeasurementNowClicked(
-                    activity = configuration.value.activityType,
-                    timeRemaining = timerValue.value.toDoubleOrNull() ?: 0.0,
-                )
-                timerValue.value = "0"; updateState(RecordingScreenData.RecordScreenStage.RECORDING)
+                // A tap landing after the transition (a double tap, or the countdown running out
+                // first) is stale: it must neither report nor start the recording a second time.
+                if (recodingScreenState.value.recordScreenStage == RecordingScreenData.RecordScreenStage.GET_READY) {
+                    // Clicked: start_measurement_now — user skipped the remaining countdown.
+                    // time_remaining is the true seconds (with ms decimals) still left on it,
+                    // measured from when it started, as uikit does; not the timer text.
+                    analyticsTracker?.trackStartMeasurementNowClicked(
+                        activity = configuration.value.activityType,
+                        timeRemaining = countdownStartedAt?.let {
+                            countdownSecondsRemaining(countdownTotalSeconds, it.elapsedNow())
+                        } ?: 0.0,
+                    )
+                    timerValue.value = "0"
+                    updateState(RecordingScreenData.RecordScreenStage.RECORDING)
+                }
             },
         ),
     )
@@ -789,6 +815,11 @@ internal class MotionRecorderViewModel(
      */
     fun setAssistiveDevice(device: OSTAssistiveDevice) {
         this.assistiveDevice = device
+    }
+
+    /** Stores the pre-recording footwear pick for analytics; see [footwear]. */
+    fun setFootwear(footwear: Footwear) {
+        this.footwear = footwear
     }
 
     /** Every option code answered before the recording, for the post-recording `requiresAny` check. */
@@ -1102,6 +1133,8 @@ internal class MotionRecorderViewModel(
     private fun startTimerJob(prepareData: OSTPrepareData.Duration) {
         readyTimeJob?.cancel()
         val prepareSeconds = prepareData.prepareDuration.seconds
+        countdownStartedAt = TimeSource.Monotonic.markNow()
+        countdownTotalSeconds = prepareSeconds
         timerValue.value = prepareSeconds.toString()
         readyTimeJob =
             viewModelScope.launch {
@@ -1282,6 +1315,13 @@ internal class MotionRecorderViewModel(
         const val DEFAULT_RECORDING_DURATION_MS = 60 * MILLIS_PER_SECOND
     }
 }
+
+/**
+ * Seconds still left on a [totalSeconds] Get Ready countdown after [elapsed], with the fraction
+ * kept and floored at 0 (the "GO" frame, held past the last counted second, reads 0).
+ */
+internal fun countdownSecondsRemaining(totalSeconds: Int, elapsed: Duration): Double =
+    (totalSeconds - elapsed.toDouble(DurationUnit.SECONDS)).coerceAtLeast(0.0)
 
 /**
  * The whole seconds the count-up recording timer reads after [elapsedMillis]: floored, as

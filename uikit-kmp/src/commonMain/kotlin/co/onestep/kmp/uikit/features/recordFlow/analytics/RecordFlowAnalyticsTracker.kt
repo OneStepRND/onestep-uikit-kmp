@@ -178,18 +178,19 @@ internal class RecordFlowAnalyticsTracker(
     }
 
     /**
-     * `screen: measurement_still_analyzing` (analysis took ≥30s). Emits the recorded
-     * [pedometer]/[seconds]/[perceptionUuid] when known. `displayed_after_seconds` is NOT
-     * sent (no on-device source for the elapsed time without adding new timing state).
+     * `screen: measurement_still_analyzing` (the analyzing UI timed out). Emits the recorded
+     * [steps]/[seconds]/[perceptionUuid] when known; [steps] goes out as `steps`, the key
+     * `measurement_error` uses. `displayed_after_seconds` is NOT sent (no on-device source for
+     * the elapsed time without adding new timing state).
      */
     fun trackStillAnalyzingScreen(
         activity: OSTActivityType,
-        pedometer: Int?,
+        steps: Int?,
         seconds: Int?,
         perceptionUuid: String?,
     ) {
         track(RecordFlowAnalyticsEvents.SCREEN_MEASUREMENT_STILL_ANALYZING, activity) {
-            if (pedometer != null) put(AnalyticsProps.PEDOMETER, pedometer.toString())
+            if (steps != null) put(AnalyticsProps.STEPS, steps.toString())
             if (seconds != null) put(AnalyticsProps.MEASUREMENT_SECONDS, seconds.toString())
             if (perceptionUuid != null) put(AnalyticsProps.PERCEPTION_UUID, perceptionUuid)
         }
@@ -300,7 +301,10 @@ internal class RecordFlowAnalyticsTracker(
     /**
      * `Clicked: measurement_submit_tags`. Emits the typed tag selections, never the
      * free-text clinician note (HIPAA — `notes` is intentionally not sent). A key is
-     * omitted when its value is null.
+     * omitted when its value is null; a NONE pick is sent as "None".
+     *
+     * The tags_* values are the spec's fixed English labels (see [assistiveDeviceLabel] and
+     * [footwearLabel]), whereas the pre-recording `*_selected` events send the enum name.
      */
     fun trackSubmitTagsClicked(
         activity: OSTActivityType,
@@ -436,7 +440,7 @@ internal class RecordFlowAnalyticsTracker(
             is WalkDuration.Unrestricted, null -> "Long walk (up to 30 min)"
         }
 
-    /** Returns null for NONE / null so the analytics key is omitted. */
+    /** Returns null only for null (not asked), so the analytics key is omitted. */
     private fun assistiveDeviceLabel(device: OSTAssistiveDevice?): String? =
         when (device) {
             OSTAssistiveDevice.WALKER -> "Walker"
@@ -444,10 +448,11 @@ internal class RecordFlowAnalyticsTracker(
             OSTAssistiveDevice.CANE -> "Cane"
             OSTAssistiveDevice.CRUTCH_DOUBLE -> "2 crutches"
             OSTAssistiveDevice.CRUTCH_SINGLE -> "1 crutch"
-            OSTAssistiveDevice.NONE, null -> null
+            OSTAssistiveDevice.NONE -> NONE_LABEL
+            null -> null
         }
 
-    /** Returns null for NONE / null so the analytics key is omitted. */
+    /** Returns null only for null (not asked), so the analytics key is omitted. */
     private fun footwearLabel(footwear: Footwear?): String? =
         when (footwear) {
             Footwear.WITH_SHOES -> "With shoes"
@@ -459,7 +464,8 @@ internal class RecordFlowAnalyticsTracker(
             Footwear.SMO_BRACE -> "SMO brace"
             Footwear.SLIPPERS -> "Slippers"
             Footwear.NON_SKID_SOCKS -> "Non-skid socks"
-            Footwear.NONE, null -> null
+            Footwear.NONE -> NONE_LABEL
+            null -> null
         }
 
     private fun track(
@@ -475,8 +481,11 @@ internal class RecordFlowAnalyticsTracker(
         trackEvent(event, props)
     }
 
+    // Every event leaves through here, so this is the one place perception_uuid is lowercased.
     private fun trackEvent(eventName: String, properties: Map<String, String>) {
-        analytics.onEvent(OSTEvent(name = eventName, properties = properties))
+        analytics.onEvent(
+            OSTEvent(name = eventName, properties = properties.withLowercasePerceptionUuid()),
+        )
     }
 
     companion object {
@@ -492,6 +501,24 @@ internal class RecordFlowAnalyticsTracker(
         // prior_screen values for measurement_instructions.
         const val PRIOR_SCREEN_MEASUREMENT_START = "measurement_start"
         const val PRIOR_SCREEN_MEASUREMENT_ERROR = "measurement_error"
+
+        private const val NONE_LABEL = "None"
+
+        /**
+         * `tags_hands_used_for_support` for `measurement_submit_tags`. The answer rides in
+         * [tags] as the localized option text ([usedHands] / [didNotUseHands]); resolves it
+         * back to the spec's "Yes"/"No", or null when the question was not asked.
+         */
+        fun handsUsedForSupport(
+            tags: List<String>,
+            usedHands: String,
+            didNotUseHands: String,
+        ): String? =
+            when {
+                usedHands in tags -> "Yes"
+                didNotUseHands in tags -> "No"
+                else -> null
+            }
 
         /**
          * Collapses a granular error-screen type (e.g. "sts_static", "walk_short") into the
