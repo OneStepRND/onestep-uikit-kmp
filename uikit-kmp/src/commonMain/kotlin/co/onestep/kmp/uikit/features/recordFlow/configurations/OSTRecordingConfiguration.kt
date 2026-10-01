@@ -112,8 +112,10 @@ data class OSTRecordingConfiguration(
     val hallwayLengthMeters: Float? = null,
     /**
      * Host-supplied colour for the activity's Get Ready screen (the pre-task screen with the
-     * Start button) — e.g. blue for Walk. Read only by that screen; the Recording and Analyzing
-     * stages that follow keep their own fixed colours regardless of this value.
+     * Start button) — e.g. blue for Walk — and for the round Start button on the Start screen
+     * before it. The Recording and Analyzing stages that follow keep their own fixed colours
+     * regardless of this value. The Start button draws white text on this colour, so it also needs
+     * 3:1 against white (its label is 28sp Bold, WCAG "large text").
      *
      * `null` (the default) leaves the Get Ready screen exactly as it renders today (orange). The
      * same colour also paints the screen's title text (60sp/48sp Bold — WCAG "large text", 3:1

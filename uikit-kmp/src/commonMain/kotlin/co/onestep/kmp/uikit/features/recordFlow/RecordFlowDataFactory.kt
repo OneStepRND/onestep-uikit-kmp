@@ -506,6 +506,7 @@ internal object RecordFlowDataFactory {
         onMainButton: () -> Unit,
         onBottomButton: () -> Unit,
         playAudioKey: String? = null,
+        activityColor: Color? = null,
     ) = UiKitScreenData(
         playAudioKey = playAudioKey,
         noteBanner = NoteBannerData(
@@ -521,6 +522,7 @@ internal object RecordFlowDataFactory {
             ),
             action = onMainButton,
             topSpace = 140.dp,
+            color = activityColor,
         ),
         outlineBrandButton = SecondaryButtonData(
             iconData = IconData(Res.drawable.ic_info_circle),
