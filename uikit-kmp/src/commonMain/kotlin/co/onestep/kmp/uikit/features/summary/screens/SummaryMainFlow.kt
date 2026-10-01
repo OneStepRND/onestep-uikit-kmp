@@ -62,10 +62,10 @@ import co.onestep.kmp.uikit.features.summary.screens.navigation.editFootwearDest
 import co.onestep.kmp.uikit.features.summary.screens.navigation.editLevelOfAssistanceScreen
 import co.onestep.kmp.uikit.features.summary.screens.navigation.summaryScreen
 import co.onestep.kmp.uikit.features.summary.screens.navigation.taggingScreen
+import co.onestep.kmp.uikit.features.tagging.PostMeasurementTags
 import co.onestep.kmp.uikit.features.tagging.PostTagFieldsDestination
 import co.onestep.kmp.uikit.features.tagging.models.Footwear
 import co.onestep.kmp.uikit.features.tagging.postTagFieldsScreen
-import co.onestep.kmp.uikit.features.tagging.models.Footwear.Companion.isFootwear
 import co.onestep.kmp.uikit.features.tagging.models.Footwear.Companion.toFootwear
 import co.onestep.kmp.uikit.models.OSTAssistiveDevice
 import co.onestep.kmp.uikit.models.OSTAssistiveDevice.Companion.toAssistiveDevice
@@ -144,6 +144,8 @@ internal fun SummaryMainFlow(
     var assistiveDevice by remember { mutableStateOf<OSTAssistiveDevice?>(null) }
     var levelOfAssistance by remember { mutableStateOf<OSTLevelOfAssistance?>(null) }
     var footwear by remember { mutableStateOf<Footwear?>(null) }
+    // The tag the footwear row was seeded from: the only footwear tag a submit replaces (OS-17656).
+    var seededFootwearTag by remember { mutableStateOf<String?>(null) }
     val hallwayState by summaryViewModel.hallwayState
     val postTaggingData by remember {
         mutableStateOf<OSTPostTaggingData?>(configuration?.effectivePostTaggingData())
@@ -238,12 +240,21 @@ internal fun SummaryMainFlow(
         summaryViewModel.partialScreenState.value = null
         assistiveDevice = motionMeasurement?.metadata?.assistiveDevice?.toAssistiveDevice()
         levelOfAssistance = motionMeasurement?.metadata?.levelOfAssistance?.toLevelOfAssistance()
-        footwear =
-            motionMeasurement
-                ?.metadata
-                ?.tags
-                ?.firstOrNull { it.isFootwear(resourceProvider) }
-                ?.toFootwear(resourceProvider)
+        @Suppress("DEPRECATION")
+        val preRecordingQuestions = configuration?.preRecordingQuestions
+        seededFootwearTag =
+            PostMeasurementTags.seededFootwearTag(
+                existing = motionMeasurement?.metadata?.tags.orEmpty(),
+                // NONE is never saved as a tag, and its title collides with custom answers.
+                footwearTitles = Footwear.entries
+                    .filter { it != Footwear.NONE }
+                    .map { resourceProvider.getString(it.displayNameRes) },
+                questionTagValues = buildSet {
+                    postTaggingQuestions?.forEach { addAll(it.tagsValues) }
+                    preRecordingQuestions?.forEach { addAll(it.tagsValues) }
+                },
+            )
+        footwear = seededFootwearTag?.toFootwear(resourceProvider)
         note = motionMeasurement?.metadata?.note
         summaryViewModel.updateHallwayState()
         // screen: activity_summary — fires once the analyzed measurement is loaded (the
@@ -420,13 +431,22 @@ internal fun SummaryMainFlow(
                             footwear = footwear,
                         )
                     }
+                    // The screen's own tag list re-submits the seeded footwear and every
+                    // answer, so the saved list is rebuilt from the selections instead.
                     updateMetaData(
-                        resourceProvider,
                         recorderBridge,
                         motionMeasurementId,
                         summaryViewModel,
-                        motionMeasurement?.metadata?.tags ?: emptyList(),
-                        kmpUserInputMetaData,
+                        kmpUserInputMetaData.copy(
+                            tags = PostMeasurementTags.merged(
+                                existing = motionMeasurement?.metadata?.tags.orEmpty(),
+                                seededFootwear = seededFootwearTag,
+                                footwear = footwear
+                                    ?.takeIf { it != Footwear.NONE }
+                                    ?.let { resourceProvider.getString(it.displayNameRes) },
+                                questions = postTaggingQuestions,
+                            ),
+                        ),
                         coroutineScope,
                         backAction,
                     )
@@ -513,17 +533,18 @@ internal fun SummaryMainFlow(
                             footwear = footwear,
                         )
                     }
+                    // No footwear row on this flow: any footwear tag is kept as it is.
                     updateMetaData(
-                        resourceProvider,
                         recorderBridge,
                         motionMeasurementId,
                         summaryViewModel,
-                        motionMeasurement?.metadata?.tags ?: emptyList(),
                         OSTUserInputMetaData(
-                            tags =
-                                postTaggingQuestions?.flatMap {
-                                    it.selectedAnswers ?: emptyList()
-                                },
+                            tags = PostMeasurementTags.merged(
+                                existing = motionMeasurement?.metadata?.tags.orEmpty(),
+                                seededFootwear = null,
+                                footwear = null,
+                                questions = postTaggingQuestions,
+                            ),
                             levelOfAssistance = levelOfAssistance,
                         ),
                         coroutineScope,
@@ -634,33 +655,23 @@ internal fun SummaryMainFlow(
 
 }
 
+/**
+ * Saves the legacy post-measurement tagging. [userInputMetaData]'s `tags` must already be the whole
+ * list to store ([PostMeasurementTags.merged]): the update replaces the measurement's tags.
+ */
 private fun updateMetaData(
-    resourceProvider: co.onestep.kmp.uikit.utils.ResourceProvider,
     recorderBridge: co.onestep.kmp.uikit.bridge.RecorderBridge,
     motionMeasurementId: String,
     summaryViewModel: SummaryViewModel,
-    currentTags: List<String>,
     userInputMetaData: OSTUserInputMetaData,
     coroutineScope: CoroutineScope,
     backAction: () -> Unit,
 ) {
-    val newTags = userInputMetaData.tags ?: emptyList()
-
-    val mutableCurrentTags =
-        when {
-            // If user has footwear and removes it or chooses NONE, remove all footwear tags
-            newTags.isEmpty() ->
-                currentTags
-                    .filterNot { it.isFootwear(resourceProvider) }
-                    .toMutableList()
-
-            else -> currentTags.toMutableList()
-        }
-
+    // tagMap is left null: it is a per-key patch, so the legacy path never touches catalog answers.
     val metadata =
         OSTUserInputMetaData(
             note = userInputMetaData.note,
-            tags = mutableCurrentTags + newTags,
+            tags = userInputMetaData.tags,
             assistiveDevice = userInputMetaData.assistiveDevice,
             levelOfAssistance = userInputMetaData.levelOfAssistance,
         )
