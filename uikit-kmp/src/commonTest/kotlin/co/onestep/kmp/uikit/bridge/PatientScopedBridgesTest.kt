@@ -106,6 +106,7 @@ private class NoopRecorderBridge : RecorderBridge {
     override val stepsCount: StateFlow<Int> = MutableStateFlow(0)
     override val analyserState: StateFlow<OSTAnalyserState> = MutableStateFlow(OSTAnalyserState.Idle)
     override val currentRecordingWindow: StateFlow<OSTRecordingWindow?> = MutableStateFlow(null)
+    override val currentSessionId: StateFlow<String?> = MutableStateFlow(null)
     override suspend fun prepareForRecording(activityType: OSTActivityType): Boolean = false
     override suspend fun start(
         activityType: OSTActivityType,
@@ -127,9 +128,16 @@ private class NoopRecorderBridge : RecorderBridge {
     override suspend fun readMotionMeasurements(request: OSTTimeRangedDataRequest): List<OSTMotionMeasurement> = emptyList()
     override suspend fun deleteMotionMeasurement(uuid: String) = Unit
     override suspend fun updateMotionMeasurement(uuid: String, metadata: OSTUserInputMetaData) = Unit
-    override suspend fun updateBalanceConditionMetadata(uuid: String, conditions: Map<String, String>) = Unit
-    override suspend fun selfReportMotionMeasurement(uuid: String, stsRepetitions: Int): SelfReportResult =
-        SelfReportResult.ServerFailure
+    override suspend fun updateBalanceConditionMetadata(
+        uuid: String,
+        conditions: Map<String, String>,
+        additionalMetadata: Map<String, Any>,
+    ) = Unit
+    override suspend fun selfReportMotionMeasurement(
+        uuid: String,
+        stsRepetitions: Int?,
+        balanceScore: Int?,
+    ): SelfReportResult = SelfReportResult.ServerFailure
 }
 
 private class NoopInsightsBridge : InsightsBridge {

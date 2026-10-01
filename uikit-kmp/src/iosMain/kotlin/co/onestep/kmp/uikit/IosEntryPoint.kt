@@ -27,6 +27,7 @@ import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
 import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
 import co.onestep.kmp.uikit.features.web.OSTWebScreen
 import co.onestep.kmp.sdk.OSTEvent
+import co.onestep.kmp.uikit.models.OSTActivityType
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.utils.ResourceProvider
 import platform.UIKit.UIColor
@@ -166,6 +167,27 @@ object OSTUIKitIos {
     }
 
     /**
+     * Same as the overload taking `onInstructionsRequested`, with the SDK's own instructions sheet.
+     *
+     * Kept as its own function, not a default argument: Swift sees no Kotlin defaults, so adding
+     * the parameter to this signature would break every existing Swift call site.
+     */
+    fun createRecordingFlowViewController(
+        config: OSTRecordingConfiguration,
+        patientId: String? = null,
+        onResult: (OSTEvent) -> Unit,
+        onFinished: (OSTRecordingFlowResult) -> Unit,
+        onDismiss: () -> Unit,
+    ): UIViewController = createRecordingFlowViewController(
+        config = config,
+        patientId = patientId,
+        onResult = onResult,
+        onFinished = onFinished,
+        onDismiss = onDismiss,
+        onInstructionsRequested = null,
+    )
+
+    /**
      * Create a UIViewController for the recording flow that delivers the typed terminal result.
      *
      * This is the iOS counterpart of the Swift uikit's `onDismissResult`: [onFinished] fires with
@@ -178,6 +200,10 @@ object OSTUIKitIos {
      * @param onFinished Callback invoked with the terminal [OSTRecordingFlowResult]. Fires only
      *        when the flow produced an analyzed measurement.
      * @param onDismiss Callback invoked when the flow should be dismissed.
+     * @param onInstructionsRequested Host-supplied "View instructions": when non-null, tapping
+     *        "View instructions" (Start screen and analysis-error screens) calls it with the
+     *        activity type instead of opening the SDK's sheet, so the host can present its own
+     *        instructions over the flow. `null` keeps the SDK's sheet.
      */
     fun createRecordingFlowViewController(
         config: OSTRecordingConfiguration,
@@ -185,6 +211,7 @@ object OSTUIKitIos {
         onResult: (OSTEvent) -> Unit,
         onFinished: (OSTRecordingFlowResult) -> Unit,
         onDismiss: () -> Unit,
+        onInstructionsRequested: ((OSTActivityType) -> Unit)?,
     ): UIViewController {
         checkConfigured()
         return ComposeUIViewController {
@@ -194,6 +221,7 @@ object OSTUIKitIos {
                 onResult = onResult,
                 onFinished = onFinished,
                 onDismiss = onDismiss,
+                onInstructionsRequested = onInstructionsRequested,
             )
         }.applyDefaultStyle()
     }

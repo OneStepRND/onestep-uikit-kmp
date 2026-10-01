@@ -33,6 +33,16 @@ interface RecorderBridge {
      */
     val currentRecordingWindow: StateFlow<OSTRecordingWindow?>
 
+    /**
+     * The perception uuid of the current or most recent recording session, or `null` before the
+     * first one (or on a platform whose SDK does not publish it).
+     *
+     * Set by the time [recorderState] reaches [OSTRecorderState.RECORDING] and kept after
+     * [reset], so it can still be read once a timed-out analysis has reset the recorder. Used for
+     * analytics only.
+     */
+    val currentSessionId: StateFlow<String?>
+
     suspend fun prepareForRecording(activityType: OSTActivityType): Boolean
 
     suspend fun start(
@@ -116,20 +126,44 @@ interface RecorderBridge {
      *
      * @param conditions The full nested object (selections + optional note), sent whole so
      *        it stays complete regardless of the server's per-key merge behavior.
+     * @param additionalMetadata Further top-level custom-metadata entries saved in the same
+     *        update, next to the conditions object — the outcomes chosen on "Recording saved"
+     *        (`onestep_balance_result_states`, a list of codes; OS-17571). Merged into the stored
+     *        custom metadata like [conditions], never replacing it. Empty sends none.
      */
-    suspend fun updateBalanceConditionMetadata(uuid: String, conditions: Map<String, String>)
+    suspend fun updateBalanceConditionMetadata(
+        uuid: String,
+        conditions: Map<String, String>,
+        additionalMetadata: Map<String, Any> = emptyMap(),
+    )
 
     /**
-     * STS manual self-report (OS-15960 sibling): submits a clinician-entered repetition count as
-     * an override for a completed STS measurement. Mirrors the Android uikit call to
-     * `OSTMotionLab.selfReportMotionMeasurement(uuid, stsRepetitions)`.
+     * Manual self-report: submits a clinician-entered override for a completed measurement's
+     * primary result. Mirrors the Android uikit call to
+     * `OSTMotionLab.selfReportMotionMeasurement(uuid, stsRepetitions, balanceScore = …)`.
      *
-     * The clinical value ([stsRepetitions]) is written to the measurement only — it is a count,
-     * never PII/PHI free text. Returns a [SelfReportResult] so callers can distinguish a
-     * retryable transport failure from a non-retryable server rejection, matching uikit's
-     * `StsFailureType`.
+     * - [stsRepetitions]: the STS repetition count (OS-15960 sibling).
+     * - [balanceScore]: the Static Balance score, 0–100. The UI kit sends 0 when the clinician
+     *   tags a trial with a failing outcome on "Recording saved" (OS-17571). Only sent when
+     *   [supportsBalanceScoreSelfReport] is true.
+     *
+     * Pass only the value being reported; a null one is not sent. The clinical values are
+     * written to the measurement only — they are numbers, never PII/PHI free text. Returns a
+     * [SelfReportResult] so callers can distinguish a retryable transport failure from a
+     * non-retryable server rejection, matching uikit's `StsFailureType`.
      */
-    suspend fun selfReportMotionMeasurement(uuid: String, stsRepetitions: Int): SelfReportResult
+    suspend fun selfReportMotionMeasurement(
+        uuid: String,
+        stsRepetitions: Int? = null,
+        balanceScore: Int? = null,
+    ): SelfReportResult
+
+    /**
+     * Whether [selfReportMotionMeasurement] can carry a `balanceScore` on this platform. False by
+     * default: the Static Balance "Recording saved" screen then skips the score self-report, and
+     * with it the "score wasn't saved" dialog, rather than failing on every save.
+     */
+    val supportsBalanceScoreSelfReport: Boolean get() = false
 
     companion object {
         const val MIN_STEPS_FOR_ANALYSIS = 20

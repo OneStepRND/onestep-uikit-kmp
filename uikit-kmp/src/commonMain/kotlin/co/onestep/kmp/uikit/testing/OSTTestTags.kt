@@ -131,6 +131,15 @@ object OSTTestTags {
          * `$balance_result_states` code such as "fell" — catalog vocabulary, never patient data).
          */
         fun recordingSavedOutcome(code: String): String = "ost_recording_saved_outcome_$code"
+
+        /** The "score wasn't saved" dialog over "Recording saved" (OS-17571). */
+        const val BALANCE_SCORE_NOT_SAVED_DIALOG = "ost_balance_score_not_saved_dialog"
+
+        /** Its "Try again" button. The value is the Android SDK's, so one flow fits both kits. */
+        const val BALANCE_SCORE_NOT_SAVED_TRY_AGAIN = "balance_score_not_saved_try_again"
+
+        /** Its "Continue" button. The value is the Android SDK's, so one flow fits both kits. */
+        const val BALANCE_SCORE_NOT_SAVED_CONTINUE = "balance_score_not_saved_continue"
     }
 
     /**

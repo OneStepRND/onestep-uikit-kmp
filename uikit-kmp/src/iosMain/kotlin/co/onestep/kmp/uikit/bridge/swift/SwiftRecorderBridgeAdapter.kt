@@ -97,10 +97,10 @@ interface IosRecorderDelegate {
  * [RecorderBridge] implementation that owns the coroutine/flow machinery in Kotlin and delegates
  * ObjC-friendly work to an [IosRecorderDelegate] Swift implementation.
  *
- * Swift pushes recorder/analyser updates via [onRecorderStateChanged], [onStepsChanged], and
- * [onAnalyserStateChanged]; the adapter exposes those as the [recorderState] (initial
- * [OSTRecorderState.INITIALIZED]), [stepsCount] (initial `0`), and [analyserState] (initial
- * [OSTAnalyserState.Idle]) flows.
+ * Swift pushes recorder/analyser updates via [onRecorderStateChanged], [onStepsChanged],
+ * [onAnalyserStateChanged] and [onSessionIdChanged]; the adapter exposes those as the
+ * [recorderState] (initial [OSTRecorderState.INITIALIZED]), [stepsCount] (initial `0`),
+ * [analyserState] (initial [OSTAnalyserState.Idle]) and [currentSessionId] (initial `null`) flows.
  */
 class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : RecorderBridge {
 
@@ -125,7 +125,21 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
     override val currentRecordingWindow: StateFlow<OSTRecordingWindow?> =
         _currentRecordingWindow.asStateFlow()
 
+    private val _currentSessionId = MutableStateFlow<String?>(null)
+
+    /** Pushed from Swift via [onSessionIdChanged]; kept across [reset], as on Android. */
+    override val currentSessionId: StateFlow<String?> = _currentSessionId.asStateFlow()
+
     // --- Swift push functions ---
+
+    /**
+     * Push the native recorder's session uuid from Swift — the one `OSTRecorderState.recording(uuid:)`
+     * carries — **before** reporting the RECORDING state, so an observer of RECORDING reads it.
+     * Not cleared when the recorder goes idle: it names the most recent recording.
+     */
+    fun onSessionIdChanged(sessionId: String?) {
+        _currentSessionId.value = sessionId
+    }
 
     /**
      * Push the current recording window from Swift, before reporting the RECORDING state.
@@ -325,15 +339,36 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
         }
     }
 
-    override suspend fun updateBalanceConditionMetadata(uuid: String, conditions: Map<String, String>) {
+    // shortcut: [additionalMetadata] (the "Recording saved" result states) is not forwarded — the
+    // Swift delegate's condition-metadata update is itself still a no-op. Upgrade path: widen
+    // [IosRecorderDelegate.updateBalanceConditionMetadata] to carry it once the native iOS SDK
+    // saves Static Balance custom metadata (OS-17547).
+    override suspend fun updateBalanceConditionMetadata(
+        uuid: String,
+        conditions: Map<String, String>,
+        additionalMetadata: Map<String, Any>,
+    ) {
         suspendCancellableCoroutine { continuation ->
             delegate.updateBalanceConditionMetadata(uuid, conditions) { continuation.resume(Unit) }
         }
     }
 
-    override suspend fun selfReportMotionMeasurement(uuid: String, stsRepetitions: Int): SelfReportResult =
-        suspendCancellableCoroutine { continuation ->
-            delegate.selfReportMotionMeasurement(uuid, stsRepetitions) { code ->
+    // shortcut: the native iOS SDK cannot self-report a balance score yet, so the "Recording saved"
+    // screen skips the report (and its "score wasn't saved" dialog) here. Upgrade path: flip this
+    // and forward `balanceScore` through [IosRecorderDelegate.selfReportMotionMeasurement] once
+    // the iOS SDK supports it (OS-17547).
+    override val supportsBalanceScoreSelfReport: Boolean get() = false
+
+    override suspend fun selfReportMotionMeasurement(
+        uuid: String,
+        stsRepetitions: Int?,
+        balanceScore: Int?,
+    ): SelfReportResult {
+        // Only the STS count reaches Swift ([supportsBalanceScoreSelfReport] is false): with none
+        // there is nothing this platform can report, so it is a non-retryable rejection.
+        val repetitions = stsRepetitions ?: return SelfReportResult.ServerFailure
+        return suspendCancellableCoroutine { continuation ->
+            delegate.selfReportMotionMeasurement(uuid, repetitions) { code ->
                 val result = when (code) {
                     SELF_REPORT_SUCCESS -> SelfReportResult.Success
                     SELF_REPORT_NETWORK_FAILURE -> SelfReportResult.NetworkFailure
@@ -342,6 +377,7 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
                 continuation.resume(result)
             }
         }
+    }
 
     companion object {
         /** Mirrors [RecorderBridge.analyze]'s default timeout, for [uploadWithoutAnalysis]. */

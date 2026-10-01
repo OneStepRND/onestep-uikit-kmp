@@ -82,13 +82,18 @@ instead of "Continue".
 `CONDITION_SETUP_SCREEN`, `CONDITION_SETUP_CONTINUE_BUTTON`, `CONDITION_SETUP_CLEAR_ALL_BUTTON`,
 `conditionSection(sectionId)`, `conditionOption(sectionId, index)`, `RECORDING_SAVED_SCREEN`,
 `RECORDING_SAVED_NOTE_FIELD`, `RECORDING_SAVED_GO_TO_SUMMARY_BUTTON`,
-`RECORDING_SAVED_RECORD_ANOTHER_BUTTON`, `recordingSavedOutcome(code)`.
+`RECORDING_SAVED_RECORD_ANOTHER_BUTTON`, `recordingSavedOutcome(code)`, and the "score wasn't
+saved" dialog: `BALANCE_SCORE_NOT_SAVED_DIALOG` (`ost_balance_score_not_saved_dialog`),
+`BALANCE_SCORE_NOT_SAVED_TRY_AGAIN` (`balance_score_not_saved_try_again`) and
+`BALANCE_SCORE_NOT_SAVED_CONTINUE` (`balance_score_not_saved_continue`) — the button values are the
+Android SDK's own, so one flow selects them in either kit.
 
 The condition list is server-driven: its labels are workspace data, its section keys are not, which
 is why the option rows are addressed as `ost_condition_option_stance_0` rather than by label. When
 the tag catalog drives Condition Setup, the section keys are the catalog field names
 (`ost_condition_option_$balance_stance_0`), and the "Recording saved" outcome chips are addressed
-by their catalog code (`ost_recording_saved_outcome_fell`).
+by their catalog code (`ost_recording_saved_outcome_fell`). The legacy configuration's result
+states (`OSTBalance.resultStates`) use the same chip ids, keyed by their own code.
 
 ### `OSTTestTags.TagCatalog`
 

@@ -87,6 +87,10 @@ import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.genericRecor
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.RecordingSavedDestination
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.conditionSetupScreen
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.recordingSavedScreen
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.BalanceScoreNotSavedDialog
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.BalanceScoreSaveGate
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.legacyOutcomesField
+import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.staticBalance.saveBalanceConditionResult
 import co.onestep.kmp.uikit.features.recordFlow.screens.instructions.InstructionsContent
 import co.onestep.kmp.uikit.features.recordFlow.screensData.EmptyAnalysisScreenData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.IconData
@@ -123,6 +127,8 @@ import co.onestep.kmp.uikit.models.displayNameRes
 import co.onestep.kmp.uikit.utils.UIktDestination
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.continue_camel_case
+import co.onestep.kmp.uikit_kmp.generated.resources.did_not_used_hands
+import co.onestep.kmp.uikit_kmp.generated.resources.used_hands
 import co.onestep.kmp.uikit_kmp.generated.resources.great_job_on_completing_a_walk
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_chevron_left
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_close
@@ -308,6 +314,7 @@ internal fun RecordFlowNavGraph(
     onAskMicrophonePermission: () -> Unit = {},
     onGoToSettings: () -> Unit = {},
     customMetadata: Map<String, Any> = emptyMap(),
+    onInstructionsRequested: ((OSTActivityType) -> Unit)? = null,
 ) {
     // Resolve the patient-bound bridge bundle once per launch. null patientId = current-user mode
     // (today's auth-bound singletons). Non-null = clinician mode: build a patient-scoped bundle via
@@ -355,6 +362,16 @@ internal fun RecordFlowNavGraph(
     // Catalog-driven Condition Setup fields (Static Balance); null keeps the legacy screen.
     val catalogConditionFields = remember(config) { config.catalogConditionSetupFields() }
 
+    // The legacy Static Balance configuration, as Condition Setup reads it; null when the catalog
+    // drives Condition Setup. Its result states are the legacy "Recording saved" outcome chips.
+    @Suppress("DEPRECATION")
+    val legacyBalance: OSTBalance? =
+        if (catalogConditionFields == null) config.balance ?: OSTBalance() else null
+
+    // Static Balance: a failed score self-report on "Recording saved" holds the tapped button until
+    // the clinician retries or continues (the "score wasn't saved" dialog, OS-17571).
+    val balanceScoreGate = remember { BalanceScoreSaveGate() }
+
     // Navigation 3 back stack owned by this flow. The uikit serializers module makes it
     // saveable across config changes and process death on every platform (iOS has no
     // reflection-based fallback).
@@ -397,6 +414,23 @@ internal fun RecordFlowNavGraph(
     var currentErrorCode by remember { mutableStateOf<String?>(null) }
     var currentErrorTitle by remember { mutableStateOf<String?>(null) }
     var showInstructionsSheet by remember { mutableStateOf(false) }
+    // Read at tap time, so a host that swaps its handler (or clears it) between recompositions is
+    // honoured without restarting the flow.
+    val currentOnInstructionsRequested by rememberUpdatedState(onInstructionsRequested)
+
+    // "View instructions" (Start screen and error screens). screen: measurement_instructions is
+    // sent with [priorScreen] and the voice-over stopped either way; a host-supplied handler then
+    // shows the host's own instructions instead of the SDK's sheet (OS-16743).
+    fun openInstructions(priorScreen: String) {
+        recordFlowTracker?.trackMeasurementInstructionsScreen(activity, priorScreen)
+        viewModel.stopAudio()
+        val hostInstructions = currentOnInstructionsRequested
+        if (hostInstructions != null) {
+            hostInstructions(activity)
+        } else {
+            showInstructionsSheet = true
+        }
+    }
     var showExitConfirmationDialog by remember { mutableStateOf(false) }
     var showRecordingExitDialog by remember { mutableStateOf(false) }
 
@@ -630,6 +664,7 @@ internal fun RecordFlowNavGraph(
                 // Clicked: pre_recording_footwear_selected — the typed footwear selection
                 // (enum name), never PII.
                 recordFlowTracker?.trackPreRecordingFootwearSelected(activity, footwear)
+                viewModel.setFootwear(footwear)
                 if (footwear != Footwear.NONE) {
                     viewModel.addTags(listOf(displayName))
                 }
@@ -646,6 +681,24 @@ internal fun RecordFlowNavGraph(
             currentIndex = currentScreenIndex,
             onBack = { backStack.pop() },
             onDone = {
+                // Clicked: measurement_submit_tags (pre-tag step). Carries the assistive-device and
+                // footwear picks from the screens just before this one and the hands-for-support
+                // answer, as fixed labels only; no perception uuid, nothing is recorded yet. The
+                // answers themselves and any note are not sent (HIPAA).
+                @Suppress("DEPRECATION")
+                val answers = config.preRecordingQuestions.orEmpty().flatMap { it.selectedAnswers.orEmpty() }
+                recordFlowTracker?.trackSubmitTagsClicked(
+                    activity = activity,
+                    source = RecordFlowAnalyticsEvents.TagSource.PRE_TAG,
+                    perceptionUuid = null,
+                    assistiveDevice = viewModel.assistiveDevice,
+                    footwear = viewModel.footwear,
+                    handsUsedForSupport = RecordFlowAnalyticsTracker.handsUsedForSupport(
+                        tags = answers,
+                        usedHands = resourceProvider.getString(Res.string.used_hands),
+                        didNotUseHands = resourceProvider.getString(Res.string.did_not_used_hands),
+                    ),
+                )
                 navigateToNext(CustomTagsDestination)
             },
         )
@@ -698,11 +751,7 @@ internal fun RecordFlowNavGraph(
             },
             secondaryAction = {
                 // screen: measurement_instructions — opened from the StartRecord ("GO") screen.
-                recordFlowTracker?.trackMeasurementInstructionsScreen(
-                    activity,
-                    RecordFlowAnalyticsTracker.PRIOR_SCREEN_MEASUREMENT_START,
-                )
-                showInstructionsSheet = true
+                openInstructions(RecordFlowAnalyticsTracker.PRIOR_SCREEN_MEASUREMENT_START)
             },
             onBackPress = {
                 showExitConfirmationDialog = true
@@ -745,9 +794,15 @@ internal fun RecordFlowNavGraph(
                     ?: viewModel.configuration.value.duration
                     ?: 0
             },
-            // The catalog's outcomes that fit the condition just recorded; null on the legacy
-            // Condition Setup, which asks none.
-            outcomes = { config.staticBalanceOutcomes(viewModel.preRecordTagCodes) },
+            // The outcomes that fit the condition just recorded: the catalog's, or on the legacy
+            // Condition Setup the host's `OSTBalance.resultStates` (null when none fit).
+            outcomes = {
+                if (legacyBalance == null) {
+                    config.staticBalanceOutcomes(viewModel.preRecordTagCodes)
+                } else {
+                    legacyBalance.legacyOutcomesField(viewModel.currentBalanceCondition)
+                }
+            },
             onRecordAnother = { note, outcomes ->
                 // static_balance_note_added — only the session uuid is sent, NEVER the
                 // free-text note (HIPAA). static_balance_another_test carries condition_count.
@@ -759,7 +814,9 @@ internal fun RecordFlowNavGraph(
                     conditionCount = viewModel.balanceConditionCount(),
                     sessionUuid = viewModel.sessionUuid,
                 )
-                saveBalanceConditionAnswers(viewModel, catalogConditionFields != null, note, outcomes)
+                balanceScoreGate.saveThen {
+                    saveBalanceConditionResult(viewModel, bridges.recorderBridge, legacyBalance, note, outcomes)
+                }
                 viewModel.prepareForNextBalanceCondition()
                 // Nav2 popped to the start destination (inclusive) and re-launched Condition
                 // Setup as a fresh single-top entry; in Nav3 that is simply "reset the stack".
@@ -777,7 +834,9 @@ internal fun RecordFlowNavGraph(
                     conditionCount = viewModel.balanceConditionCount(),
                     sessionUuid = viewModel.sessionUuid,
                 )
-                saveBalanceConditionAnswers(viewModel, catalogConditionFields != null, note, outcomes)
+                balanceScoreGate.saveThen {
+                    saveBalanceConditionResult(viewModel, bridges.recorderBridge, legacyBalance, note, outcomes)
+                }
                 finishStaticBalance(
                     viewModel.motionMeasurement.value,
                     viewModel.sessionUuid,
@@ -1060,20 +1119,39 @@ internal fun RecordFlowNavGraph(
                 }
             }
 
-            // screen: measurement_error — emitted once when the error screen is shown. Sends
-            // the canonical error_code (derived from error.errorType), localized title/subtitle
-            // strings and the recorded measurement metadata (each omitted when null).
+            // Emitted once when the error screen is shown. A failed or timed-out analysis has no
+            // measurement and the recorder has been reset, so the recorded uuid / steps / length
+            // fall back to what the ViewModel kept from the recording (each omitted when null).
             LaunchedEffect(error) {
-                recordFlowTracker?.trackErrorScreen(
-                    activity = activity,
-                    errorType = error.errorType,
-                    measurementSeconds = errorMeasurement?.metadata?.seconds,
-                    steps = errorMeasurement?.metadata?.steps,
-                    perceptionUuid = errorMeasurement?.id,
-                    titleString = errorScreenData.title?.text,
-                    subtitleString = errorScreenData.subtitle?.text,
-                    appSection = RecordFlowAnalyticsTracker.APP_SECTION_DEFAULT,
-                )
+                val snapshot = viewModel.recordingSnapshot
+                val measurementSeconds = errorMeasurement?.metadata?.seconds ?: snapshot.measurementSeconds
+                val steps = errorMeasurement?.metadata?.steps ?: snapshot.steps
+                val perceptionUuid = errorMeasurement?.id ?: snapshot.perceptionUuid
+                if (error == RecordFlowError.Timeout) {
+                    // screen: measurement_still_analyzing — the timeout screen is "analysis took
+                    // too long", not an error per se (OS-15833), so it reports this INSTEAD of
+                    // measurement_error, as uikit's ErrorTimeOut does (OS-17521).
+                    recordFlowTracker?.trackStillAnalyzingScreen(
+                        activity = activity,
+                        steps = steps,
+                        seconds = measurementSeconds,
+                        perceptionUuid = perceptionUuid,
+                    )
+                } else {
+                    // screen: measurement_error — the canonical error_code (derived from
+                    // error.errorType), the localized title/subtitle strings and the recorded
+                    // measurement metadata.
+                    recordFlowTracker?.trackErrorScreen(
+                        activity = activity,
+                        errorType = error.errorType,
+                        measurementSeconds = measurementSeconds,
+                        steps = steps,
+                        perceptionUuid = perceptionUuid,
+                        titleString = errorScreenData.title?.text,
+                        subtitleString = errorScreenData.subtitle?.text,
+                        appSection = RecordFlowAnalyticsTracker.APP_SECTION_DEFAULT,
+                    )
+                }
             }
             ErrorScreen(
                 onBackPress = {
@@ -1126,9 +1204,10 @@ internal fun RecordFlowNavGraph(
                     // itself for Generic Recording, which has none.
                     backStack.add(recordEntryDestination)
                 },
-                // Secondary CTA: "View instructions" opens the instructions sheet on analysis
-                // errors; for the Static Balance short error it is "Finish" — resume to the
-                // web summary if a prior condition completed this session, else exit.
+                // Secondary CTA: "View instructions" opens the instructions (the SDK's sheet, or
+                // the host's via onInstructionsRequested) on analysis errors; for the Static
+                // Balance short error it is "Finish" — resume to the web summary if a prior
+                // condition completed this session, else exit.
                 onSecondaryAction =
                     if (error == RecordFlowError.StaticBalanceShort) {
                         {
@@ -1143,11 +1222,7 @@ internal fun RecordFlowNavGraph(
                     } else {
                         {
                             // screen: measurement_instructions — opened from an error screen.
-                            recordFlowTracker?.trackMeasurementInstructionsScreen(
-                                activity,
-                                RecordFlowAnalyticsTracker.PRIOR_SCREEN_MEASUREMENT_ERROR,
-                            )
-                            showInstructionsSheet = true
+                            openInstructions(RecordFlowAnalyticsTracker.PRIOR_SCREEN_MEASUREMENT_ERROR)
                         }
                     },
                 screenDataFactory = { retry, secondary ->
@@ -1239,6 +1314,15 @@ internal fun RecordFlowNavGraph(
                     recordFlowTracker?.trackShortHallwayEditClicked(activity)
                     viewModel.dismissShortHallwayDialog()
                 },
+            )
+        }
+
+        // Static Balance "score wasn't saved" — non-dismissable; the tapped button waits on it.
+        if (balanceScoreGate.pending != null) {
+            BalanceScoreNotSavedDialog(
+                retrying = balanceScoreGate.retrying,
+                onTryAgain = { balanceScoreGate.tryAgain(scope) },
+                onContinue = balanceScoreGate::continueWithoutScore,
             )
         }
 
@@ -1554,24 +1638,6 @@ internal fun finishOnUiTimeout(
         ),
     )
     onDismiss()
-}
-
-/**
- * Saves what the clinician entered on Static Balance's "Recording saved" screen. With the tag
- * catalog the note and the chosen outcomes go up together in one awaited update; the legacy
- * Condition Setup keeps its note in `onestep_balance_conditions`, as before, and asks no outcomes.
- */
-private suspend fun saveBalanceConditionAnswers(
-    viewModel: MotionRecorderViewModel,
-    catalogDriven: Boolean,
-    note: String?,
-    outcomes: Map<String, OSTTagValue>,
-) {
-    if (catalogDriven) {
-        viewModel.updateBalanceConditionAnswers(note, outcomes)
-    } else {
-        viewModel.updateBalanceConditionNote(note)
-    }
 }
 
 /**
