@@ -58,6 +58,13 @@ val generateTagCatalogSample by tasks.registering {
 }
 
 kotlin {
+    // Binary compatibility validation: this library's public API is inherited by every consuming
+    // app, so an accidental break must fail the PR, not a consumer's build. The reference dumps
+    // live in uikit-kmp/api/; after an intentional API change run `./gradlew :uikit-kmp:updateKotlinAbi`
+    // (macOS, so the iOS klib dump is complete) and commit the result. CI runs checkKotlinAbi.
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    abiValidation()
+
     // Suppress expect/actual class beta warnings
     targets.configureEach {
         compilations.configureEach {

@@ -15,6 +15,7 @@ import co.onestep.kmp.uikit.features.recordFlow.components.ToolBarHeight
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.features.recordFlow.screensData.UiKitScreenData
 import co.onestep.kmp.uikit.utils.UIktDestination
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -36,6 +37,7 @@ internal fun EntryProviderScope<NavKey>.editAssistiveDeviceScreen(
                 .padding(top = ToolBarHeight.dp),
         ) {
             UiKitScreen(
+                screenTag = OSTTestTags.Tagging.EDIT_ASSISTIVE_DEVICE_SCREEN,
                 screenData = screenData(),
                 onBackPress = onBackPress,
             )

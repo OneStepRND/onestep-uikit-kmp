@@ -34,6 +34,7 @@ import co.onestep.kmp.uikit.features.summary.presentation.StsManualReportViewMod
 import co.onestep.kmp.uikit.utils.UIktDestination
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
 import co.onestep.kmp.uikit_kmp.generated.resources.sts_manual_report_title
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
 
@@ -127,6 +128,7 @@ internal fun EntryProviderScope<NavKey>.stsManualReportScreen(
                             ),
                     ) {
                         UiKitScreen(
+                            screenTag = OSTTestTags.Summary.STS_MANUAL_REPORT_ERROR_SCREEN,
                             onBackPress = {
                                 viewModel.consumeFailed()
                                 onExitOnFailure()
@@ -165,6 +167,7 @@ internal fun EntryProviderScope<NavKey>.stsManualReportScreen(
                             ),
                     ) {
                         UiKitScreen(
+                            screenTag = OSTTestTags.Summary.STS_MANUAL_REPORT_ERROR_SCREEN,
                             onBackPress = {
                                 viewModel.consumeFailed()
                                 onExitOnFailure()
