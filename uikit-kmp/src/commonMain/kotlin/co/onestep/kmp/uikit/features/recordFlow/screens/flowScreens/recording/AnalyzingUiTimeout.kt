@@ -70,14 +70,18 @@ internal class AnalyzingUiTimeout(
     }
 
     /**
-     * Stops the timer because an outcome arrived. As before the extraction, a cancelled timer is
-     * not re-armed by [start] until [reset].
+     * Stops the timer because an outcome arrived. It stays disarmed for the rest of the attempt —
+     * a later [start] in the same attempt (e.g. a late recorder `DONE`) must not open a second
+     * 60 s window — until [reset] marks the next attempt.
      */
     fun cancel() {
         job?.cancel()
     }
 
-    /** Stops the timer and lets the next [start] arm it again. */
+    /**
+     * Stops the timer and lets the next [start] arm it again. Call at every attempt boundary: the
+     * flow being cleared, and each new Static Balance condition.
+     */
     fun reset() {
         job?.cancel()
         job = null

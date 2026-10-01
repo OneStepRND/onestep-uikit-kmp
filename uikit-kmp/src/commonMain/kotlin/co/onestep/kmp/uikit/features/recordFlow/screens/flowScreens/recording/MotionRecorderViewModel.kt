@@ -933,6 +933,10 @@ internal class MotionRecorderViewModel(
         // in the same session.
         customMetadata.remove(OSTBalanceCondition.KEY_BALANCE_CONDITIONS)
         session.resetForNextRecording()
+        // The previous condition's Analyzed cancelled the UI timeout but left it disarmed for the
+        // rest of that attempt; without a reset the next condition's analyzing screen would have
+        // no timeout at all and could hang forever.
+        uiTimeout.reset()
         recorderBridge.reset()
         timerValue.value = ""
         recodingScreenState.value = getReadyState()

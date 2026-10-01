@@ -148,4 +148,35 @@ class AnalyzingUiTimeoutTest {
         assertEquals(1, h.expiredCount, "the first arm's deadline holds")
         assertEquals(1, h.dismissCount)
     }
+
+    @Test
+    fun cancelledTimerStaysDisarmedWithinTheAttempt() = runTest {
+        // A late start in the same attempt must not open a second 60 s window.
+        val h = Harness(this)
+        h.start(OSTSummaryOptions.None)
+        h.timeout.cancel()
+
+        h.start(OSTSummaryOptions.None)
+        expire()
+
+        assertEquals(0, h.expiredCount)
+    }
+
+    @Test
+    fun resetRearmsTheTimerForTheNextAttempt() = runTest {
+        // Static Balance: condition 1 is analyzed (timer cancelled), the clinician records another
+        // condition, and condition 2's analyzing screen must still time out.
+        val h = Harness(this)
+        h.start(OSTSummaryOptions.None)
+        h.timeout.cancel()
+        h.resolved = true // Condition 1's result.
+
+        h.timeout.reset()
+        h.resolved = false // analyse() opens the next attempt.
+        h.start(OSTSummaryOptions.None)
+        expire()
+
+        assertEquals(1, h.expiredCount, "the next condition's timer fires")
+        assertEquals(1, h.dismissCount)
+    }
 }
