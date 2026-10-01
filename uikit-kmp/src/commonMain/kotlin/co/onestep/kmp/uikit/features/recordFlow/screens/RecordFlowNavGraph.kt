@@ -1095,20 +1095,39 @@ internal fun RecordFlowNavGraph(
                 }
             }
 
-            // screen: measurement_error — emitted once when the error screen is shown. Sends
-            // the canonical error_code (derived from error.errorType), localized title/subtitle
-            // strings and the recorded measurement metadata (each omitted when null).
+            // Emitted once when the error screen is shown. A failed or timed-out analysis has no
+            // measurement and the recorder has been reset, so the recorded uuid / steps / length
+            // fall back to what the ViewModel kept from the recording (each omitted when null).
             LaunchedEffect(error) {
-                recordFlowTracker?.trackErrorScreen(
-                    activity = activity,
-                    errorType = error.errorType,
-                    measurementSeconds = errorMeasurement?.metadata?.seconds,
-                    steps = errorMeasurement?.metadata?.steps,
-                    perceptionUuid = errorMeasurement?.id,
-                    titleString = errorScreenData.title?.text,
-                    subtitleString = errorScreenData.subtitle?.text,
-                    appSection = RecordFlowAnalyticsTracker.APP_SECTION_DEFAULT,
-                )
+                val snapshot = viewModel.recordingSnapshot
+                val measurementSeconds = errorMeasurement?.metadata?.seconds ?: snapshot.measurementSeconds
+                val steps = errorMeasurement?.metadata?.steps ?: snapshot.steps
+                val perceptionUuid = errorMeasurement?.id ?: snapshot.perceptionUuid
+                if (error == RecordFlowError.Timeout) {
+                    // screen: measurement_still_analyzing — the timeout screen is "analysis took
+                    // too long", not an error per se (OS-15833), so it reports this INSTEAD of
+                    // measurement_error, as uikit's ErrorTimeOut does (OS-17521).
+                    recordFlowTracker?.trackStillAnalyzingScreen(
+                        activity = activity,
+                        steps = steps,
+                        seconds = measurementSeconds,
+                        perceptionUuid = perceptionUuid,
+                    )
+                } else {
+                    // screen: measurement_error — the canonical error_code (derived from
+                    // error.errorType), the localized title/subtitle strings and the recorded
+                    // measurement metadata.
+                    recordFlowTracker?.trackErrorScreen(
+                        activity = activity,
+                        errorType = error.errorType,
+                        measurementSeconds = measurementSeconds,
+                        steps = steps,
+                        perceptionUuid = perceptionUuid,
+                        titleString = errorScreenData.title?.text,
+                        subtitleString = errorScreenData.subtitle?.text,
+                        appSection = RecordFlowAnalyticsTracker.APP_SECTION_DEFAULT,
+                    )
+                }
             }
             ErrorScreen(
                 onBackPress = {

@@ -33,6 +33,16 @@ interface RecorderBridge {
      */
     val currentRecordingWindow: StateFlow<OSTRecordingWindow?>
 
+    /**
+     * The perception uuid of the current or most recent recording session, or `null` before the
+     * first one (or on a platform whose SDK does not publish it).
+     *
+     * Set by the time [recorderState] reaches [OSTRecorderState.RECORDING] and kept after
+     * [reset], so it can still be read once a timed-out analysis has reset the recorder. Used for
+     * analytics only.
+     */
+    val currentSessionId: StateFlow<String?>
+
     suspend fun prepareForRecording(activityType: OSTActivityType): Boolean
 
     suspend fun start(

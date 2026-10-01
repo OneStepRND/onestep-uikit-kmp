@@ -97,10 +97,10 @@ interface IosRecorderDelegate {
  * [RecorderBridge] implementation that owns the coroutine/flow machinery in Kotlin and delegates
  * ObjC-friendly work to an [IosRecorderDelegate] Swift implementation.
  *
- * Swift pushes recorder/analyser updates via [onRecorderStateChanged], [onStepsChanged], and
- * [onAnalyserStateChanged]; the adapter exposes those as the [recorderState] (initial
- * [OSTRecorderState.INITIALIZED]), [stepsCount] (initial `0`), and [analyserState] (initial
- * [OSTAnalyserState.Idle]) flows.
+ * Swift pushes recorder/analyser updates via [onRecorderStateChanged], [onStepsChanged],
+ * [onAnalyserStateChanged] and [onSessionIdChanged]; the adapter exposes those as the
+ * [recorderState] (initial [OSTRecorderState.INITIALIZED]), [stepsCount] (initial `0`),
+ * [analyserState] (initial [OSTAnalyserState.Idle]) and [currentSessionId] (initial `null`) flows.
  */
 class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : RecorderBridge {
 
@@ -125,7 +125,21 @@ class SwiftRecorderBridgeAdapter(private val delegate: IosRecorderDelegate) : Re
     override val currentRecordingWindow: StateFlow<OSTRecordingWindow?> =
         _currentRecordingWindow.asStateFlow()
 
+    private val _currentSessionId = MutableStateFlow<String?>(null)
+
+    /** Pushed from Swift via [onSessionIdChanged]; kept across [reset], as on Android. */
+    override val currentSessionId: StateFlow<String?> = _currentSessionId.asStateFlow()
+
     // --- Swift push functions ---
+
+    /**
+     * Push the native recorder's session uuid from Swift — the one `OSTRecorderState.recording(uuid:)`
+     * carries — **before** reporting the RECORDING state, so an observer of RECORDING reads it.
+     * Not cleared when the recorder goes idle: it names the most recent recording.
+     */
+    fun onSessionIdChanged(sessionId: String?) {
+        _currentSessionId.value = sessionId
+    }
 
     /**
      * Push the current recording window from Swift, before reporting the RECORDING state.

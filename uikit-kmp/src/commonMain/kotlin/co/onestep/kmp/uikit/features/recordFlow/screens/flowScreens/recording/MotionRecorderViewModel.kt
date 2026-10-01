@@ -159,6 +159,13 @@ internal class MotionRecorderViewModel(
     var motionMeasurement = mutableStateOf<OSTMotionMeasurement?>(null)
 
     /**
+     * This attempt's perception uuid, unfiltered step count and recorded length, for the
+     * still-analyzing / error analytics: a timed-out analysis never delivers [motionMeasurement]
+     * and the recorder is reset by then, so the recorder cannot be asked any more.
+     */
+    val recordingSnapshot = RecordingSnapshot()
+
+    /**
      * The elapsed whole seconds the count-up timer was showing when this recording stopped, for
      * the Generic Recording "Recording saved" card (port of iOS UI kit `6690111`).
      *
@@ -335,7 +342,9 @@ internal class MotionRecorderViewModel(
                     when (it) {
                         OSTRecorderState.INITIALIZED -> Unit
 
-                        OSTRecorderState.RECORDING -> Unit
+                        // The bridge publishes the session uuid before RECORDING.
+                        OSTRecorderState.RECORDING ->
+                            recordingSnapshot.onRecordingStarted(recorderBridge.currentSessionId.value)
 
                         OSTRecorderState.FINALIZING -> {
                             captureStoppedElapsedSeconds()
@@ -427,6 +436,8 @@ internal class MotionRecorderViewModel(
         subtitle.value = null
         // The previous recording's stop instant is not this one's.
         stoppedAtElapsedSeconds = null
+        // Nor are its uuid and steps: an attempt whose recorder never starts reports neither.
+        recordingSnapshot.clear()
         hasPlayedReadyForAnalysisAudio = false
 
         // Safety net: ensure recorder is in clean state before starting new flow
@@ -550,6 +561,7 @@ internal class MotionRecorderViewModel(
         val measurementSeconds =
             session.goTimeMs?.let { ((currentTimeMillis() - it) / 1000L).toInt() } ?: 0
         analyticsTracker?.trackAnalyzingScreen(configuration.value.activityType, measurementSeconds)
+        recordingSnapshot.onRecordingStopped(measurementSeconds)
         recordingJob?.cancel()
         // The recording is over (VM stop, or the SDK backstop/cap fired) — drop the session
         // bookkeeping so a later exit doesn't try to stop an already-stopped recorder.
@@ -1120,6 +1132,8 @@ internal class MotionRecorderViewModel(
     private fun startStepMonitoring() {
         stepMonitorJob =
             viewModelScope.launch {
+                // Unfiltered, unlike [stepCount]: every activity reports its steps.
+                launch { recorderBridge.stepsCount.collect { recordingSnapshot.onStepCount(it) } }
                 stepCount.collect { count ->
                     if (count >= 20 && !hasPlayedReadyForAnalysisAudio && configuration.value.playVoiceOver) {
                         hasPlayedReadyForAnalysisAudio = true
