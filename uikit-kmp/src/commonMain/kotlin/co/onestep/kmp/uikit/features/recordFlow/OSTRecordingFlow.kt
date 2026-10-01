@@ -31,6 +31,9 @@ private enum class FlowPhase { PERMISSION_FLOW, RECORDING_FLOW }
  *        registered at `configure` time (the flow fails fast otherwise). The id is never attached
  *        to analytics, logs, or screen names (HIPAA).
  * @param onResult Callback invoked when the recording flow produces an event (completion, error, etc.).
+ *        A flow that ends because analysis timed out with `showSummaryScreen = None` emits
+ *        [OSTRecordingFlowExit.EVENT_NAME] with [OSTRecordingFlowExit.EXIT_REASON_UI_TIMEOUT] here
+ *        immediately before [onDismiss], so hosts can tell it apart from a user cancel.
  * @param onFinished Callback invoked with the terminal [OSTRecordingFlowResult] — the measurement
  *        id plus the `summaryUrl` the host opens in a web view — immediately before [onDismiss].
  *        Fires only when the flow produced an analyzed measurement; a plain cancel/exit signals

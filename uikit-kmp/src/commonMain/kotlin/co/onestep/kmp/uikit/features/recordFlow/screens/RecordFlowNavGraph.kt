@@ -17,13 +17,17 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleStartEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +44,7 @@ import co.onestep.kmp.uikit.features.audio.PlatformAudioPlayerAdapter
 import co.onestep.kmp.uikit.features.audio.PlatformTTSPlayerAdapter
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowError
+import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlowExit
 import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlowResult
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowOutcome
 import co.onestep.kmp.uikit.features.recordFlow.ResultHandler
@@ -406,6 +411,23 @@ internal fun RecordFlowNavGraph(
         viewModel.setForegroundState(true)
         onStopOrDispose {
             viewModel.setForegroundState(false)
+        }
+    }
+
+    // UI timeout with OSTSummaryOptions.None: no in-flow screen was asked for, so the flow ends
+    // here with the ui_timeout exit reason instead of sitting on the analyzing screen. Collected
+    // only while RESUMED, like uikit's RecordFlowFragment; the signal is conflated, so a timeout
+    // reached in the background is delivered on return. The VM claimed the attempt's one-shot
+    // outcome before signalling, so a late result cannot also finish the flow.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnResult by rememberUpdatedState(onResult)
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
+    LaunchedEffect(viewModel, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.onUiTimeoutExit.collect {
+                viewModel.clearJobs()
+                finishOnUiTimeout(onResult = currentOnResult, onDismiss = currentOnDismiss)
+            }
         }
     }
 
@@ -1504,6 +1526,28 @@ private fun finishWithMeasurement(
             summaryUrl = measurement.summaryUrl,
             sessionUuid = sessionUuid,
             hallwayLengthMeters = hallwayLengthMeters,
+        ),
+    )
+    onDismiss()
+}
+
+/**
+ * Terminal exit for an attempt that timed out on the analyzing screen with no summary configured.
+ *
+ * Emits the [OSTRecordingFlowExit] event (exit reason only — PHI-free) so the host can tell the
+ * timeout apart from a user cancel, then dismisses. No [OSTRecordingFlowResult]: there is no
+ * analyzed measurement, matching uikit's `RESULT_CANCELED` + `EXIT_REASON_UI_TIMEOUT`.
+ */
+internal fun finishOnUiTimeout(
+    onResult: (OSTEvent) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    onResult(
+        OSTEvent(
+            name = OSTRecordingFlowExit.EVENT_NAME,
+            properties = mapOf(
+                OSTRecordingFlowExit.KEY_EXIT_REASON to OSTRecordingFlowExit.EXIT_REASON_UI_TIMEOUT,
+            ),
         ),
     )
     onDismiss()
