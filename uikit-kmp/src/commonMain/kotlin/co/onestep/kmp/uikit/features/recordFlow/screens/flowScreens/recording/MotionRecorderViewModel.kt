@@ -840,8 +840,13 @@ internal class MotionRecorderViewModel(
      * object (selections + note) via the update PATCH rather than only the note, so the
      * object stays complete regardless of the server's per-key merge behavior. The
      * measurement's own top-level `note` field is intentionally not used for Static Balance.
+     *
+     * **Suspends until the update completes**, like [updateBalanceConditionAnswers]: the caller
+     * then resets the condition or finishes the flow, and a fire-and-forget request was lost when
+     * the host tore the flow down. The request runs in [viewModelScope], so a screen leaving
+     * composition mid-save cancels only the wait.
      */
-    fun updateBalanceConditionNote(newNote: String?) {
+    suspend fun updateBalanceConditionNote(newNote: String?) {
         if (newNote.isNullOrBlank()) return
         val measurementId = motionMeasurement.value?.id ?: return
         val condition = currentBalanceCondition ?: return
@@ -855,10 +860,16 @@ internal class MotionRecorderViewModel(
                     uuid = measurementId,
                     conditions = conditionsMetadata,
                 )
-            } catch (e: Exception) {
-                println("MotionRecorderViewModel: Failed to update static balance note for $measurementId: ${e.message}")
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
+                // Never log the note (or a message that might carry it) — only what failed.
+                println(
+                    "MotionRecorderViewModel: Failed to update static balance note for " +
+                        "$measurementId: ${failure::class.simpleName}",
+                )
             }
-        }
+        }.join()
     }
 
     /**
