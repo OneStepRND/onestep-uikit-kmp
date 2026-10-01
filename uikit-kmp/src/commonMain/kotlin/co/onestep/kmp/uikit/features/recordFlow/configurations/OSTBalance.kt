@@ -25,17 +25,19 @@ import kotlinx.serialization.Serializable
  *
  * @param categories Ordered condition categories shown on the Condition Setup screen.
  * @param resultStates Per-recording outcome states (with their [ResultState.requiresAny]
- *        applicability rules). Carried for the (deferred) outcome-capture UI; not rendered yet.
+ *        applicability rules), offered as multi-select chips on the "Recording saved" screen
+ *        when no tag catalog drives the recording (see [resultStatesFor]). Empty (the default)
+ *        hides the question.
  * @param notesKey Metadata key under which the Condition Setup free-text note is attached
  *        inside the nested `onestep_balance_conditions` object. This is itself one of the
  *        server-driven `balance_conditions` (the `"note"` condition): like the category
  *        [Category.key]s it is used verbatim and MUST match the iOS SDK
  *        exactly. Defaults to [DEFAULT_NOTES_KEY] when the server supplies none.
- * @param resultStatesKey Top-level custom-metadata key reserved for the (deferred)
- *        per-recording outcome-capture UI. Server-driven and used verbatim; MUST match the
- *        iOS SDK exactly. Defaults to [DEFAULT_RESULT_STATES_KEY] when the server supplies
- *        none. Not used by the "Recording saved" screen, whose free-text observation is
- *        patched onto the measurement's own `note` field after analysis.
+ * @param resultStatesKey Top-level custom-metadata key under which the outcomes chosen on the
+ *        "Recording saved" screen are attached, next to `onestep_balance_conditions`, as a list of
+ *        codes (see [resultStatesMetadata]). Defaults to [DEFAULT_RESULT_STATES_KEY], the key the
+ *        backend reserves and reads for its pass/fail analysis; leave it at the default unless the
+ *        backend changes it.
  */
 @Immutable
 @Serializable
@@ -84,7 +86,7 @@ data class OSTBalance(
 
     /**
      * A per-recording outcome the clinician can record after a condition (e.g. "Fell",
-     * "Grabbed support"). Carried in the model for a future outcome-capture screen.
+     * "Grabbed support"), offered on the "Recording saved" screen.
      *
      * @param code Canonical, locale-independent outcome value.
      * @param displayName Outcome label, used verbatim.
@@ -108,11 +110,11 @@ data class OSTBalance(
         const val DEFAULT_NOTES_KEY = "note"
 
         /**
-         * Fallback metadata key for the (deferred) per-recording outcome-capture UI
-         * when the server supplies no [resultStatesKey]. Part of the cross-platform
-         * contract iOS must mirror.
+         * Metadata key for the outcomes chosen on the "Recording saved" screen: the one the
+         * backend reserves and parses (as a list of codes) for its pass/fail analysis. Matches
+         * the Android SDK (OS-17571); part of the cross-platform contract iOS must mirror.
          */
-        const val DEFAULT_RESULT_STATES_KEY = "onestep_result_states"
+        const val DEFAULT_RESULT_STATES_KEY = "onestep_balance_result_states"
 
         /**
          * The full known option set, used when no server config is supplied (SDK
@@ -172,3 +174,42 @@ data class OSTBalance(
             )
     }
 }
+
+/**
+ * The [OSTBalance.resultStates] that apply to [condition], in server order: a state is offered
+ * when its [OSTBalance.ResultState.requiresAny] is empty or names at least one option chosen in
+ * [condition]. With no condition only the unconditional states apply. The SDK adds no rule of its
+ * own. Mirrors the Android SDK's `resultStatesFor` (OS-17571).
+ */
+internal fun OSTBalance.resultStatesFor(condition: OSTBalanceCondition?): List<OSTBalance.ResultState> {
+    val chosenCodes = condition?.selections?.map { it.code }?.toSet().orEmpty()
+    return resultStates.filter { state ->
+        state.requiresAny.isEmpty() || state.requiresAny.any { it in chosenCodes }
+    }
+}
+
+/**
+ * The custom-metadata entry for the outcomes chosen on the "Recording saved" screen: the codes of
+ * [offered] that are in [chosen], in offered order, as a list under [OSTBalance.resultStatesKey]
+ * (e.g. `["fell", "opened_eyes"]` — the backend ignores the key in any other shape). Nothing when
+ * none were chosen — no key at all, never an empty list. Mirrors the Android SDK.
+ */
+internal fun OSTBalance.resultStatesMetadata(
+    offered: List<OSTBalance.ResultState>,
+    chosen: Collection<String>,
+): Map<String, Any> {
+    val codes = offered.map { it.code }.filter { it in chosen }
+    return if (codes.isEmpty()) emptyMap() else mapOf(resultStatesKey to codes)
+}
+
+/** The result state meaning the trial went as planned; choosing it alone scores nothing. */
+internal const val BALANCE_RESULT_COMPLETED = "completed"
+
+/**
+ * The self-reported Static Balance score for the outcomes chosen on "Recording saved": 0 as soon as
+ * any outcome other than [BALANCE_RESULT_COMPLETED] is chosen ("tagging any of these events … sets
+ * the score to 0"), or null — no self-report — when none, or only `completed`, was chosen. Mirrors
+ * the Android SDK's `balanceSelfReportScore` (OS-17571).
+ */
+internal fun balanceSelfReportScore(chosen: Collection<String>): Int? =
+    if (chosen.any { it != BALANCE_RESULT_COMPLETED }) 0 else null

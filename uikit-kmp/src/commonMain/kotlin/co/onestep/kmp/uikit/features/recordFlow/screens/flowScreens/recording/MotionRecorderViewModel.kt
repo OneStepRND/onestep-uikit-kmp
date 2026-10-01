@@ -690,6 +690,9 @@ internal class MotionRecorderViewModel(
         // added afterwards on the "Recording saved" screen via [updateBalanceConditionNote].
         if (configuration.value.activityType == OSTActivityType.STATIC_BALANCE) {
             customMetadata[OSTBalanceCondition.KEY_SESSION_UUID] = sessionUuid
+            // shortcut: Android native retired `onestep_balance_conditions` for `tag_map`
+            // (OS-17571); it stays here because the iOS bridge drops `tag_map`, which would lose
+            // the condition there. Retire it once the iOS SDK sends `tag_map` (OS-17547).
             currentBalanceCondition?.let {
                 customMetadata[OSTBalanceCondition.KEY_BALANCE_CONDITIONS] =
                     it.toConditionsMetadata(
@@ -841,24 +844,32 @@ internal class MotionRecorderViewModel(
      * object stays complete regardless of the server's per-key merge behavior. The
      * measurement's own top-level `note` field is intentionally not used for Static Balance.
      *
+     * [resultStatesMetadata] — the outcomes chosen on "Recording saved", already shaped by
+     * `OSTBalance.resultStatesMetadata` — rides the same update as top-level custom metadata, so a
+     * save with outcomes but no note still sends the conditions object.
+     *
      * **Suspends until the update completes**, like [updateBalanceConditionAnswers]: the caller
      * then resets the condition or finishes the flow, and a fire-and-forget request was lost when
      * the host tore the flow down. The request runs in [viewModelScope], so a screen leaving
      * composition mid-save cancels only the wait.
      */
-    suspend fun updateBalanceConditionNote(newNote: String?) {
-        if (newNote.isNullOrBlank()) return
+    suspend fun updateBalanceConditionNote(
+        newNote: String?,
+        resultStatesMetadata: Map<String, Any> = emptyMap(),
+    ) {
+        if (newNote.isNullOrBlank() && resultStatesMetadata.isEmpty()) return
         val measurementId = motionMeasurement.value?.id ?: return
         val condition = currentBalanceCondition ?: return
         @Suppress("DEPRECATION")
         val notesKey = configuration.value.balance?.notesKey ?: OSTBalance.DEFAULT_NOTES_KEY
-        val conditionsMetadata = condition.copy(notes = newNote)
+        val conditionsMetadata = (if (newNote.isNullOrBlank()) condition else condition.copy(notes = newNote))
             .toConditionsMetadata(notesKey = notesKey)
         viewModelScope.launch {
             try {
                 recorderBridge.updateBalanceConditionMetadata(
                     uuid = measurementId,
                     conditions = conditionsMetadata,
+                    additionalMetadata = resultStatesMetadata,
                 )
             } catch (cancellation: CancellationException) {
                 throw cancellation
