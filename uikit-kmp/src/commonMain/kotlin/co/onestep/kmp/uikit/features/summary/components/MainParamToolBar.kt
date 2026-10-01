@@ -343,7 +343,8 @@ internal fun MinimalAnalysisBanner(
                 },
                 modifier = Modifier
                     .height(40.dp)
-                    .padding(start = 8.dp),
+                    .padding(start = 8.dp)
+                    .test(OSTTestTags.Summary.ANALYSIS_BANNER_LEARN_MORE_BUTTON),
                 size = OSButtonSize.Small,
             )
         }

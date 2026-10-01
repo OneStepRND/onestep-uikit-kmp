@@ -102,6 +102,7 @@ import co.onestep.kmp.uikit.navigation.UIktNavSavedStateConfiguration
 import co.onestep.kmp.uikit.navigation.pop
 import co.onestep.kmp.uikit.navigation.popUpToInclusive
 import co.onestep.kmp.uikit.ui.components.BottomSheet
+import co.onestep.kmp.uikit.ui.components.TaggedPopup
 import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.utils.test
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.MotionRecorderViewModel
@@ -145,7 +146,6 @@ import co.onestep.kmp.uikit_kmp.generated.resources.yes
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import co.onestep.designsystem.components.ButtonVariant
-import co.onestep.designsystem.components.OSPopup
 import co.onestep.designsystem.theme.LocalOSColors
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
@@ -1406,7 +1406,8 @@ private fun HallwayWarningDialog(
     onEdit: () -> Unit,
 ) {
     LaunchedEffect(Unit) { onShown() }
-    OSPopup(
+    // TaggedPopup, not OSPopup: OSPopup's buttons and checkbox cannot carry test tags.
+    TaggedPopup(
         // A dialog composes in its own window, so the tag goes on the popup itself.
         modifier = Modifier.test(OSTTestTags.RecordFlow.HALLWAY_WARNING_DIALOG),
         onDismissRequest = onDismiss,
@@ -1417,16 +1418,20 @@ private fun HallwayWarningDialog(
             unitText,
         ),
         closeIcon = vectorResource(Res.drawable.ic_close),
+        closeButtonTestTag = OSTTestTags.RecordFlow.HALLWAY_WARNING_CLOSE_BUTTON,
         // Start Test proceeds with the short length (secondary/outline per design).
         confirmButtonText = stringResource(Res.string.short_hallway_start_test),
         confirmButtonVariant = ButtonVariant.Secondary,
+        confirmButtonTestTag = OSTTestTags.RecordFlow.HALLWAY_WARNING_START_BUTTON,
         onConfirm = onStartTest,
         // Edit Hallway Length is the primary (filled) action.
         cancelButtonText = stringResource(Res.string.short_hallway_edit_hallway_length),
         cancelButtonVariant = ButtonVariant.Primary,
+        cancelButtonTestTag = OSTTestTags.RecordFlow.HALLWAY_WARNING_EDIT_BUTTON,
         onCancel = onEdit,
         checkboxText = stringResource(Res.string.short_hallway_dont_show_again),
         checkboxChecked = dontShowAgainChecked,
+        checkboxTestTag = OSTTestTags.RecordFlow.HALLWAY_WARNING_DONT_SHOW_CHECKBOX,
         onCheckboxCheckedChange = onSuppressChange,
     )
 }
@@ -1436,18 +1441,21 @@ private fun ExitConfirmationDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    OSPopup(
+    // TaggedPopup, not OSPopup: OSPopup's buttons cannot carry test tags.
+    TaggedPopup(
         modifier = Modifier.test(OSTTestTags.RecordFlow.EXIT_DIALOG),
         onDismissRequest = onDismissRequest,
         title = stringResource(Res.string.stop_recording_dialog_text),
         confirmButtonText = stringResource(Res.string.yes),
         confirmButtonVariant = ButtonVariant.Primary,
+        confirmButtonTestTag = OSTTestTags.RecordFlow.EXIT_DIALOG_CONFIRM_BUTTON,
         onConfirm = {
             onDismissRequest()
             onConfirm()
         },
         cancelButtonText = stringResource(Res.string.no),
         cancelButtonVariant = ButtonVariant.Secondary,
+        cancelButtonTestTag = OSTTestTags.RecordFlow.EXIT_DIALOG_CANCEL_BUTTON,
         onCancel = onDismissRequest,
     )
 }

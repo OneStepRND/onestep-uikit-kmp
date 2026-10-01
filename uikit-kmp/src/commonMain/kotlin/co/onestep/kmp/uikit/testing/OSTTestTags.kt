@@ -87,6 +87,21 @@ object OSTTestTags {
         const val HALLWAY_SKIP_BUTTON = "ost_hallway_distance_skip_button"
         const val HALLWAY_WARNING_DIALOG = "ost_hallway_warning_dialog"
 
+        /**
+         * The short-hallway popup's "Start test" button. This and the next two values are the
+         * Android SDK's, so one flow fits both kits.
+         */
+        const val HALLWAY_WARNING_START_BUTTON = "short_hallway_start"
+
+        /** The short-hallway popup's "Edit hallway length" button. The value is the Android SDK's. */
+        const val HALLWAY_WARNING_EDIT_BUTTON = "short_hallway_edit"
+
+        /** The short-hallway popup's "Don't show again" checkbox. The value is the Android SDK's. */
+        const val HALLWAY_WARNING_DONT_SHOW_CHECKBOX = "short_hallway_dont_show"
+
+        /** The short-hallway popup's close (X) icon. */
+        const val HALLWAY_WARNING_CLOSE_BUTTON = "ost_hallway_warning_close_button"
+
         // ── Recording ─────────────────────────────────────────────────────────────────────
         const val RECORDING_SCREEN = "ost_recording_screen"
         const val RECORDING_TITLE = "ost_recording_title"
@@ -103,6 +118,12 @@ object OSTTestTags {
 
         // ── Exit confirmation ─────────────────────────────────────────────────────────────
         const val EXIT_DIALOG = "ost_exit_confirmation_dialog"
+
+        /** The exit confirmation's "Yes" button, which stops the recording. */
+        const val EXIT_DIALOG_CONFIRM_BUTTON = "ost_exit_dialog_confirm_button"
+
+        /** The exit confirmation's "No" button, which keeps recording. */
+        const val EXIT_DIALOG_CANCEL_BUTTON = "ost_exit_dialog_cancel_button"
     }
 
     /** Static Balance condition setup and its per-condition "Recording saved" screen. */
@@ -179,11 +200,24 @@ object OSTTestTags {
 
         const val HIGHLIGHTS_LIST = "ost_summary_highlights_list"
         const val GAIT_LAB_LIST = "ost_summary_gait_lab_list"
+        /**
+         * The expanded score ring. It is the node the Android SDK tags `summary_score_ring`; the
+         * KMP value predates that one and is kept (see "Android parity" in `docs/TestTags.md`).
+         */
         const val MAIN_PARAM = "ost_summary_main_param"
         const val HALLWAY_EDIT_BUTTON = "ost_summary_hallway_edit_button"
         const val STS_EDIT_BUTTON = "ost_summary_sts_edit_button"
         const val EMPTY_STATE = "ost_summary_empty_state"
         const val SHIMMER = "ost_summary_shimmer"
+
+        /** The analysis banner's "Learn more" button, which opens [INFO_SHEET]. */
+        const val ANALYSIS_BANNER_LEARN_MORE_BUTTON = "ost_summary_analysis_banner_learn_more_button"
+
+        /** The close (X) icon inside [INFO_SHEET]. */
+        const val INFO_SHEET_CLOSE_BUTTON = "ost_summary_info_sheet_close_button"
+
+        /** The info icon on the TUG summary card, in [HIGHLIGHTS_LIST]. */
+        const val TUG_INFO_BUTTON = "ost_summary_tug_info_button"
 
         /** The partial (steps + duration only) result shown when there is no full analysis. */
         const val PARTIAL_RESULT = "ost_summary_partial_result"
@@ -192,6 +226,9 @@ object OSTTestTags {
         const val STS_MANUAL_REPORT_SCREEN = "ost_sts_manual_report_screen"
         const val STS_MANUAL_REPORT_PICKER = "ost_sts_manual_report_picker"
         const val STS_MANUAL_REPORT_SAVE_BUTTON = "ost_sts_manual_report_save_button"
+
+        /** The error screen shown when saving the STS self-report fails (network or server). */
+        const val STS_MANUAL_REPORT_ERROR_SCREEN = "ost_sts_manual_report_error_screen"
         const val INFO_SHEET = "ost_summary_info_sheet"
 
         /** The sticky bottom CTA that leaves the summary. */
@@ -217,6 +254,18 @@ object OSTTestTags {
         const val LEVEL_OF_ASSISTANCE_TEXT = "tag_screen_level_of_assistance_text"
         const val FOOTWEAR_EDIT_BUTTON = "tag_screen_footwear_edit_button"
         const val FOOTWEAR_TEXT = "tag_screen_footwear_text"
+
+        /** The assistive-device picker opened from [ASSISTIVE_DEVICE_EDIT_BUTTON]. */
+        const val EDIT_ASSISTIVE_DEVICE_SCREEN = "ost_tag_edit_assistive_device_screen"
+
+        /** The level-of-assistance picker opened from [LEVEL_OF_ASSISTANCE_EDIT_BUTTON]. */
+        const val EDIT_LEVEL_OF_ASSISTANCE_SCREEN = "ost_tag_edit_level_of_assistance_screen"
+
+        /** The footwear picker opened from [FOOTWEAR_EDIT_BUTTON]. */
+        const val EDIT_FOOTWEAR_SCREEN = "ost_tag_edit_footwear_screen"
+
+        /** The answer picker for a configured question, opened from its [question] row. */
+        const val EDIT_QUESTION_SCREEN = "ost_tag_edit_question_screen"
 
         /** The row for configured question [index] (e.g. the use-of-hands question). */
         fun question(index: Int): String = "ost_tag_screen_question_$index"

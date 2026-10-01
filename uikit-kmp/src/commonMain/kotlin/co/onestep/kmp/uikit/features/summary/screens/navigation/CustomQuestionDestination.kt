@@ -9,6 +9,7 @@ import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingQuest
 import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.UiKitScreen
 import co.onestep.kmp.uikit.features.summary.SummaryDataFactory
 import co.onestep.kmp.uikit.utils.UIktDestination
+import co.onestep.kmp.uikit.testing.OSTTestTags
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -23,6 +24,7 @@ internal fun EntryProviderScope<NavKey>.customQuestionDestination(
         val question = questionProvider() ?: return@entry
         UiKitScreen(
             modifier = Modifier.padding(top = 40.dp),
+            screenTag = OSTTestTags.Tagging.EDIT_QUESTION_SCREEN,
             onBackPress = onBackPress,
             screenData = SummaryDataFactory.customQuestionScreenData(
                 onItemSelected = onItemSelected,

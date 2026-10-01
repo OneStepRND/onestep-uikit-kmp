@@ -12,6 +12,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.recordFlow.screensData.InfoBottomSheetData
@@ -42,6 +44,7 @@ internal fun InfoBottomSheetContent(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .size(32.dp)
+                    .test(OSTTestTags.Summary.INFO_SHEET_CLOSE_BUTTON)
                     .clickable { onDismiss() },
                 tint = colors.neutral_p3,
             )

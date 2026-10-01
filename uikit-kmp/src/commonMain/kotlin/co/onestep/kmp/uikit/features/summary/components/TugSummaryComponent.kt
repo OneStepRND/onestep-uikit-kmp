@@ -29,6 +29,8 @@ import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import co.onestep.kmp.uikit.testing.OSTTestTags
+import co.onestep.kmp.uikit.utils.test
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -110,6 +112,7 @@ fun TugSummaryComponent(
                     Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
+                        .test(OSTTestTags.Summary.TUG_INFO_BUTTON)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = osClickIndication(bounded = false),
