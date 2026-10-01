@@ -28,13 +28,14 @@ import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TimerData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.ToolBarData
 import co.onestep.kmp.uikit.models.OSTActivityType
-import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
 import co.onestep.kmp.uikit.models.OSTAnalyserError
 import co.onestep.kmp.uikit.models.OSTAnalyserState
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.uikit.models.OSTRecorderState
 import co.onestep.kmp.uikit.models.OSTAssistiveDevice
+import co.onestep.kmp.uikit.models.OSTTagValue
 import co.onestep.kmp.uikit.models.OSTUserInputMetaData
+import co.onestep.kmp.uikit.models.codes
 import co.onestep.kmp.uikit.models.OSTWalkCourseLength.Companion.getWalkCourseLength
 import co.onestep.kmp.sdk.currentTimeMillis
 import co.onestep.kmp.uikit.utils.Languages
@@ -63,6 +64,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -93,8 +95,10 @@ internal class MotionRecorderViewModel(
     private val _onInitializationError = Channel<Unit>(Channel.CONFLATED)
     val onInitializationError = _onInitializationError.receiveAsFlow()
 
-    private val _onUiTimeoutExit = Channel<Unit>(Channel.CONFLATED)
-    val onUiTimeoutExit = _onUiTimeoutExit.receiveAsFlow()
+    // The analyzing screen's give-up timer. For OSTSummaryOptions.None its expiry ends the flow
+    // instead of showing the Timeout error screen; the NavGraph collects [onUiTimeoutExit].
+    private val uiTimeout = AnalyzingUiTimeout(viewModelScope)
+    val onUiTimeoutExit: Flow<Unit> = uiTimeout.exit
 
     // Focused collaborators extracted from this ViewModel (OS God-class decomposition). The
     // ViewModel remains the single entry point the UI sees and delegates to these for their
@@ -194,6 +198,11 @@ internal class MotionRecorderViewModel(
 
     private var assistiveDevice: OSTAssistiveDevice? = null
 
+    // Tag-catalog answers from the pre-recording screen (or the catalog-driven Static Balance
+    // Condition Setup), uploaded as the measurement's tag_map. Plain state like note/tags: after
+    // process death the flow restarts at the first screen and asks again.
+    private var preRecordTagMap: Map<String, OSTTagValue> = emptyMap()
+
     private val customMetadata: MutableMap<String, Any> = mutableMapOf()
 
     /**
@@ -232,8 +241,6 @@ internal class MotionRecorderViewModel(
     private var analysingJob: Job? = null
 
     private var analyseStateJob: Job? = null
-
-    private var uiTimeoutJob: Job? = null
 
     /**
      * Latches the first terminal outcome of this analysis attempt — a result **or** an error — so
@@ -354,7 +361,7 @@ internal class MotionRecorderViewModel(
                         }
 
                         OSTAnalyserState.Analyzed -> {
-                            uiTimeoutJob?.cancel()
+                            uiTimeout.cancel()
                             subtitle.value = resourceProvider.getString(Res.string.preparing_results)
                             delay(2000)
                             // Claimed after the delay, not before: an error reported while the
@@ -366,7 +373,7 @@ internal class MotionRecorderViewModel(
                         }
 
                         is OSTAnalyserState.Failed -> {
-                            uiTimeoutJob?.cancel()
+                            uiTimeout.cancel()
                             clearJobs()
                             reportError(it.error)
                         }
@@ -628,37 +635,21 @@ internal class MotionRecorderViewModel(
     )
 
     private fun startUiTimeout() {
-        if (uiTimeoutJob != null) return  // Already running
-        uiTimeoutJob = viewModelScope.launch {
-            delay(60_000L)
-            println("MotionRecorderViewModel: UI timeout reached after 60 seconds")
-            // Cancel all in-flight work (upload continues via NonCancellable in analyze())
-            analyseStateJob?.cancel()
-            analyseStateJob = null
-            analysingJob?.cancel()
-            analysingJob = null
-            // Reset recorder AND analyser to clean state for re-entry
-            recorderBridge.reset()
-            when (configuration.value.showSummaryScreen) {
-                OSTSummaryOptions.Full,
-                OSTSummaryOptions.WEB -> {
-                    // Through reportError, not onError: the timeout is this attempt's terminal
-                    // outcome like any other, so it must not cover a result already delivered and
-                    // must not be covered by one that arrives after it.
-                    reportError(OSTAnalyserError.Timeout(null, "UI timeout"))
-                }
-
-                OSTSummaryOptions.None -> {
-                    viewModelScope.launch {
-                        _onUiTimeoutExit.send(Unit)
-                    }
-                }
-
-                OSTSummaryOptions.MINIMAL -> {
-                    reportError(OSTAnalyserError.Timeout(null, "UI timeout"))
-                }
-            }
-        }
+        uiTimeout.start(
+            summaryOption = { configuration.value.showSummaryScreen },
+            onExpired = {
+                println("MotionRecorderViewModel: UI timeout reached after 60 seconds")
+                // Cancel all in-flight work (upload continues via NonCancellable in analyze())
+                analyseStateJob?.cancel()
+                analyseStateJob = null
+                analysingJob?.cancel()
+                analysingJob = null
+                // Reset recorder AND analyser to clean state for re-entry
+                recorderBridge.reset()
+            },
+            claimOutcome = ::claimAttemptOutcome,
+            onError = { error -> onError(error, configuration.value.activityType) },
+        )
     }
 
     /** TUG/STS begin sensor capture on Get Ready; every other activity starts at "go". */
@@ -684,7 +675,8 @@ internal class MotionRecorderViewModel(
             currentBalanceCondition?.let {
                 customMetadata[OSTBalanceCondition.KEY_BALANCE_CONDITIONS] =
                     it.toConditionsMetadata(
-                        notesKey = configuration.value.balance?.notesKey
+                        // In catalog mode the condition carries no note, so the key is unused.
+                        notesKey = @Suppress("DEPRECATION") configuration.value.balance?.notesKey
                             ?: OSTBalance.DEFAULT_NOTES_KEY,
                     )
             }
@@ -703,6 +695,7 @@ internal class MotionRecorderViewModel(
                     note = note,
                     tags = tags,
                     assistiveDevice = assistiveDevice,
+                    tagMap = preRecordTagMap.ifEmpty { null },
                     walkCourseLength =
                         hallwayManager.hallwayLengthForCurrentTest?.let {
                             getWalkCourseLength(it, isImperialSystem())
@@ -780,6 +773,14 @@ internal class MotionRecorderViewModel(
         this.assistiveDevice = device
     }
 
+    /** Every option code answered before the recording, for the post-recording `requiresAny` check. */
+    val preRecordTagCodes: Set<String> get() = preRecordTagMap.codes()
+
+    /** Replaces the pre-recording tag-catalog answers; going back and re-answering must not merge. */
+    fun setTagMap(tagMap: Map<String, OSTTagValue>) {
+        preRecordTagMap = tagMap
+    }
+
     fun addTags(tagsToAdd: List<String>) {
         this.tags.addAll(tagsToAdd)
     }
@@ -826,6 +827,7 @@ internal class MotionRecorderViewModel(
         if (newNote.isNullOrBlank()) return
         val measurementId = motionMeasurement.value?.id ?: return
         val condition = currentBalanceCondition ?: return
+        @Suppress("DEPRECATION")
         val notesKey = configuration.value.balance?.notesKey ?: OSTBalance.DEFAULT_NOTES_KEY
         val conditionsMetadata = condition.copy(notes = newNote)
             .toConditionsMetadata(notesKey = notesKey)
@@ -838,6 +840,50 @@ internal class MotionRecorderViewModel(
             } catch (e: Exception) {
                 println("MotionRecorderViewModel: Failed to update static balance note for $measurementId: ${e.message}")
             }
+        }
+    }
+
+    /**
+     * Catalog-driven Static Balance: sends the "Recording saved" note and the chosen outcomes
+     * ([outcomes], a `$balance_result_states` tag map) in **one** update, as the Android SDK does
+     * (OS-17545). The note goes to the measurement's own `note` field; the condition already
+     * travelled at recorder start (in `tag_map` and in `onestep_balance_conditions`), so it is not
+     * re-sent. Nothing chosen and no note means no request at all.
+     *
+     * **Suspends until the update completes**, so the caller can await it before navigating away.
+     * The request itself runs in [viewModelScope], not the caller's: a screen that leaves
+     * composition mid-save (the toolbar's close button) cancels only the wait, not the update.
+     */
+    suspend fun updateBalanceConditionAnswers(
+        newNote: String?,
+        outcomes: Map<String, OSTTagValue>,
+    ) {
+        if (newNote.isNullOrBlank() && outcomes.isEmpty()) return
+        val measurementId = motionMeasurement.value?.id ?: return
+        viewModelScope.launch { sendBalanceConditionAnswers(measurementId, newNote, outcomes) }.join()
+    }
+
+    private suspend fun sendBalanceConditionAnswers(
+        measurementId: String,
+        newNote: String?,
+        outcomes: Map<String, OSTTagValue>,
+    ) {
+        try {
+            recorderBridge.updateMotionMeasurement(
+                uuid = measurementId,
+                metadata = OSTUserInputMetaData(
+                    note = newNote?.takeIf { it.isNotBlank() },
+                    tagMap = outcomes.ifEmpty { null },
+                ),
+            )
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
+            // Never log the note or the answers — log only what failed.
+            println(
+                "MotionRecorderViewModel: Failed to save the static balance answers for " +
+                    "$measurementId: ${failure::class.simpleName}",
+            )
         }
     }
 
@@ -882,10 +928,15 @@ internal class MotionRecorderViewModel(
         balanceManager.clearCurrentCondition()
         note = null
         tags.clear()
+        preRecordTagMap = emptyMap()
         // Drop the per-condition object but keep session_uuid so the next condition stays
         // in the same session.
         customMetadata.remove(OSTBalanceCondition.KEY_BALANCE_CONDITIONS)
         session.resetForNextRecording()
+        // The previous condition's Analyzed cancelled the UI timeout but left it disarmed for the
+        // rest of that attempt; without a reset the next condition's analyzing screen would have
+        // no timeout at all and could hang forever.
+        uiTimeout.reset()
         recorderBridge.reset()
         timerValue.value = ""
         recodingScreenState.value = getReadyState()
@@ -960,7 +1011,7 @@ internal class MotionRecorderViewModel(
     private suspend fun uploadWithoutAnalysing() {
         val uploaded = recorderBridge.uploadWithoutAnalysis()
         motionMeasurement.value = uploaded
-        uiTimeoutJob?.cancel()
+        uiTimeout.cancel()
         if (uploaded != null) {
             if (claimAttemptOutcome()) {
                 onMeasurementResult(uploaded)
@@ -1054,8 +1105,7 @@ internal class MotionRecorderViewModel(
         analysingJob = null
         analyseStateJob?.cancel()
         analyseStateJob = null
-        uiTimeoutJob?.cancel()
-        uiTimeoutJob = null
+        uiTimeout.reset()
 
         viewModelScope.launch {
             // Gracefully stop the recorder and wait for DONE, if a start was initiated

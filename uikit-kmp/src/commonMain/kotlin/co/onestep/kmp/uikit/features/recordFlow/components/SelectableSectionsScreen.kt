@@ -2,6 +2,7 @@ package co.onestep.kmp.uikit.features.recordFlow.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -14,6 +15,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,16 +39,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +67,7 @@ import co.onestep.designsystem.components.PrimaryButton
 import co.onestep.designsystem.components.SecondaryButton
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.designsystem.theme.Variables
+import co.onestep.kmp.uikit.features.tagging.CustomTextField
 import co.onestep.kmp.uikit.testing.OSTTestTags
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import co.onestep.kmp.uikit.utils.test
@@ -72,16 +82,22 @@ import co.onestep.kmp.uikit_kmp.generated.resources.ic_stance_tandem
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_vision_eyes_closed
 import co.onestep.kmp.uikit_kmp.generated.resources.ic_vision_eyes_open
 import co.onestep.kmp.uikit_kmp.generated.resources.list_separator
+import co.onestep.kmp.uikit_kmp.generated.resources.note_hint_text
+import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-/** A selectable option row inside a [SelectableSection]: localized label + leading icon (SVG drawable). */
+/**
+ * A selectable option row inside a [SelectableSection]: localized label + optional leading icon
+ * (SVG drawable). A null [icon] renders the label alone.
+ */
 @Immutable
 internal data class SelectableOption(
     val label: String,
-    val icon: DrawableResource,
+    val icon: DrawableResource? = null,
 )
 
 /**
@@ -121,6 +137,10 @@ internal data class SelectableSections(
 // shortcut: a bitmask caps a section at 32 options; every catalog in play is an order of
 // magnitude smaller. Upgrade path if one is not: a custom Saver over a List<List<Int>>.
 private const val MAX_OPTIONS_PER_SECTION = Int.SIZE_BITS
+
+// The least room left under the content for the sticky Clear-all / Continue bar; the bar's
+// measured height wins when it is taller.
+private val StickyBarClearance = 120.dp
 
 /** The option indices set in [mask], ascending (catalog order), bounded by [optionCount]. */
 internal fun selectedIndicesOf(mask: Int, optionCount: Int): List<Int> =
@@ -169,8 +189,16 @@ internal fun joinSelectedLabels(
  * enables once every [SelectableSection.required] section holds at least one selection. The
  * screen owns all selection state internally and hands the result out via [onContinue] as a
  * `sectionId -> selected option indices` map (catalog order, sections with no selection omitted)
- * plus the note (always null here — the flow's only caller collects its note post-recording).
+ * plus the trimmed note (null when blank or hidden).
  *
+ * Expanding a section scrolls just enough for its last option to clear the sticky action bar —
+ * including the section open on arrival — so no option is hidden underneath it.
+ *
+ * @param showNote When true, renders a free-text note field under the sections, using [noteHint].
+ * @param initialNote The note the field starts with, e.g. one already saved on the measurement.
+ * @param submitting While true, Continue is disabled — the caller is saving the previous tap's
+ *   result and a second tap must not submit again.
+ * @param noteTestTag Test tag applied to the note field.
  * @param continueButtonTestTag Optional test tag applied to the Continue button.
  * @param clearButtonTestTag Optional test tag applied to the Clear-all button.
  */
@@ -181,6 +209,11 @@ internal fun SelectableSectionsScreen(
     onContinue: (selections: Map<String, List<Int>>, note: String?) -> Unit,
     modifier: Modifier = Modifier,
     onScreenView: () -> Unit = {},
+    showNote: Boolean = false,
+    initialNote: String? = null,
+    submitting: Boolean = false,
+    noteHint: StringResource = Res.string.note_hint_text,
+    noteTestTag: String = OSTTestTags.Tagging.NOTE_TEXT_FIELD,
     continueButtonTestTag: String? = null,
     clearButtonTestTag: String? = null,
 ) {
@@ -197,6 +230,8 @@ internal fun SelectableSectionsScreen(
         mutableStateOf(IntArray(items.size))
     }
 
+    val note = rememberSaveable { mutableStateOf(initialNote) }
+
     // One section expanded at a time; -1 = none. Defaults to the first section.
     var expandedSection by rememberSaveable(items.size) { mutableStateOf(0) }
 
@@ -206,6 +241,11 @@ internal fun SelectableSectionsScreen(
 
     val continueEnabled = isContinueEnabled(selected, items)
 
+    // The sticky action bar's measured height: how far it reaches up over the content. Measured
+    // rather than assumed, since its size follows the font scale, button text and system insets.
+    var barHeightPx by remember { mutableIntStateOf(0) }
+    val barClearance = with(LocalDensity.current) { barHeightPx.toDp() }.coerceAtLeast(StickyBarClearance)
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -214,7 +254,7 @@ internal fun SelectableSectionsScreen(
                 // Clears the opaque base of the sticky bar; the last item can still
                 // scroll up into the gradient's transparent top and fade out.
                 .padding(horizontal = Variables.GapL)
-                .padding(bottom = 120.dp),
+                .padding(bottom = barClearance),
         ) {
             OSText(
                 text = title,
@@ -235,6 +275,7 @@ internal fun SelectableSectionsScreen(
                     section = section,
                     selectedIndices = selectedIndices,
                     expanded = expandedSection == index,
+                    barClearancePx = barHeightPx,
                     onHeaderClick = {
                         expandedSection = if (expandedSection == index) -1 else index
                     },
@@ -252,6 +293,15 @@ internal fun SelectableSectionsScreen(
                 )
                 if (index < items.lastIndex) Spacer(Modifier.height(Variables.GapM))
             }
+            if (showNote) {
+                CustomTextField(
+                    value = note.value,
+                    onValueChange = { note.value = it },
+                    modifier = Modifier.padding(vertical = Variables.GapL),
+                    hintRes = noteHint,
+                    testTag = noteTestTag,
+                )
+            }
         }
 
         // Sticky action bar: a top-fading gradient (transparent → surface) so scrolled
@@ -261,6 +311,7 @@ internal fun SelectableSectionsScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
+                .onSizeChanged { barHeightPx = it.height }
                 .background(
                     Brush.verticalGradient(
                         0f to Color.Transparent,
@@ -290,8 +341,13 @@ internal fun SelectableSectionsScreen(
             )
             PrimaryButton(
                 text = stringResource(Res.string.continue_camel_case),
-                onClick = { onContinue(selectionsBySectionId(selected, items), null) },
-                enabled = continueEnabled,
+                onClick = {
+                    onContinue(
+                        selectionsBySectionId(selected, items),
+                        note.value?.trim()?.takeIf { showNote && it.isNotEmpty() },
+                    )
+                },
+                enabled = continueEnabled && !submitting,
                 size = OSButtonSize.Big,
                 modifier = Modifier
                     .weight(1f)
@@ -315,6 +371,7 @@ private fun SelectableSectionCard(
     onHeaderClick: () -> Unit,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    barClearancePx: Int = 0,
 ) {
     val colors = LocalOSColors.current
     Column(
@@ -328,8 +385,8 @@ private fun SelectableSectionCard(
                 .fillMaxWidth()
                 .clickable(onClick = onHeaderClick)
                 .padding(Variables.GapL)
-                // Static Balance is this component's only caller; its tag helpers keep the
-                // ids consistent with the rest of that flow.
+                // Named for Static Balance, the first caller; the tag-catalog screens reuse the
+                // same published helpers (section id = the field's `name`) rather than fork them.
                 .test(OSTTestTags.StaticBalance.conditionSection(section.id)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -392,10 +449,10 @@ private fun SelectableSectionCard(
                         // draw while it fades and shrinks away.
                         var lastSoleOption by remember(section) { mutableStateOf(soleOption) }
                         if (soleOption != null) lastSoleOption = soleOption
-                        AnimatedVisibility(visible = soleOption != null) {
-                            lastSoleOption?.let {
+                        AnimatedVisibility(visible = soleOption?.icon != null) {
+                            lastSoleOption?.icon?.let {
                                 Image(
-                                    painter = painterResource(it.icon),
+                                    painter = painterResource(it),
                                     contentDescription = null,
                                     modifier = Modifier.size(36.dp),
                                 )
@@ -418,7 +475,30 @@ private fun SelectableSectionCard(
             )
         }
         AnimatedVisibility(visible = expanded) {
-            Column(modifier = Modifier.padding(bottom = Variables.GapM)) {
+            // Once the card has finished expanding, scroll just enough for its last option to sit
+            // above the sticky action bar; an option hidden under the bar reads as not there. This
+            // includes the card open on arrival. Waiting for the enter transition lets a card
+            // collapsing above it settle first, and waiting for both measurements keeps the request
+            // from firing at a zero-height target on the first frame.
+            val optionsRequester = remember { BringIntoViewRequester() }
+            var optionsHeightPx by remember { mutableIntStateOf(0) }
+            val currentBarClearancePx by rememberUpdatedState(barClearancePx)
+            LaunchedEffect(Unit) {
+                snapshotFlow {
+                    transition.currentState == EnterExitState.Visible &&
+                        optionsHeightPx > 0 &&
+                        currentBarClearancePx > 0
+                }.first { it }
+                // The strip from the options' bottom edge down through the bar's height.
+                val bottom = optionsHeightPx.toFloat()
+                optionsRequester.bringIntoView(Rect(0f, bottom - 1f, 1f, bottom + currentBarClearancePx))
+            }
+            Column(
+                modifier = Modifier
+                    .bringIntoViewRequester(optionsRequester)
+                    .onSizeChanged { optionsHeightPx = it.height }
+                    .padding(bottom = Variables.GapM),
+            ) {
                 section.options.forEachIndexed { index, option ->
                     val isSelected = index in selectedIndices
                     // Kept as State, not read via `by`: drawBehind reads it in the draw phase, so
@@ -443,12 +523,14 @@ private fun SelectableSectionCard(
                             .padding(horizontal = Variables.GapL, vertical = Variables.GapM),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Image(
-                            painter = painterResource(option.icon),
-                            contentDescription = null,
-                            modifier = Modifier.size(40.dp),
-                        )
-                        Spacer(Modifier.width(Variables.GapM))
+                        option.icon?.let {
+                            Image(
+                                painter = painterResource(it),
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                            )
+                            Spacer(Modifier.width(Variables.GapM))
+                        }
                         OSText(
                             text = option.label,
                             fontSize = 20.sp,

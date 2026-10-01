@@ -17,13 +17,17 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleStartEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +44,7 @@ import co.onestep.kmp.uikit.features.audio.PlatformAudioPlayerAdapter
 import co.onestep.kmp.uikit.features.audio.PlatformTTSPlayerAdapter
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowDataFactory
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowError
+import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlowExit
 import co.onestep.kmp.uikit.features.recordFlow.OSTRecordingFlowResult
 import co.onestep.kmp.uikit.features.recordFlow.RecordFlowOutcome
 import co.onestep.kmp.uikit.features.recordFlow.ResultHandler
@@ -49,7 +54,11 @@ import co.onestep.kmp.uikit.features.recordFlow.components.ToolBarHeight
 import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsEvents
 import co.onestep.kmp.uikit.features.recordFlow.analytics.RecordFlowAnalyticsTracker
 import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTRecordingConfiguration
+import co.onestep.kmp.uikit.features.recordFlow.configurations.OSTTagField
+import co.onestep.kmp.uikit.features.recordFlow.configurations.catalogConditionSetupFields
 import co.onestep.kmp.uikit.features.recordFlow.configurations.collectsPostRecordingNote
+import co.onestep.kmp.uikit.features.recordFlow.configurations.staticBalanceOutcomes
+import co.onestep.kmp.uikit.features.recordFlow.configurations.tagFieldsFor
 import co.onestep.kmp.uikit.features.recordFlow.configurations.defaultInstructions
 import co.onestep.kmp.uikit.features.recordFlow.destinations.CustomTagsDestination
 import co.onestep.kmp.uikit.features.recordFlow.destinations.HallwayDistanceDestination
@@ -96,13 +105,16 @@ import co.onestep.kmp.uikit.features.recordFlow.screens.flowScreens.recording.Re
 import co.onestep.kmp.uikit.features.recordFlow.screensData.RecordingScreenData
 import co.onestep.kmp.uikit.features.recordFlow.screensData.isSixOrTwoMinWalk
 import co.onestep.kmp.uikit.features.tagging.models.Footwear
-import co.onestep.kmp.uikit.features.summary.OSTMeasurementSummary
+import co.onestep.kmp.uikit.features.summary.MeasurementSummary
+import co.onestep.kmp.uikit.features.tagging.PreTagFieldsDestination
+import co.onestep.kmp.uikit.features.tagging.preTagFieldsScreen
 import co.onestep.kmp.uikit.features.summary.screens.navigation.StsManualReportDestination
 import co.onestep.kmp.uikit.features.summary.screens.navigation.stsManualReportScreen
 import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOptions
 import co.onestep.kmp.uikit.features.summary.models.OSTSummaryOrigin
 import co.onestep.kmp.uikit.models.FeatureFlag
 import co.onestep.kmp.uikit.models.OSTActivityType
+import co.onestep.kmp.uikit.models.OSTTagValue
 import co.onestep.kmp.sdk.OSTEvent
 import co.onestep.kmp.uikit.models.OSTMotionMeasurement
 import co.onestep.kmp.sdk.currentTimeMillis
@@ -236,19 +248,14 @@ internal fun buildPreRecordDestinations(
         add(SelectWalkDurationDestination)
     }
 
-    // c.1) Optional pre-recording assistive-device selection
-    if (config.showPreRecordingAssistiveDeviceSelection) {
-        add(PreAssistiveDeviceDestination)
-    }
-
-    // c.2) Optional pre-recording footwear selection
-    if (config.showPreRecordingFootwearSelection) {
-        add(PreFootwearDestination)
-    }
-
-    // d) Optional pre-recording questions (custom tags)
-    config.preRecordingQuestions?.let {
-        add(CustomTagsDestination)
+    val preRecordTagFields = config.tagFieldsFor(OSTTagField.STAGE_PRE_RECORD)
+    if (preRecordTagFields != null) {
+        // c) Tag catalog: every pre-recording question on one screen, replacing the legacy screens
+        // below. Nothing to ask means no screen. Static Balance asks them on its Condition Setup
+        // screen instead, added above.
+        if (!isStaticBalance && preRecordTagFields.isNotEmpty()) add(PreTagFieldsDestination)
+    } else {
+        addLegacyPreRecordingQuestions(config)
     }
 
     // e) Microphone permission for dual-task
@@ -268,6 +275,24 @@ internal fun buildPreRecordDestinations(
 
     // g) End on the screen the flow records from.
     add(recordEntryDestinationFor(config.activityType))
+}
+
+@Suppress("DEPRECATION") // The legacy tagging path, kept for one release.
+private fun MutableList<UIktDestination>.addLegacyPreRecordingQuestions(config: OSTRecordingConfiguration) {
+    // c.1) Optional pre-recording assistive-device selection
+    if (config.showPreRecordingAssistiveDeviceSelection) {
+        add(PreAssistiveDeviceDestination)
+    }
+
+    // c.2) Optional pre-recording footwear selection
+    if (config.showPreRecordingFootwearSelection) {
+        add(PreFootwearDestination)
+    }
+
+    // d) Optional pre-recording questions (custom tags)
+    config.preRecordingQuestions?.let {
+        add(CustomTagsDestination)
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -326,6 +351,9 @@ internal fun RecordFlowNavGraph(
 
     val startDestination: NavKey = preRecordDestinations.firstOrNull() ?: recordEntryDestination
 
+    // Catalog-driven Condition Setup fields (Static Balance); null keeps the legacy screen.
+    val catalogConditionFields = remember(config) { config.catalogConditionSetupFields() }
+
     // Navigation 3 back stack owned by this flow. The uikit serializers module makes it
     // saveable across config changes and process death on every platform (iOS has no
     // reflection-based fallback).
@@ -383,6 +411,23 @@ internal fun RecordFlowNavGraph(
         viewModel.setForegroundState(true)
         onStopOrDispose {
             viewModel.setForegroundState(false)
+        }
+    }
+
+    // UI timeout with OSTSummaryOptions.None: no in-flow screen was asked for, so the flow ends
+    // here with the ui_timeout exit reason instead of sitting on the analyzing screen. Collected
+    // only while RESUMED, like uikit's RecordFlowFragment; the signal is conflated, so a timeout
+    // reached in the background is delivered on return. The VM claimed the attempt's one-shot
+    // outcome before signalling, so a late result cannot also finish the flow.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnResult by rememberUpdatedState(onResult)
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
+    LaunchedEffect(viewModel, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.onUiTimeoutExit.collect {
+                viewModel.clearJobs()
+                finishOnUiTimeout(onResult = currentOnResult, onDismiss = currentOnDismiss)
+            }
         }
     }
 
@@ -471,7 +516,7 @@ internal fun RecordFlowNavGraph(
         // content; the toolbar just fades away over the reserved space. Because the NavDisplay is
         // inset below the toolbar (not overlapping it) there is no iOS touch conflict.
         //
-        // Screens that intentionally render with no top chrome (Recording saved, Summary)
+        // Screens that intentionally render with no top chrome (Generic Recording notes, Summary)
         // reclaim the inset so they keep their full-height layout.
         //
         // ⚠️ A route listed here OWNS ITS OWN TOP INSET. Nothing above it applies `statusBars`, so a
@@ -482,7 +527,6 @@ internal fun RecordFlowNavGraph(
         // the inset here for them instead: Summary already applies it to its own toolbar and would
         // double-pad.
         val collapseToolbarGap = when (currentKey) {
-            RecordingSavedDestination,
             GenericRecordingNotesDestination,
             SummaryResultDestination -> true
             else -> false
@@ -592,9 +636,9 @@ internal fun RecordFlowNavGraph(
             },
         )
 
-        // Pre-recording questions (custom tags)
+        // Pre-recording questions (custom tags) — the legacy tagging path, kept for one release.
         customTagsScreen(
-            preRecordingQuestions = config.preRecordingQuestions,
+            preRecordingQuestions = @Suppress("DEPRECATION") config.preRecordingQuestions,
             onAddTags = { viewModel.addTags(it) },
             onRemoveTags = { viewModel.removeTags(it) },
             onToolbarBackRequest = tagBackRequests,
@@ -602,6 +646,15 @@ internal fun RecordFlowNavGraph(
             onBack = { backStack.pop() },
             onDone = {
                 navigateToNext(CustomTagsDestination)
+            },
+        )
+
+        // Tag catalog (OS-17546): every pre-recording question on one screen, answered as codes.
+        preTagFieldsScreen(
+            fields = config.tagFieldsFor(OSTTagField.STAGE_PRE_RECORD).orEmpty(),
+            onContinue = { tagMap ->
+                viewModel.setTagMap(tagMap)
+                navigateToNext(PreTagFieldsDestination)
             },
         )
 
@@ -660,7 +713,12 @@ internal fun RecordFlowNavGraph(
         // Condition setup — start of each condition. On Continue, stores the condition and
         // advances to the next pre-record destination (StartRecord).
         conditionSetupScreen(
-            balance = config.balance ?: OSTBalance(),
+            // The legacy condition set, kept for one release; unused when the catalog drives this
+            // screen (catalogFields).
+            balance = @Suppress("DEPRECATION") config.balance ?: OSTBalance(),
+            catalogFields = catalogConditionFields,
+            onCatalogAnswers = viewModel::setTagMap,
+            conditionNumber = { viewModel.balanceConditionCount() },
             onScreenView = {
                 // screen: static_balance_condition_setup — condition_number is 1-based within
                 // the session (completed count + 1); session_uuid groups the session.
@@ -686,7 +744,10 @@ internal fun RecordFlowNavGraph(
                     ?: viewModel.configuration.value.duration
                     ?: 0
             },
-            onRecordAnother = { note ->
+            // The catalog's outcomes that fit the condition just recorded; null on the legacy
+            // Condition Setup, which asks none.
+            outcomes = { config.staticBalanceOutcomes(viewModel.preRecordTagCodes) },
+            onRecordAnother = { note, outcomes ->
                 // static_balance_note_added — only the session uuid is sent, NEVER the
                 // free-text note (HIPAA). static_balance_another_test carries condition_count.
                 if (!note.isNullOrBlank()) {
@@ -697,14 +758,14 @@ internal fun RecordFlowNavGraph(
                     conditionCount = viewModel.balanceConditionCount(),
                     sessionUuid = viewModel.sessionUuid,
                 )
-                viewModel.updateBalanceConditionNote(note)
+                saveBalanceConditionAnswers(viewModel, catalogConditionFields != null, note, outcomes)
                 viewModel.prepareForNextBalanceCondition()
                 // Nav2 popped to the start destination (inclusive) and re-launched Condition
                 // Setup as a fresh single-top entry; in Nav3 that is simply "reset the stack".
                 backStack.clear()
                 backStack.add(ConditionSetupDestination)
             },
-            onGoToSummary = { note ->
+            onGoToSummary = { note, outcomes ->
                 // static_balance_note_added — only the session uuid (never the note text).
                 // static_balance_go_to_summary carries condition_count.
                 if (!note.isNullOrBlank()) {
@@ -715,7 +776,7 @@ internal fun RecordFlowNavGraph(
                     conditionCount = viewModel.balanceConditionCount(),
                     sessionUuid = viewModel.sessionUuid,
                 )
-                viewModel.updateBalanceConditionNote(note)
+                saveBalanceConditionAnswers(viewModel, catalogConditionFields != null, note, outcomes)
                 finishStaticBalance(
                     viewModel.motionMeasurement.value,
                     viewModel.sessionUuid,
@@ -907,12 +968,15 @@ internal fun RecordFlowNavGraph(
         entry<SummaryResultDestination> {
             val measurement = resultMeasurement
             if (measurement != null) {
-                OSTMeasurementSummary(
+                MeasurementSummary(
                     measurement = measurement,
                     patientId = patientId,
                     options = OSTSummaryOptions.Full,
                     origin = OSTSummaryOrigin.Recording,
                     configuration = config,
+                    // This flow knows what was answered before the recording (an empty set when
+                    // nothing was), so the post-recording options can be narrowed by requiresAny.
+                    preRecordTagCodes = { viewModel.preRecordTagCodes },
                     // Dismissing the native summary still delivers the full result (id +
                     // summaryUrl) — uikit's SummaryFragment does the same, so a host can offer
                     // "open the web summary" after the in-app one.
@@ -1379,14 +1443,21 @@ private fun adjustToolBar(
             viewModel.showBackButton(true)
         }
 
-        // No toolbar on the "Recording saved" screen — its own "Go to summary" /
-        // "Record another test" buttons are the only actions. Same for the Generic Recording
-        // notes screen, whose only action is Continue, and the blinded-recording thank-you, where a
-        // back button would step back into the recording that just finished.
+        // The test's name and the close (X) button, no back button (Figma 14259:18939): stepping
+        // back would re-enter the recording that just finished. Tapping X exits the flow without
+        // opening the summary.
+        RecordingSavedDestination -> {
+            viewModel.showToolbar(true)
+            viewModel.setToolBarTitle(config.activityType.displayNameRes)
+            viewModel.showBackButton(false)
+        }
+
+        // No toolbar on the Generic Recording notes screen, whose only action is Continue, or the
+        // blinded-recording thank-you, where a back button would step back into the recording that
+        // just finished.
         //
         // Note these are NOT the same set as `collapseToolbarGap` above: the thank-you keeps its
         // reserved top space (with nothing drawn in it) and so is not listed there.
-        RecordingSavedDestination,
         GenericRecordingNotesDestination,
         NoSummaryNoticeDestination -> {
             viewModel.showToolbar(false)
@@ -1458,6 +1529,46 @@ private fun finishWithMeasurement(
         ),
     )
     onDismiss()
+}
+
+/**
+ * Terminal exit for an attempt that timed out on the analyzing screen with no summary configured.
+ *
+ * Emits the [OSTRecordingFlowExit] event (exit reason only — PHI-free) so the host can tell the
+ * timeout apart from a user cancel, then dismisses. No [OSTRecordingFlowResult]: there is no
+ * analyzed measurement, matching uikit's `RESULT_CANCELED` + `EXIT_REASON_UI_TIMEOUT`.
+ */
+internal fun finishOnUiTimeout(
+    onResult: (OSTEvent) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    onResult(
+        OSTEvent(
+            name = OSTRecordingFlowExit.EVENT_NAME,
+            properties = mapOf(
+                OSTRecordingFlowExit.KEY_EXIT_REASON to OSTRecordingFlowExit.EXIT_REASON_UI_TIMEOUT,
+            ),
+        ),
+    )
+    onDismiss()
+}
+
+/**
+ * Saves what the clinician entered on Static Balance's "Recording saved" screen. With the tag
+ * catalog the note and the chosen outcomes go up together in one awaited update; the legacy
+ * Condition Setup keeps its note in `onestep_balance_conditions`, as before, and asks no outcomes.
+ */
+private suspend fun saveBalanceConditionAnswers(
+    viewModel: MotionRecorderViewModel,
+    catalogDriven: Boolean,
+    note: String?,
+    outcomes: Map<String, OSTTagValue>,
+) {
+    if (catalogDriven) {
+        viewModel.updateBalanceConditionAnswers(note, outcomes)
+    } else {
+        viewModel.updateBalanceConditionNote(note)
+    }
 }
 
 /**

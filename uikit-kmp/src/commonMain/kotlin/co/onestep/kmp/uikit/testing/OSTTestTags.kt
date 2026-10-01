@@ -125,6 +125,28 @@ object OSTTestTags {
         const val RECORDING_SAVED_NOTE_FIELD = "ost_recording_saved_note_field"
         const val RECORDING_SAVED_GO_TO_SUMMARY_BUTTON = "recording_saved_go_to_summary_button"
         const val RECORDING_SAVED_RECORD_ANOTHER_BUTTON = "recording_saved_record_another_button"
+
+        /**
+         * The outcome chip for catalog option [code] on "Recording saved" (a
+         * `$balance_result_states` code such as "fell" — catalog vocabulary, never patient data).
+         */
+        fun recordingSavedOutcome(code: String): String = "ost_recording_saved_outcome_$code"
+    }
+
+    /**
+     * The tag-catalog question screens (OS-17546): the pre-recording "Your setup" screen and the
+     * post-recording screen after the summary. Their sections reuse
+     * [StaticBalance.conditionSection] / [StaticBalance.conditionOption], keyed by the catalog
+     * field's `name` (e.g. "$footwear").
+     */
+    object TagCatalog {
+        const val PRE_RECORD_SCREEN = "ost_pre_tag_fields_screen"
+        const val PRE_RECORD_CONTINUE_BUTTON = "pre_tag_fields_continue_button"
+        const val PRE_RECORD_CLEAR_ALL_BUTTON = "pre_tag_fields_clear_all_button"
+        const val POST_RECORD_SCREEN = "ost_post_tag_fields_screen"
+        const val POST_RECORD_CONTINUE_BUTTON = "post_tag_fields_continue_button"
+        const val POST_RECORD_CLEAR_ALL_BUTTON = "post_tag_fields_clear_all_button"
+        const val POST_RECORD_NOTE_FIELD = "ost_post_tag_fields_note_field"
     }
 
     /** The Generic Recording post-recording notes screen. */
