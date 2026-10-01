@@ -106,6 +106,7 @@ private class NoopRecorderBridge : RecorderBridge {
     override val stepsCount: StateFlow<Int> = MutableStateFlow(0)
     override val analyserState: StateFlow<OSTAnalyserState> = MutableStateFlow(OSTAnalyserState.Idle)
     override val currentRecordingWindow: StateFlow<OSTRecordingWindow?> = MutableStateFlow(null)
+    override val currentSessionId: StateFlow<String?> = MutableStateFlow(null)
     override suspend fun prepareForRecording(activityType: OSTActivityType): Boolean = false
     override suspend fun start(
         activityType: OSTActivityType,

@@ -18,12 +18,16 @@ import OSTUIKit
 ///     onDismiss: { dismiss() }
 /// )
 /// ```
+///
+/// To show the host's own instructions instead of the SDK's sheet, pass
+/// `onInstructionsRequested: { activityType in presentInstructions(for: activityType) }`.
 public struct OSTRecordingFlowView: UIViewControllerRepresentable {
     private let config: OSTRecordingConfiguration
     private let patientId: String?
     private let onResult: (OSTEvent) -> Void
     private let onFinished: ((OSTRecordingFlowResult) -> Void)?
     private let onDismiss: (() -> Void)?
+    private let onInstructionsRequested: ((OSTActivityType) -> Void)?
 
     /// - Parameter patientId: Clinician-mode selector. `nil` (default) records for the current
     ///   authenticated user. A non-nil OneStep patient UUID records patient-scoped for that patient
@@ -31,28 +35,37 @@ public struct OSTRecordingFlowView: UIViewControllerRepresentable {
     /// - Parameter onFinished: Terminal result of the flow — the measurement id plus the
     ///   `summaryUrl` to open in a web view — delivered immediately before `onDismiss`. Fires only
     ///   when the flow produced an analyzed measurement. Requires `onDismiss` to be non-nil.
+    /// - Parameter onInstructionsRequested: Host-supplied "View instructions". `nil` (default)
+    ///   keeps the SDK's instructions sheet. Non-nil: tapping "View instructions" on the Start
+    ///   screen or an analysis-error screen calls it with the activity type instead of opening the
+    ///   sheet. The SDK still stops the voice-over and still reports the instructions screen.
     public init(
         config: OSTRecordingConfiguration,
         patientId: String? = nil,
         onResult: @escaping (OSTEvent) -> Void,
         onFinished: ((OSTRecordingFlowResult) -> Void)? = nil,
-        onDismiss: (() -> Void)? = nil
+        onDismiss: (() -> Void)? = nil,
+        onInstructionsRequested: ((OSTActivityType) -> Void)? = nil
     ) {
         self.config = config
         self.patientId = patientId
         self.onResult = onResult
         self.onFinished = onFinished
         self.onDismiss = onDismiss
+        self.onInstructionsRequested = onInstructionsRequested
     }
 
     public func makeUIViewController(context: Context) -> UIViewController {
-        if let onFinished, let onDismiss {
+        // Only the most complete overload takes onInstructionsRequested. The no-op closures match
+        // the Kotlin defaults the shorter overloads fall back to.
+        if onInstructionsRequested != nil || (onFinished != nil && onDismiss != nil) {
             return OSTUIKitIos.shared.createRecordingFlowViewController(
                 config: config,
                 patientId: patientId,
                 onResult: onResult,
-                onFinished: onFinished,
-                onDismiss: onDismiss
+                onFinished: onFinished ?? { _ in },
+                onDismiss: onDismiss ?? {},
+                onInstructionsRequested: onInstructionsRequested
             )
         }
         if let onDismiss {

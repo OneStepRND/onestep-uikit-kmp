@@ -32,6 +32,8 @@ internal class FakeRecorderBridge : RecorderBridge {
      */
     override val currentRecordingWindow = MutableStateFlow<OSTRecordingWindow?>(null)
 
+    override val currentSessionId = MutableStateFlow<String?>(null)
+
     var monotonicNow: (() -> Long)? = null
 
     data class StartCall(val activityType: OSTActivityType, val durationMs: Long?)

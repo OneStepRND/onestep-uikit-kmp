@@ -104,7 +104,6 @@ internal object AnalyticsProps {
     // --- Durations / counts ---
     const val SCORE = "score"
     const val STEPS = "steps"
-    const val PEDOMETER = "pedometer"
     const val REPS = "reps"
     const val SECONDS = "seconds"
     const val MEASUREMENT_SECONDS = "measurement_seconds"
@@ -182,4 +181,16 @@ internal object AnalyticsProps {
     const val FLOW_NAME = "flow_name"
     const val ORGANIZATION_NAME = "organization_name"
     const val PATIENT_UUID = "patient_uuid"
+}
+
+/**
+ * Lowercases the `perception_uuid` value, if any. Analytics only — the measurement ids sent to
+ * the API are untouched. iOS hosts hand the SDK `UUID.uuidString`, which is uppercase, while
+ * Android's are lowercase, so without this one perception reports under two ids. Each tracker
+ * applies it at its single emit point.
+ */
+internal fun Map<String, String>.withLowercasePerceptionUuid(): Map<String, String> {
+    val uuid = this[AnalyticsProps.PERCEPTION_UUID] ?: return this
+    val lowercase = uuid.lowercase()
+    return if (lowercase == uuid) this else this + (AnalyticsProps.PERCEPTION_UUID to lowercase)
 }

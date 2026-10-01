@@ -87,6 +87,10 @@ class AndroidRecorderBridge private constructor(
             }
         }
 
+    /** Core's session uuid: set at the start of each recording, never cleared by `reset()`. */
+    override val currentSessionId: StateFlow<String?>
+        get() = motionLab.currentSessionId
+
     private fun CoreRecordingWindow.toKmp() = OSTRecordingWindow(
         startedAtMonotonicMillis = startedAtRealtimeMillis,
         willEndAtMonotonicMillis = willEndAtRealtimeMillis,
