@@ -39,6 +39,23 @@ jobs:
       - name: Compile gate (Android + iOS)
         run: ./gradlew :uikit-kmp:compileAndroidMain :uikit-kmp:compileKotlinIosSimulatorArm64 --no-parallel --max-workers=2
 
+      # Fails on any change to the public ABI that the committed dumps in uikit-kmp/api/ don't
+      # carry. The regenerated dumps are printed (as a diff, and as a base64 tar.gz that can be
+      # unpacked with `base64 -d | tar xz` from the repo root) so the update can be reviewed and
+      # committed without a local macOS build.
+      - name: Kotlin ABI check
+        run: |
+          if ! ./gradlew :uikit-kmp:checkKotlinAbi --no-parallel --max-workers=2; then
+            ./gradlew :uikit-kmp:updateKotlinAbi --no-parallel --max-workers=2
+            git add -N uikit-kmp/api
+            git --no-pager diff -- uikit-kmp/api
+            echo "----- BEGIN ABI DUMP -----"
+            tar czf - uikit-kmp/api | base64
+            echo "----- END ABI DUMP -----"
+            echo "::error::The public ABI changed. If intended, run ./gradlew :uikit-kmp:updateKotlinAbi and commit uikit-kmp/api/."
+            exit 1
+          fi
+
       - name: Android host unit tests
         run: ./gradlew :uikit-kmp:testAndroidHostTest --no-parallel --max-workers=2
 
