@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -32,8 +31,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.viewinterop.AndroidView
 import co.onestep.kmp.uikit.utils.PlatformBackHandler
-import kotlin.coroutines.resume
-import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * `WebView`-backed engine.
@@ -62,8 +59,6 @@ internal actual fun PlatformWebView(
     userAgentSuffix: String?,
     isLoading: MutableState<Boolean>,
     isError: MutableState<Boolean>,
-    loadFinishedToken: MutableState<Int>,
-    engine: MutableState<OSTWebEngine?>,
     reloadSignal: Int,
 ) {
     val context = LocalContext.current
@@ -96,15 +91,21 @@ internal actual fun PlatformWebView(
     val hostMessageHolder = remember { mutableStateOf(onHostMessage) }
     hostMessageHolder.value = onHostMessage
 
+    // Whether the current main-frame load got an HTTP error status. WebView reports the status in
+    // onReceivedHttpError as the response headers arrive, which can be BEFORE onPageStarted (posted
+    // at commit) — so onPageStarted must not blindly clear the error, or it erases the verdict it
+    // just received. Reset only when uikit itself starts a load (first load, retry).
+    val mainFrameHttpFailed = remember { mutableStateOf(false) }
+
     val webViewClient = remember {
         object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                isLoading.value = true
-                // A new load starting is the only safe place to clear the error: onPageFinished also
-                // fires for WebView's error page, so clearing there would swallow the failure that
-                // onReceivedError just reported.
-                isError.value = false
+                isLoading.value = !mainFrameHttpFailed.value
+                // A new load starting is the only safe place to clear a network error:
+                // onPageFinished also fires for WebView's error page, so clearing there would
+                // swallow the failure that onReceivedError just reported.
+                isError.value = mainFrameHttpFailed.value
                 view?.evaluateJavascript(
                     injectedHostContextJs(theme, fontScale, insetsHolder.value),
                     null,
@@ -122,7 +123,6 @@ internal actual fun PlatformWebView(
                 // Hide the loader only once the document is done. onPageCommitVisible fires at the
                 // first painted frame, which for an SPA is still the blank shell.
                 isLoading.value = false
-                loadFinishedToken.value += 1
             }
 
             override fun shouldOverrideUrlLoading(
@@ -164,10 +164,12 @@ internal actual fun PlatformWebView(
                 errorResponse: WebResourceResponse?,
             ) {
                 super.onReceivedHttpError(view, request, errorResponse)
+                // Sub-resource statuses (an API call, an image) are the page's to handle.
                 if (request?.isForMainFrame != true) return
-                // 404 only, matching both apps: the web summary returns non-fatal error statuses on
-                // sub-resources and even on some main-frame probes that still render fine.
-                if (errorResponse?.statusCode == 404) {
+                val statusCode = errorResponse?.statusCode ?: return
+                if (isHttpErrorStatus(statusCode)) {
+                    mainFrameHttpFailed.value = true
+                    isLoading.value = false
                     isError.value = true
                 }
             }
@@ -178,7 +180,9 @@ internal actual fun PlatformWebView(
                 error: WebResourceError?,
             ) {
                 super.onReceivedError(view, request, error)
+                // Network-level failure, including the network stack's own ERROR_TIMEOUT.
                 if (request?.isForMainFrame == true) {
+                    isLoading.value = false
                     isError.value = true
                 }
             }
@@ -245,25 +249,11 @@ internal actual fun PlatformWebView(
         }
     }
 
-    DisposableEffect(webView) {
-        engine.value = object : OSTWebEngine {
-            override fun reload() = webView.reload()
-
-            override suspend fun isRenderedContentBlank(): Boolean =
-                suspendCancellableCoroutine { continuation ->
-                    webView.evaluateJavascript(BLANK_CONTENT_PROBE_JS) { result ->
-                        // evaluateJavascript returns a JSON literal, so the string comes back quoted.
-                        continuation.resume(result?.trim('"') == BLANK_CONTENT_PROBE_RESULT)
-                    }
-                }
-        }
-        onDispose {
-            engine.value = null
-        }
-    }
-
     LaunchedEffect(reloadSignal) {
-        if (reloadSignal > 0) webView.reload()
+        if (reloadSignal > 0) {
+            mainFrameHttpFailed.value = false
+            webView.reload()
+        }
     }
 
     // Push inset changes to the live page instead of reloading it. The page re-reads them from the
@@ -290,6 +280,7 @@ internal actual fun PlatformWebView(
         update = { view ->
             if (requestedUrl.value != url) {
                 requestedUrl.value = url
+                mainFrameHttpFailed.value = false
                 view.loadUrl(url)
             }
         },

@@ -59,18 +59,6 @@ fun ostWebUrlRouter(routes: Map<String, () -> Unit>): OSTWebUrlRouter =
         } ?: false
     }
 
-/** Handle to the live web engine, so common code can drive platform-specific operations. */
-internal interface OSTWebEngine {
-    fun reload()
-
-    /** Runs [BLANK_CONTENT_PROBE_JS] in the page; `false` on any evaluation failure. */
-    suspend fun isRenderedContentBlank(): Boolean
-}
-
-// OS-16070 bounded self-heal: how long to let the SPA hydrate before probing, and how many
-// automatic reloads to spend before falling through to the manual-retry error UI.
-private const val CONTENT_SETTLE_DELAY_MS = 1_500L
-private const val MAX_AUTO_RELOADS = 2
 private const val RETRY_LOADER_DELAY_MS = 100L
 
 /**
@@ -87,6 +75,12 @@ private const val RETRY_LOADER_DELAY_MS = 100L
  *
  * This is the union of the Patient app's and Clinician app's `MultiPlatformWebView`. The load/error/
  * retry state machine lives here in common code; only the engine itself is per-platform.
+ *
+ * **What counts as a failure.** Only the main-frame load itself: a network error (including the
+ * network stack's own timeout) or an HTTP error status ([isHttpErrorStatus]). What the page renders
+ * is the page's business — uikit never inspects the DOM to guess whether it "looks" loaded, and
+ * never reloads on its own. A page that is slow to paint or shows its own loading skeleton is
+ * working, and a page that fails its own data fetch owns that error state.
  *
  * Full-login browser handoff (Chrome Custom Tabs / `ASWebAuthenticationSession`) is deliberately
  * **not** ported: logging in is a host concern, and it would force `androidx.browser` onto every
@@ -109,8 +103,6 @@ private const val RETRY_LOADER_DELAY_MS = 100L
  *   RUM snippet, for instance).
  * @param userAgentSuffix appended to the platform default user agent, e.g. `"PatientApp/1.0"`.
  * @param theme brand colors and light/dark handed to the page.
- * @param autoReloadOnBlankContent bounded self-heal for an SPA that loads but renders nothing
- *   (OS-16070). Leave on for the web summary; turn off for pages that can legitimately be blank.
  * @param loader shown while a main-frame load is in flight.
  * @param errorContent shown when the load fails or the URL is not loadable; receives the retry action.
  */
@@ -126,7 +118,6 @@ fun OSTWebView(
     injectedJavaScript: String? = null,
     userAgentSuffix: String? = null,
     theme: OSTWebColorConfig = LocalOSColors.current.toOSTWebColorConfig(),
-    autoReloadOnBlankContent: Boolean = true,
     loader: @Composable () -> Unit = { OSTWebViewLoader() },
     errorContent: @Composable (retry: () -> Unit) -> Unit = { OSTWebViewError(onRetry = it) },
 ) {
@@ -147,12 +138,8 @@ fun OSTWebView(
 
     val isLoading = remember { mutableStateOf(isUrlLoadable) }
     val isError = remember { mutableStateOf(!isUrlLoadable) }
-    val engine = remember { mutableStateOf<OSTWebEngine?>(null) }
-    // Bumped by the platform layer on every finished main-frame load; drives the blank-content probe.
-    val loadFinishedToken = remember { mutableStateOf(0) }
     var reloadSignal by remember { mutableIntStateOf(0) }
     var retryRequested by remember { mutableStateOf(false) }
-    var autoReloadCount by remember { mutableIntStateOf(0) }
 
     Box(modifier = modifier.fillMaxSize().test(OSTTestTags.Web.VIEW)) {
         // A non-https URL is never handed to the engine — the error state below is the whole
@@ -171,14 +158,9 @@ fun OSTWebView(
                 userAgentSuffix = userAgentSuffix,
                 isLoading = isLoading,
                 isError = isError,
-                loadFinishedToken = loadFinishedToken,
-                engine = engine,
                 reloadSignal = reloadSignal,
             )
         }
-
-        // Each distinct URL gets a fresh self-heal budget.
-        LaunchedEffect(url) { autoReloadCount = 0 }
 
         LaunchedEffect(retryRequested) {
             if (!retryRequested) return@LaunchedEffect
@@ -191,48 +173,26 @@ fun OSTWebView(
             retryRequested = false
         }
 
-        // OS-16070: after a main-frame load finishes, let the SPA hydrate, then probe for a
-        // rendered-but-blank page. Reload while under budget; once spent, surface the error UI for a
-        // manual retry. Cannot loop: the budget is bounded and SPA route changes (pushState) do not
-        // bump loadFinishedToken.
-        LaunchedEffect(loadFinishedToken.value, autoReloadOnBlankContent) {
-            if (!autoReloadOnBlankContent || loadFinishedToken.value == 0) return@LaunchedEffect
-            val currentEngine = engine.value ?: return@LaunchedEffect
-
-            delay(CONTENT_SETTLE_DELAY_MS)
-            if (!currentEngine.isRenderedContentBlank()) return@LaunchedEffect
-
-            if (autoReloadCount < MAX_AUTO_RELOADS) {
-                autoReloadCount++
-                isError.value = false
-                // Keep the loader over the blank page for the duration of the reload.
-                isLoading.value = true
-                currentEngine.reload()
-            } else {
-                isLoading.value = false
-                isError.value = true
-            }
-        }
-
         AnimatedVisibility(visible = isLoading.value, enter = fadeIn(), exit = fadeOut()) {
             loader()
         }
 
         AnimatedVisibility(visible = isError.value, enter = fadeIn(), exit = fadeOut()) {
-            errorContent {
-                // A user-initiated retry grants a fresh self-heal budget so the probe can run again
-                // on the reloaded page.
-                autoReloadCount = 0
-                retryRequested = true
-            }
+            errorContent { retryRequested = true }
         }
     }
 }
 
 /**
- * The web engine itself. Reports load state through [isLoading] / [isError], publishes an
- * [OSTWebEngine] handle into [engine], bumps [loadFinishedToken] on each finished main-frame load,
- * and reloads whenever [reloadSignal] increments past 0.
+ * Whether a main-frame HTTP response is a failed load. Any 4xx/5xx is: the status code is the
+ * server's own verdict on the page, and the only one uikit acts on.
+ */
+internal fun isHttpErrorStatus(statusCode: Int): Boolean = statusCode >= 400
+
+/**
+ * The web engine itself. Reports load state through [isLoading] / [isError] — an error only for a
+ * main-frame network failure or an [isHttpErrorStatus] response — and reloads whenever
+ * [reloadSignal] increments past 0.
  */
 @Composable
 internal expect fun PlatformWebView(
@@ -247,8 +207,6 @@ internal expect fun PlatformWebView(
     userAgentSuffix: String?,
     isLoading: MutableState<Boolean>,
     isError: MutableState<Boolean>,
-    loadFinishedToken: MutableState<Int>,
-    engine: MutableState<OSTWebEngine?>,
     reloadSignal: Int,
 )
 

@@ -17,15 +17,14 @@ import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import co.onestep.kmp.uikit.utils.PlatformBackHandler
-import kotlin.coroutines.resume
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.cinterop.readValue
-import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.CoreGraphics.CGRectZero
 import platform.Foundation.NSError
 import platform.Foundation.NSHTTPCookie
 import platform.Foundation.NSHTTPCookieStorage
+import platform.Foundation.NSHTTPURLResponse
 import platform.Foundation.NSURL
 import platform.Foundation.NSURLRequest
 import platform.UIKit.UIScrollViewContentInsetAdjustmentBehavior
@@ -33,6 +32,8 @@ import platform.WebKit.WKNavigation
 import platform.WebKit.WKNavigationAction
 import platform.WebKit.WKNavigationActionPolicy
 import platform.WebKit.WKNavigationDelegateProtocol
+import platform.WebKit.WKNavigationResponse
+import platform.WebKit.WKNavigationResponsePolicy
 import platform.WebKit.WKScriptMessage
 import platform.WebKit.WKScriptMessageHandlerProtocol
 import platform.WebKit.WKUserContentController
@@ -188,8 +189,6 @@ internal actual fun PlatformWebView(
     userAgentSuffix: String?,
     isLoading: MutableState<Boolean>,
     isError: MutableState<Boolean>,
-    loadFinishedToken: MutableState<Int>,
-    engine: MutableState<OSTWebEngine?>,
     reloadSignal: Int,
 ) {
     val density = LocalDensity.current
@@ -232,6 +231,30 @@ internal actual fun PlatformWebView(
                 decisionHandler(WKNavigationActionPolicy.WKNavigationActionPolicyAllow)
             }
 
+            override fun webView(
+                webView: WKWebView,
+                decidePolicyForNavigationResponse: WKNavigationResponse,
+                decisionHandler: (WKNavigationResponsePolicy) -> Unit,
+            ) {
+                // WebKit renders a 4xx/5xx body as an ordinary page, so the status is checked here.
+                // Main frame only: sub-resource statuses are the page's to handle. Cancelling (rather
+                // than flagging and allowing) keeps didCommitNavigation from clearing the error; the
+                // cancellation then surfaces as WK_ERROR_FRAME_LOAD_INTERRUPTED, which is ignored.
+                val statusCode = (decidePolicyForNavigationResponse.response as? NSHTTPURLResponse)
+                    ?.statusCode
+                    ?.toInt()
+                if (decidePolicyForNavigationResponse.forMainFrame &&
+                    statusCode != null &&
+                    isHttpErrorStatus(statusCode)
+                ) {
+                    isLoading.value = false
+                    isError.value = true
+                    decisionHandler(WKNavigationResponsePolicy.WKNavigationResponsePolicyCancel)
+                    return
+                }
+                decisionHandler(WKNavigationResponsePolicy.WKNavigationResponsePolicyAllow)
+            }
+
             @ObjCSignatureOverride
             override fun webView(webView: WKWebView, didStartProvisionalNavigation: WKNavigation?) {
                 // A full main-frame load began. SPA client-side route changes go through pushState
@@ -254,7 +277,6 @@ internal actual fun PlatformWebView(
                 // did-fail callback, but leaving the error flag alone keeps this symmetric with
                 // Android, where onPageFinished *does* fire for the error page.
                 isLoading.value = false
-                loadFinishedToken.value += 1
             }
 
             @ObjCSignatureOverride
@@ -263,6 +285,7 @@ internal actual fun PlatformWebView(
                 didFailNavigation: WKNavigation?,
                 withError: NSError,
             ) {
+                // Network-level failure, including NSURLErrorTimedOut from the network stack.
                 isLoading.value = false
                 isError.value = true
             }
@@ -320,26 +343,7 @@ internal actual fun PlatformWebView(
     val target = remember(url) { NSURL.URLWithString(url) }
 
     DisposableEffect(webView) {
-        engine.value = object : OSTWebEngine {
-            override fun reload() {
-                // reload() over a fresh request: it reuses the cached JS bundle and just re-runs the
-                // SPA (re-firing the data fetch we need), which is far less main-thread work than
-                // re-fetching and re-parsing the page — it keeps the Compose loader from stuttering
-                // during the reload.
-                webView.reload()
-            }
-
-            override suspend fun isRenderedContentBlank(): Boolean =
-                suspendCancellableCoroutine { continuation ->
-                    webView.evaluateJavaScript(BLANK_CONTENT_PROBE_JS) { result, error ->
-                        continuation.resume(
-                            error == null && (result as? String) == BLANK_CONTENT_PROBE_RESULT,
-                        )
-                    }
-                }
-        }
         onDispose {
-            engine.value = null
             webView.navigationDelegate = null
             webView.stopLoading()
             if (onCloseForm != null) {
