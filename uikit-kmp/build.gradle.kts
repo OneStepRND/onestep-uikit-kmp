@@ -14,7 +14,7 @@ plugins {
 group = "co.onestep.kmp"
 
 val versionMajor = 0
-val versionMinor = 7
+val versionMinor = 8
 val versionPatch = 0
 
 val baseVersionName = "$versionMajor.$versionMinor.$versionPatch"
