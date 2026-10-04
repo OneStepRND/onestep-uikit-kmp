@@ -222,33 +222,6 @@ internal fun parseHostMessage(raw: String): OSTWebHostMessage? {
 }
 
 /**
- * Conservative "the page loaded but rendered nothing" probe (OS-16070).
- *
- * The web summary is an SPA: the shell can finish loading while its data fetch comes back empty on
- * a cold backend pipeline, so React renders an empty body — a blank page that fixes itself on
- * reload. This probe drives that bounded auto-reload.
- *
- * Uses `innerText`, not `textContent` (OS-16501): `textContent` counts text inside `<style>` and
- * `<script>`, so a page stuck on a skeleton loader with an inline stylesheet reads as thousands of
- * characters of "content" and never trips. `innerText` is rendered text only, which is what "did
- * anything paint?" has to mean. Any JS failure returns `ok` so uncertainty never causes a reload.
- */
-internal const val BLANK_CONTENT_PROBE_JS = """
-(function () {
-  try {
-    var b = document.body;
-    var text = (b && b.innerText) ? b.innerText.trim() : '';
-    var content = document.querySelectorAll('img, svg, canvas, video, input, button, select, textarea, a').length;
-    return (text.length < 10 && content === 0) ? 'blank' : 'ok';
-  } catch (e) {
-    return 'ok';
-  }
-})();
-"""
-
-internal const val BLANK_CONTENT_PROBE_RESULT = "blank"
-
-/**
  * Trust-boundary check on a host-supplied URL: uikit only ever loads `https`.
  *
  * uikit is a HIPAA-scoped library whose hosts pass URLs through from server payloads, so "open

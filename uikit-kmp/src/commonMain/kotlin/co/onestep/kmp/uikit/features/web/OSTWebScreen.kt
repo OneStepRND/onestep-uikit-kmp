@@ -64,7 +64,6 @@ fun OSTWebScreen(
     injectedJavaScript: String? = null,
     userAgentSuffix: String? = null,
     theme: OSTWebColorConfig = LocalOSColors.current.toOSTWebColorConfig(),
-    autoReloadOnBlankContent: Boolean = true,
 ) {
     Box(
         modifier = modifier
@@ -88,7 +87,6 @@ fun OSTWebScreen(
             injectedJavaScript = injectedJavaScript,
             userAgentSuffix = userAgentSuffix,
             theme = theme,
-            autoReloadOnBlankContent = autoReloadOnBlankContent,
         )
 
         if (showCloseButton) {
