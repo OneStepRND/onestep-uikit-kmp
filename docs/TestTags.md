@@ -194,7 +194,7 @@ it breaks published flows. A flow that runs on both kits selects these per platf
 | `measurement_start` | `RecordFlow.MAIN_BUTTON` on `START_RECORD_SCREEN` |
 | `measurement_start_now` | `RecordFlow.RECORDING_BOTTOM_BUTTON` |
 | `measurement_slide_to_stop` | `RecordFlow.RECORDING_STOP_SLIDER` |
-| `recording_timer` | `RecordFlow.RECORDING_TIMER` (the same node in the get-ready and recording stages) |
+| `recording_timer` | `RecordFlow.RECORDING_TIMER` (the same node in the get-ready and recording stages). Since 0.8.1 that node is also the one that carries the whole `mm:ss` as its text — the digits animate as separate children but merge into it — so `text: "01:0[0-9]"` matches it, and a screen reader reads the time as one value |
 | `hallway_length_field` | `RecordFlow.HALLWAY_INPUT` |
 | `hallway_continue` | `RecordFlow.HALLWAY_CONTINUE_BUTTON` |
 | `hallway_continue_without` | `RecordFlow.HALLWAY_SKIP_BUTTON` |
