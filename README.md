@@ -20,9 +20,9 @@ Current pinned versions (generated from `uikit-kmp/build.gradle.kts` and
 `./scripts/update-readme-versions.sh` after a bump):
 
 <!-- versions:start -->
-![uikit-kmp](https://img.shields.io/badge/uikit--kmp-0.8.3-blue)
+![uikit-kmp](https://img.shields.io/badge/uikit--kmp-0.8.4-blue)
 ![core](https://img.shields.io/badge/core-2.3.0--E--SNAPSHOT-orange)
-![design-system](https://img.shields.io/badge/design--system-1.3.2-green)
+![design-system](https://img.shields.io/badge/design--system-1.3.3-green)
 <!-- versions:end -->
 
 ### What `-SNAPSHOT` means here
