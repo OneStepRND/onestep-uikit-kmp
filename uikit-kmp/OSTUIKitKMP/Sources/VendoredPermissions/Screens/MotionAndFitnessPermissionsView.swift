@@ -123,7 +123,9 @@ struct MotionAndFitnessPermissionsView: View {
         PermissionBaseView(
             icon: .permMotionAndFitness,
             title: coordinator.mode == .background ? LocalizedStrings.getDeeperInsights : LocalizedStrings.motionAndFitnessActivityAccessRequired,
-            primaryButtonTitle: LocalizedStrings.allow,
+            // "Continue", not "Allow" — 5.1.1(iv) forbids a priming CTA that mimics the
+            // system prompt's own button.
+            primaryButtonTitle: LocalizedStrings.continueText,
             primaryAction: {
                 // Track allow button click
                 PermissionsFlowAnalytics.trackClick(
@@ -254,6 +256,9 @@ struct MotionAndFitnessPermissionsView: View {
                 showSettingsView = true
                 shouldPoll = false // Don't poll when showing settings view
             }
+            // 5.1.1(iv): first-time screen has no X; the settings variant keeps one, since its
+            // prompt can never be shown again.
+            coordinator.currentScreenAllowsDismiss = showSettingsView
             // If status == .notDetermined, show initial view (default) and keep polling
         }
         .onReceive(timerPublisher) { _ in

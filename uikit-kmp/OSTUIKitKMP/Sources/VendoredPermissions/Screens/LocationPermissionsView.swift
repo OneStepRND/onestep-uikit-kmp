@@ -244,6 +244,7 @@ struct LocationPermissionsView: View {
         }
         .id((viewModel.permissionStatus))
         .onAppear {
+            coordinator.currentScreenAllowsDismiss = shouldShowSettingsButton
             // Track screen view
             PermissionsFlowAnalytics.trackScreen(
                 "permission_request",
@@ -262,6 +263,8 @@ struct LocationPermissionsView: View {
                 coordinator.nextScreen(currentScreen: .locationScreen(maxMode: neededPermissionsLevel))
             }
         }
+        // 5.1.1(iv): no X on the first-time screen; keep one on the settings variant.
+        .onChange(of: shouldShowSettingsButton) { coordinator.currentScreenAllowsDismiss = $0 }
         .onChange(of: viewModel.permissionStatus) { newStatus in
             // Track permission status change
             let status: String?
@@ -308,7 +311,8 @@ struct LocationPermissionWhenInUseView: View {
         PermissionBaseView(
             icon: .permLocation,
             title: LocalizedStrings.locationAccessRequired,
-            primaryButtonTitle: LocalizedStrings.allow,
+            // "Continue", not "Allow" — 5.1.1(iv).
+            primaryButtonTitle: LocalizedStrings.continueText,
             primaryAction: { requestAction() },
             content: {
                 VStack {
@@ -341,7 +345,8 @@ struct LocationPermissionAlwaysView: View {
         PermissionBaseView(
             icon: .permLocation,
             title: LocalizedStrings.getBetterAssessments,
-            primaryButtonTitle: LocalizedStrings.allow,
+            // "Continue", not "Allow" — 5.1.1(iv).
+            primaryButtonTitle: LocalizedStrings.continueText,
             primaryAction: { requestAction() },
             content: {
                 VStack{

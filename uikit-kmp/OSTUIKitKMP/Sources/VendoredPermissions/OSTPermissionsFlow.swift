@@ -43,7 +43,12 @@ struct OSTPermissionsFlow: View {
                             }
                         }
                         dismiss()
-                    })
+                    },
+                    // 5.1.1(iv): no X on a first-time priming screen — the user must proceed
+                    // to the system prompt. The post-denial "Go to Settings" variants set this
+                    // true, because their prompt can never reappear and an X-less screen would
+                    // trap them.
+                    hidden: !coordinator.currentScreenAllowsDismiss)
             } else {
                 EmptyView()
             }
