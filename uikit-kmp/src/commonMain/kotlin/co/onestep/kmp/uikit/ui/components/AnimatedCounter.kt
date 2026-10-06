@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
-import co.onestep.designsystem.components.OSText
+import co.onestep.designsystem.components.OSTextFixedSize
 import co.onestep.designsystem.theme.LocalOSColors
 import co.onestep.kmp.uikit.ui.theme.PreviewTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -75,7 +75,10 @@ fun AnimatedCounter(
                         // Visual only: the merged parent speaks for the whole value.
                         modifier = Modifier.clearAndSetSemantics { },
                     ) { animatedChar ->
-                        OSText(
+                        // Fixed size: the counter ignores the phone's font-size setting. It is
+                        // already large, and scaling it broke the recording layout (OS-17707,
+                        // OS-17708).
+                        OSTextFixedSize(
                             text = animatedChar.toString(),
                             fontSize = textData.textSize,
                             fontWeight = textData.fontWeight,
