@@ -17,12 +17,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
+import kotlin.math.roundToInt
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import co.onestep.kmp.uikit.features.recordFlow.screensData.TextData
@@ -62,7 +65,9 @@ fun AnimatedCounter(
     val wholeValue = text
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
-            modifier.semantics(mergeDescendants = true) {
+            modifier
+                .shrinkToFitWidth()
+                .semantics(mergeDescendants = true) {
                 this.text = AnnotatedString(wholeValue)
             },
         ) {
@@ -90,6 +95,33 @@ fun AnimatedCounter(
         }
     }
 }
+
+/**
+ * Scales the content down when its natural width is wider than the space it gets.
+ *
+ * A fixed font size alone is not enough: the phone's display Zoom raises the density, so a fixed
+ * `sp` still grows in pixels and the timer's last digit was clipped (OS-17708). At normal sizes
+ * the content fits and this does nothing.
+ */
+private fun Modifier.shrinkToFitWidth(): Modifier =
+    layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = Constraints.Infinity))
+        val scale =
+            if (constraints.hasBoundedWidth && placeable.width > constraints.maxWidth) {
+                constraints.maxWidth.toFloat() / placeable.width
+            } else {
+                1f
+            }
+        val width = (placeable.width * scale).roundToInt()
+        val height = (placeable.height * scale).roundToInt()
+        layout(width, height) {
+            // The layer scales around the content's centre, so centre it on the scaled box.
+            placeable.placeWithLayer((width - placeable.width) / 2, (height - placeable.height) / 2) {
+                scaleX = scale
+                scaleY = scale
+            }
+        }
+    }
 
 private const val STIFFNESS = 150f
 
