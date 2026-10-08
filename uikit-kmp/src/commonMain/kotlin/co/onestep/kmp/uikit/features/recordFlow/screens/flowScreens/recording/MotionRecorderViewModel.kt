@@ -503,9 +503,9 @@ internal class MotionRecorderViewModel(
                     if (config.playVoiceOver) {
                         audioPlayer.stopCurrentAudio()
                         when (prepareScreenData.prepareDuration) {
-                            // No Russian variant exists for 5-second countdown
+                            // OS-17715: countdown_from_5_ru is the last five counts of countdown_from_10_ru.
                             OSTPrepareDuration.FIVE_SECONDS -> audioPlayer.playAudio(
-                                localizedAudioKey("countdown_from_5", ruKey = "countdown_from_5"),
+                                localizedAudioKey("countdown_from_5"),
                             )
 
                             OSTPrepareDuration.TEN_SECONDS -> audioPlayer.playAudio(
