@@ -9,11 +9,13 @@ package co.onestep.kmp.uikit.features.permissions
  * - [BACKGROUND]: Requests all permissions needed for background monitoring
  *   (ACTIVITY_RECOGNITION, POST_NOTIFICATIONS, and Battery Optimization on Android; Motion/Fitness and Location Always on iOS)
  *
- * - [HEALTH_KIT]: iOS only — requests HealthKit data access permissions.
- *   Returns an empty sequence on Android.
+ * - [HEALTH_KIT]: deprecated no-op — HealthKit support was removed from uikit-kmp
+ *   (linking platform.HealthKit put HK API references into every consumer's binary, which
+ *   App Review flags under guideline 2.5.1 in apps with no HealthKit feature). The mode is
+ *   kept for API compatibility and completes immediately on both platforms.
  *
- * - [FULL]: iOS only — requests Motion/Fitness, Location Always, and HealthKit.
- *   Returns an empty sequence on Android.
+ * - [FULL]: iOS only — requests Motion/Fitness and Location Always (HealthKit removed, see
+ *   [HEALTH_KIT]). Returns an empty sequence on Android.
  */
 enum class OSTPermissionMode {
     /**
@@ -27,13 +29,13 @@ enum class OSTPermissionMode {
     BACKGROUND,
 
     /**
-     * HealthKit mode (iOS only): Requests HealthKit data access permissions.
-     * On Android, this mode produces an empty permission sequence.
+     * Deprecated no-op: HealthKit support was removed from uikit-kmp. The mode completes
+     * immediately on both platforms; kept only so existing callers keep compiling.
      */
     HEALTH_KIT,
 
     /**
-     * Full mode (iOS only): Requests Motion/Fitness → Location (Always) → HealthKit.
+     * Full mode (iOS only): Requests Motion/Fitness → Location (Always).
      * On Android, this mode produces an empty permission sequence.
      */
     FULL,

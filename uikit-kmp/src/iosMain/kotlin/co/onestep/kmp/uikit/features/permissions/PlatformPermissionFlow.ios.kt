@@ -22,7 +22,6 @@ import co.onestep.kmp.uikit.di.UIKitServiceLocator
 import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionChecker
 import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionFlowCoordinator
 import co.onestep.kmp.uikit.features.permissions.ios.IosPermissionScreen
-import co.onestep.kmp.uikit.features.permissions.ios.screens.IosHealthKitPermissionScreen
 import co.onestep.kmp.uikit.features.permissions.ios.screens.IosLocationPermissionScreen
 import co.onestep.kmp.uikit.features.permissions.ios.screens.IosMotionPermissionScreen
 import co.onestep.kmp.uikit.features.permissions.ios.screens.IosRationalizationScreen
@@ -211,13 +210,6 @@ private fun ComposePermissionFlow(
 
                 is IosPermissionScreen.Location ->
                     IosLocationPermissionScreen(
-                        coordinator = coordinator,
-                        screen = currentScreen,
-                        checker = checker,
-                    )
-
-                is IosPermissionScreen.HealthKit ->
-                    IosHealthKitPermissionScreen(
                         coordinator = coordinator,
                         screen = currentScreen,
                         checker = checker,

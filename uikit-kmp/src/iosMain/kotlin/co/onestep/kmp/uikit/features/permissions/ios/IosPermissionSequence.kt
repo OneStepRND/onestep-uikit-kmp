@@ -18,14 +18,14 @@ internal object IosPermissionSequence {
                 IosPermissionType.LOCATION_ALWAYS,
                 IosPermissionType.MOTION_FITNESS,
             )
-            OSTPermissionMode.HEALTH_KIT -> listOf(
-                IosPermissionType.HEALTH_KIT,
-            )
+            // HealthKit support was removed from uikit-kmp (App Store guideline 2.5.1:
+            // linking platform.HealthKit flags every consumer's binary; no KMP consumer
+            // used it). HEALTH_KIT mode completes immediately; FULL no longer includes it.
+            OSTPermissionMode.HEALTH_KIT -> emptyList()
             OSTPermissionMode.FULL -> listOf(
                 IosPermissionType.LOCATION_WHILE_USING,
                 IosPermissionType.LOCATION_ALWAYS,
                 IosPermissionType.MOTION_FITNESS,
-                IosPermissionType.HEALTH_KIT,
             )
         }
 }

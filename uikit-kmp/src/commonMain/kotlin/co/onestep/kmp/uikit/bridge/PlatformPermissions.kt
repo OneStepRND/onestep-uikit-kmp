@@ -24,7 +24,10 @@ data class PermissionResult(
 
 /**
  * Platform permissions manager.
- * Android: ActivityCompat permissions, iOS: CMMotionActivityManager + UNUserNotificationCenter + CLLocationManager + HKHealthStore
+ * Android: ActivityCompat permissions, iOS: CMMotionActivityManager + UNUserNotificationCenter + CLLocationManager.
+ * HealthKit support was removed: [requestHealthKit] is a deprecated no-op that emits DENIED on
+ * both platforms (linking platform.HealthKit flagged every consumer's binary under App Store
+ * guideline 2.5.1).
  */
 expect class PlatformPermissionsManager {
     fun requestActivityRecognition(): Flow<PermissionResult>
