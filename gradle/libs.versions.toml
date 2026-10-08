@@ -12,7 +12,12 @@ designSystem = "1.3.3"
 # of truth for the version pinned across Package.swift, scripts/publish-xcframework.sh,
 # uikit-kmp/OSTUIKitKMP/Package.swift and the iOS test app. After editing, run
 # scripts/sync-ios-sdk-version.sh to propagate it; CI (ios-sdk-version.yml) fails on drift.
-onestepSdkIos = "2.3.1"
+# 2.3.3-core is the HealthKit-free SDK flavour (its -core tag's Package.swift points at a zip
+# built with ONESTEP_EXCLUDE_HEALTHKIT; module name and API are otherwise the same). uikit-kmp's
+# only SPM consumer today is the Clinician app, which must ship zero HealthKit references
+# (App Review 2.5.1) — so the no-HK flavour is the default here. A host that wants the full SDK
+# (background walk bouts / HK wake source) pins the unsuffixed version in ITS OWN package.
+onestepSdkIos = "2.3.3-core"
 media3 = "1.10.1"
 coil = "2.7.0"
 activityCompose = "1.13.0"
