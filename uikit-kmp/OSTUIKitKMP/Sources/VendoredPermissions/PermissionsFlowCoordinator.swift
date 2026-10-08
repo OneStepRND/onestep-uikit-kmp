@@ -9,7 +9,6 @@ import SwiftUI
 import CoreMotion
 import CoreLocation
 import OneStepSDK
-import HealthKit
 
 @MainActor
 class PermissionsFlowCoordinator: NSObject, ObservableObject {
@@ -18,7 +17,6 @@ class PermissionsFlowCoordinator: NSObject, ObservableObject {
     @Published var criticalPermissionsDenied: Bool = false
     private let motionManager = CMMotionActivityManager()
     private var locationManager = CLLocationManager()
-    private let healthStore = HKHealthStore()
     var mode: PermissionFlowMode
     var screensToBeShown = [PermissionFlowScreens]()
 
@@ -67,13 +65,16 @@ class PermissionsFlowCoordinator: NSObject, ObservableObject {
         //configure which permissions we require for every mode
         switch mode {
         case .healthKit:
-            permissionsByMode = [.healthKit]
+            // HealthKit support was removed (App Review 2.5.1; the pinned OneStepSDK -core
+            // flavour has no HealthKit). The mode is kept for API compatibility and completes
+            // immediately.
+            permissionsByMode = []
         case .inApp:
             permissionsByMode = [.motionAndFitness, .locationWhileInUse]
         case .background:
             permissionsByMode = [.motionAndFitness, .locationAlways]
         case .full:
-            permissionsByMode = [.motionAndFitness, .locationAlways, .healthKit]
+            permissionsByMode = [.motionAndFitness, .locationAlways]
         }
         
         //filter out the permissions we already have
@@ -113,11 +114,6 @@ class PermissionsFlowCoordinator: NSObject, ObservableObject {
         } else if permissionsByMode.contains(.locationAlways) {
             screensToBeShown.append(.locationScreen(maxMode: .locationAlways))
         }
-        
-        //healthKit
-        if permissionsByMode.contains(.healthKit) {
-            screensToBeShown.append(.healthKitScreen)
-        }
     }
     
     private func filterOutPermissionsWeAlreadyHave(_ permissionsLacking: inout [PermissionsNeeded]) async {
@@ -132,23 +128,6 @@ class PermissionsFlowCoordinator: NSObject, ObservableObject {
         if permissionsLacking.contains(.locationAlways) && locationManager.authorizationStatus == .authorizedAlways {
             permissionsLacking.removeAll { $0 == .locationAlways }
         }
-        
-        if permissionsLacking.contains(.healthKit) {
-            if !(await healthkitShouldBeRequested()) {
-                permissionsLacking.removeAll { $0 == .healthKit }
-            }
-        }
-    }
-    
-    func healthkitShouldBeRequested() async -> Bool {
-        let healthKitPermissionsRequested = await PermissionsValidator.healthKitPermissionsRequested()
-        let healthKitPermissionsGranted = await PermissionsValidator.checkIfAllHealthKitPermissionsGranted()
-        
-        if !healthKitPermissionsRequested || !healthKitPermissionsGranted {
-            return true
-        }
-        
-        return false
     }
     
     func requestLocationAlways() {
@@ -205,16 +184,13 @@ class PermissionsFlowCoordinator: NSObject, ObservableObject {
             return motionMissing || locationMissing
 
         case .full:
-            // For full mode, we need motion, location always, AND healthKit
             let motionMissing = motionStatus != .authorized
             let locationMissing = locationStatus != .authorizedAlways
-            let healthKitMissing = await healthkitShouldBeRequested()
-            return motionMissing || locationMissing || healthKitMissing
+            return motionMissing || locationMissing
 
         case .healthKit:
-            // For healthKit mode, we primarily need HealthKit permissions
-            let healthKitMissing = await healthkitShouldBeRequested()
-            return healthKitMissing
+            // HealthKit support removed — nothing to request, nothing missing.
+            return false
         }
     }
 
@@ -259,9 +235,6 @@ class PermissionsFlowCoordinator: NSObject, ObservableObject {
         case .motionAndFitnessScreen:
             let variant = determineMotionVariant()
             return (PermissionType.motionFitness.rawValue, variant)
-        case .healthKitScreen:
-            let variant = determineHealthKitVariant()
-            return (PermissionType.healthkit.rawValue, variant)
         case .permissionsRationalization:
             // For the rationalization screen, use the first permission that will be asked
             if let firstScreen = screensToBeShown.first(where: { $0 != .permissionsRationalization }) {
@@ -302,13 +275,6 @@ class PermissionsFlowCoordinator: NSObject, ObservableObject {
         } else if status == .restricted {
             return PermissionVariant.restricted.rawValue
         }
-        return PermissionVariant.firstTime.rawValue
-    }
-
-    /// Determine variant for HealthKit
-    func determineHealthKitVariant() -> String {
-        // HealthKit doesn't have a simple denied state, so we default to first_time
-        // Could be enhanced based on UserDefaults tracking if needed
         return PermissionVariant.firstTime.rawValue
     }
 

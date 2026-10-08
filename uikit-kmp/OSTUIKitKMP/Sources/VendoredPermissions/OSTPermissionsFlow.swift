@@ -92,8 +92,6 @@ extension OSTPermissionsFlow {
             LocationPermissionsView(neededPermissionsLevel: .locationWhileInUse)
         case .motionAndFitnessScreen:
             MotionAndFitnessPermissionsView()
-        case .healthKitScreen:
-            HealthKitPermissionsView()
         case .permissionsRationalization:
             PermissionsRationalizationScreen()
         default:
