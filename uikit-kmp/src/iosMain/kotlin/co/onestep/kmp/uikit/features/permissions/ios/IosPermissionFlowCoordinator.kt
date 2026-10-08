@@ -173,8 +173,9 @@ internal class IosPermissionFlowCoordinator(
                         result.add(IosPermissionScreen.Location(phase = LocationPhase.ALWAYS))
                     }
                 }
-                IosPermissionType.HEALTH_KIT ->
-                    result.add(IosPermissionScreen.HealthKit(showSettings = wasPreviouslyDenied))
+                IosPermissionType.HEALTH_KIT -> {
+                    // HealthKit support removed — no sequence produces it (IosPermissionSequence).
+                }
                 IosPermissionType.MICROPHONE -> {
                     // Microphone is handled separately, not part of the main flow
                 }
@@ -204,6 +205,5 @@ private fun IosPermissionScreen.permissionName(): String? = when (this) {
     is IosPermissionScreen.Rationalization -> "rationalization"
     is IosPermissionScreen.Motion -> "motion_fitness"
     is IosPermissionScreen.Location -> if (phase == LocationPhase.ALWAYS) "location_always" else "location_when_in_use"
-    is IosPermissionScreen.HealthKit -> "health_kit"
     is IosPermissionScreen.Completed -> null
 }

@@ -17,13 +17,6 @@ import platform.Foundation.NSDate
 import platform.Foundation.NSOperationQueue
 import platform.Foundation.dateWithTimeIntervalSince1970
 import platform.Foundation.timeIntervalSince1970
-import platform.HealthKit.HKHealthStore
-import platform.HealthKit.HKObjectType
-import platform.HealthKit.HKQuantityType
-import platform.HealthKit.HKQuantityTypeIdentifierStepCount
-import platform.HealthKit.HKQuantityTypeIdentifierWalkingDoubleSupportPercentage
-import platform.HealthKit.HKQuantityTypeIdentifierWalkingSpeed
-import platform.HealthKit.HKQuantityTypeIdentifierWalkingStepLength
 import platform.UserNotifications.UNAuthorizationOptionAlert
 import platform.UserNotifications.UNAuthorizationOptionBadge
 import platform.UserNotifications.UNAuthorizationOptionSound
@@ -88,29 +81,12 @@ actual class PlatformPermissionsManager {
         emit(PermissionResult(Permission.LOCATION_ALWAYS, PermissionStatus.NOT_DETERMINED))
     }
 
+    // HealthKit support was removed from uikit-kmp: linking platform.HealthKit put HK API
+    // references into every consuming app's binary, which App Review flags (guideline 2.5.1)
+    // in apps with no HealthKit feature. No KMP consumer used this request. If a consumer
+    // ever needs it, reintroduce it as a separate opt-in module, not here.
     actual fun requestHealthKit(): Flow<PermissionResult> = flow {
-        if (!HKHealthStore.isHealthDataAvailable()) {
-            emit(PermissionResult(Permission.HEALTH_KIT, PermissionStatus.DENIED))
-            return@flow
-        }
-        val store = HKHealthStore()
-        val readTypes = setOf(
-            HKQuantityType.quantityTypeForIdentifier(HKQuantityTypeIdentifierStepCount),
-            HKQuantityType.quantityTypeForIdentifier(HKQuantityTypeIdentifierWalkingStepLength),
-            HKQuantityType.quantityTypeForIdentifier(HKQuantityTypeIdentifierWalkingSpeed),
-            HKQuantityType.quantityTypeForIdentifier(HKQuantityTypeIdentifierWalkingDoubleSupportPercentage),
-        ).filterNotNull().toSet()
-
-        val granted = suspendCoroutine { continuation ->
-            store.requestAuthorizationToShareTypes(
-                typesToShare = null,
-                readTypes = readTypes as Set<HKObjectType>,
-            ) { success, _ ->
-                continuation.resume(success)
-            }
-        }
-        val status = if (granted) PermissionStatus.GRANTED else PermissionStatus.DENIED
-        emit(PermissionResult(Permission.HEALTH_KIT, status))
+        emit(PermissionResult(Permission.HEALTH_KIT, PermissionStatus.DENIED))
     }
 
     actual fun checkPermissionStatus(permission: Permission): PermissionStatus {
@@ -145,11 +121,8 @@ actual class PlatformPermissionsManager {
                     else -> PermissionStatus.NOT_DETERMINED
                 }
             }
-            Permission.HEALTH_KIT -> {
-                if (!HKHealthStore.isHealthDataAvailable()) return PermissionStatus.DENIED
-                // HealthKit doesn't provide a simple synchronous check for read authorization
-                PermissionStatus.NOT_DETERMINED
-            }
+            // HealthKit support removed — see requestHealthKit() above.
+            Permission.HEALTH_KIT -> PermissionStatus.DENIED
         }
     }
 }

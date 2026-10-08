@@ -17,9 +17,6 @@ internal sealed class IosPermissionScreen {
         val isDowngraded: Boolean = false,
     ) : IosPermissionScreen()
 
-    /** HealthKit permission screen. */
-    data class HealthKit(val showSettings: Boolean = false) : IosPermissionScreen()
-
     /** Flow completed — all permissions handled. */
     data object Completed : IosPermissionScreen()
 }
