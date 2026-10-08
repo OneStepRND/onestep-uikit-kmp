@@ -21,9 +21,8 @@ class AudioAssetsTest {
      * build them, across every language the flow is localized in.
      */
     private val allKeys = listOf(
-        // Countdown — Get Ready. No Russian variant exists for the 5-second countdown, so it
-        // deliberately falls back to the English clip.
-        "countdown_from_5", "countdown_from_5_iw",
+        // Countdown — Get Ready.
+        "countdown_from_5", "countdown_from_5_ru", "countdown_from_5_iw",
         "countdown_from_10", "countdown_from_10_ru", "countdown_from_10_iw",
         // Recording stopped.
         "recording_stopped", "recording_stopped_ru", "recording_stopped_iw",
