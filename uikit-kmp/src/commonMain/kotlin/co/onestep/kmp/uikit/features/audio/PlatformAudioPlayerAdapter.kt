@@ -2,6 +2,7 @@ package co.onestep.kmp.uikit.features.audio
 
 import co.onestep.kmp.uikit.bridge.PlatformAudioPlayer
 import co.onestep.kmp.uikit_kmp.generated.resources.Res
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -28,21 +29,30 @@ internal class PlatformAudioPlayerAdapter(
         enabled = enable
     }
 
-    override fun playAudio(resourceKey: String) {
-        if (!enabled) return
+    override fun playAudio(resourceKey: String, onStarted: () -> Unit) {
+        if (!enabled) {
+            scope.launch { onStarted() }
+            return
+        }
         val path = AudioAssets.pathFor(resourceKey)
         loadJob?.cancel()
         loadJob = scope.launch {
             val bytes = try {
                 Res.readBytes(path)
+            } catch (cancellation: CancellationException) {
+                // A cancelled load must not report a start: the caller has moved on.
+                throw cancellation
             } catch (e: Exception) {
                 // A missing/renamed asset must not take the flow down — audio is non-critical.
                 // It is logged rather than swallowed because the symptom (silence) is otherwise
                 // indistinguishable from voice-over being switched off.
                 println("PlatformAudioPlayerAdapter: cannot read audio resource $path: ${e.message}")
+                onStarted()
                 return@launch
             }
+            // play() returns once the platform player has started (synchronous prepare + start).
             platform.play(bytes)
+            onStarted()
         }
     }
 
