@@ -500,28 +500,37 @@ internal class MotionRecorderViewModel(
                 }
 
                 is OSTPrepareData.Duration -> {
-                    if (config.playVoiceOver) {
-                        audioPlayer.stopCurrentAudio()
-                        when (prepareScreenData.prepareDuration) {
-                            // OS-17715: countdown_from_5_ru is the last five counts of countdown_from_10_ru.
-                            OSTPrepareDuration.FIVE_SECONDS -> audioPlayer.playAudio(
-                                localizedAudioKey("countdown_from_5"),
-                            )
-
-                            OSTPrepareDuration.TEN_SECONDS -> audioPlayer.playAudio(
-                                localizedAudioKey("countdown_from_10"),
-                            )
-
-                            OSTPrepareDuration.NONE -> Unit
-                        }
-                    }
+                    if (config.playVoiceOver) audioPlayer.stopCurrentAudio()
+                    val voiceOverKey = when (prepareScreenData.prepareDuration) {
+                        // OS-17715: countdown_from_5_ru is the last five counts of countdown_from_10_ru.
+                        OSTPrepareDuration.FIVE_SECONDS -> localizedAudioKey("countdown_from_5")
+                        OSTPrepareDuration.TEN_SECONDS -> localizedAudioKey("countdown_from_10")
+                        OSTPrepareDuration.NONE -> null
+                    }.takeIf { config.playVoiceOver }
                     // screen: measurement_countdown — the Get Ready countdown screen
                     // is shown (Duration prepare with a non-zero countdown), matching
                     // uikit's countdown screen-view.
                     if (prepareScreenData.prepareDuration != OSTPrepareDuration.NONE) {
                         analyticsTracker?.trackMeasurementCountdownScreen(configuration.value.activityType)
                     }
-                    startTimerJob(prepareScreenData)
+                    if (voiceOverKey == null) {
+                        startTimerJob(prepareScreenData)
+                    } else {
+                        // The clip is read from compose resources and prepared before it plays
+                        // (~200 ms on a Galaxy S21, more on a cold start or a busy main thread).
+                        // Starting the digits at the same moment as the load left the voice that
+                        // much behind them for the whole countdown, so the digits wait for the
+                        // voice. The first digit shows meanwhile. "Start now" or leaving the
+                        // screen during the load moves the stage on, and the countdown stays off.
+                        timerValue.value = prepareScreenData.prepareDuration.seconds.toString()
+                        audioPlayer.playAudio(voiceOverKey) {
+                            if (recodingScreenState.value.recordScreenStage ==
+                                RecordingScreenData.RecordScreenStage.GET_READY
+                            ) {
+                                startTimerJob(prepareScreenData)
+                            }
+                        }
+                    }
                     // TUG/STS: the recorder starts already on Get Ready, so the countdown is
                     // part of the recording; the GO marker written at the RECORDING transition
                     // tells analysis where the activity actually began. The recorder's deadline
